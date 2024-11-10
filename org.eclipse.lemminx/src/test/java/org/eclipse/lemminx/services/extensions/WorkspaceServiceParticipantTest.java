@@ -51,7 +51,9 @@ public class WorkspaceServiceParticipantTest extends AbstractCacheBasedTest {
 
 	@Test
 	public void testWorkspaceFolders() {
-		DidChangeWorkspaceFoldersParams params = new DidChangeWorkspaceFoldersParams(new WorkspaceFoldersChangeEvent(Collections.singletonList(new WorkspaceFolder("added")), Collections.singletonList(new WorkspaceFolder("removed"))));
+		DidChangeWorkspaceFoldersParams params = new DidChangeWorkspaceFoldersParams(new WorkspaceFoldersChangeEvent(
+				Collections.singletonList(new WorkspaceFolder("added", "added")),
+				Collections.singletonList(new WorkspaceFolder("removed", "removed"))));
 		server.getWorkspaceService().didChangeWorkspaceFolders(params);
 		assertArrayEquals(new String[] { "added" }, workspaceServiceParticipant.didChangeWorkspaceFolders.getEvent().getAdded().stream().map(WorkspaceFolder::getUri).toArray(String[]::new));
 		assertArrayEquals(new String[] { "removed" }, workspaceServiceParticipant.didChangeWorkspaceFolders.getEvent().getRemoved().stream().map(WorkspaceFolder::getUri).toArray(String[]::new));

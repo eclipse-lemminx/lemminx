@@ -12,8 +12,7 @@
 package org.eclipse.lemminx.client;
 
 import org.eclipse.lsp4j.DynamicRegistrationCapabilities;
-import org.eclipse.xtext.xbase.lib.Pure;
-import org.eclipse.xtext.xbase.lib.util.ToStringBuilder;
+import org.eclipse.lsp4j.jsonrpc.util.ToStringBuilder;
 
 /**
  * Extended capabilities specific to the `textDocument/codeLens` request. This capability doesn't belong to LSP specification. See proposal at 
@@ -52,7 +51,6 @@ public class ExtendedCodeLensCapabilities extends DynamicRegistrationCapabilitie
 	 * Specific capabilities for the `CodeLensKind` in the `textDocument/codeLens`
 	 * request.
 	 */
-	@Pure
 	public CodeLensKindCapabilities getCodeLensKind() {
 		return this.codeLensKind;
 	}
@@ -66,7 +64,6 @@ public class ExtendedCodeLensCapabilities extends DynamicRegistrationCapabilitie
 	}
 
 	@Override
-	@Pure
 	public String toString() {
 		ToStringBuilder b = new ToStringBuilder(this);
 		b.add("codeLensKind", this.codeLensKind);
@@ -75,7 +72,6 @@ public class ExtendedCodeLensCapabilities extends DynamicRegistrationCapabilitie
 	}
 
 	@Override
-	@Pure
 	public boolean equals(final Object obj) {
 		if (this == obj) {
 			return true;
@@ -101,7 +97,6 @@ public class ExtendedCodeLensCapabilities extends DynamicRegistrationCapabilitie
 	}
 
 	@Override
-	@Pure
 	public int hashCode() {
 		return 31 * super.hashCode() + ((this.codeLensKind == null) ? 0 : this.codeLensKind.hashCode());
 	}

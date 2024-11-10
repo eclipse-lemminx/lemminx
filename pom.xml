@@ -8,7 +8,7 @@
 	<description>LemMinX is a XML Language Server Protocol (LSP), and can be used with any editor that supports LSP, to offer an outstanding XML editing experience</description>
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<lsp4j.version>0.20.1</lsp4j.version>
+		<lsp4j.version>0.22.0</lsp4j.version>
 		<junit.version>5.10.1</junit.version>
 	</properties>
 	<url>https://github.com/eclipse/lemminx</url>

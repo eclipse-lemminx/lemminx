@@ -13,8 +13,7 @@ package org.eclipse.lemminx.client;
 
 import java.util.List;
 
-import org.eclipse.xtext.xbase.lib.Pure;
-import org.eclipse.xtext.xbase.lib.util.ToStringBuilder;
+import org.eclipse.lsp4j.jsonrpc.util.ToStringBuilder;
 
 /**
  * Specific capabilities for the `CodeLensKind`.
@@ -48,7 +47,6 @@ public class CodeLensKindCapabilities {
 	 * If this property is not present the client only supports the codeLens kinds
 	 * from `File` to `Array` as defined in the initial version of the protocol.
 	 */
-	@Pure
 	public List<String> getValueSet() {
 		return this.valueSet;
 	}
@@ -66,7 +64,6 @@ public class CodeLensKindCapabilities {
 	}
 
 	@Override
-	@Pure
 	public String toString() {
 		ToStringBuilder b = new ToStringBuilder(this);
 		b.add("valueSet", this.valueSet);
@@ -74,7 +71,6 @@ public class CodeLensKindCapabilities {
 	}
 
 	@Override
-	@Pure
 	public boolean equals(final Object obj) {
 		if (this == obj) {
 			return true;
@@ -97,7 +93,6 @@ public class CodeLensKindCapabilities {
 	}
 
 	@Override
-	@Pure
 	public int hashCode() {
 		return 31 * 1 + ((this.valueSet == null) ? 0 : this.valueSet.hashCode());
 	}
