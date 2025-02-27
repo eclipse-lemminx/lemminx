@@ -176,6 +176,7 @@
 							<imageName>lemminx-${os.detected.classifier}-${project.version}</imageName>
 							<buildArgs>
 								--no-fallback
+								-march=compatibility
 								--enable-http
 								--enable-https
 								${graalvm.static}
