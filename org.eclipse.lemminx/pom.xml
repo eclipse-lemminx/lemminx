@@ -234,14 +234,14 @@
 			<version>1.4.01</version>
 		</dependency>
 		<dependency>
-			<groupId>com.kotcrab.remark</groupId>
+			<groupId>io.github.w6et</groupId>
 			<artifactId>remark</artifactId>
-			<version>1.0.0</version>
+			<version>1.2.3</version>
 		</dependency>
 		<dependency>
 			<groupId>org.jsoup</groupId>
 			<artifactId>jsoup</artifactId>
-			<version>1.14.2</version>
+			<version>1.17.2</version>
 		</dependency>
 		<dependency>
 			<groupId>xml-resolver</groupId>
