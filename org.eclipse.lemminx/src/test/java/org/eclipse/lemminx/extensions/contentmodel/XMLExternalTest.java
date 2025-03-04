@@ -13,14 +13,18 @@ package org.eclipse.lemminx.extensions.contentmodel;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.lemminx.MockXMLLanguageServer;
 import org.eclipse.lemminx.XMLLanguageServer;
+import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DidChangeWatchedFilesParams;
 import org.eclipse.lsp4j.DidOpenTextDocumentParams;
 import org.eclipse.lsp4j.FileChangeType;
@@ -81,7 +85,7 @@ public class XMLExternalTest extends BaseFileTempTest {
 
 		Thread.sleep(threadSleepMs);
 
-		List<PublishDiagnosticsParams> actualDiagnostics = languageServer.getPublishDiagnostics();
+		List<PublishDiagnosticsParams> actualDiagnostics = getDiagnostic(1);
 		assertEquals(1, actualDiagnostics.size());
 		assertEquals(0, actualDiagnostics.get(0).getDiagnostics().size());
 
@@ -89,7 +93,7 @@ public class XMLExternalTest extends BaseFileTempTest {
 		didChangedWatchedFiles(languageServer, testDtd);
 
 		Thread.sleep(threadSleepMs);
-
+		actualDiagnostics = getDiagnostic(2);
 		assertEquals(2, actualDiagnostics.size());
 		assertFalse(actualDiagnostics.get(1).getDiagnostics().isEmpty());
 		assertEquals("MSG_ELEMENT_NOT_DECLARED", actualDiagnostics.get(1).getDiagnostics().get(0).getCode().getLeft());
@@ -134,19 +138,31 @@ public class XMLExternalTest extends BaseFileTempTest {
 
 		clientOpenFile(languageServer, xmlTextDocument);
 
-		Thread.sleep(threadSleepMs);
-
-		List<PublishDiagnosticsParams> actualDiagnostics = languageServer.getPublishDiagnostics();
+		List<PublishDiagnosticsParams> actualDiagnostics = getDiagnostic(1);
 		assertEquals(1, actualDiagnostics.size());
 		assertEquals(0, actualDiagnostics.get(0).getDiagnostics().size());
 
 		editFile(testXsd, 12, "            maxOccurs=\"2\"/>");
 		didChangedWatchedFiles(languageServer, testXsd);
-
-		Thread.sleep(threadSleepMs);
-
+		actualDiagnostics = getDiagnostic(2);
 		assertEquals(2, actualDiagnostics.size());
-		assertEquals("cvc-complex-type.2.4.f", actualDiagnostics.get(1).getDiagnostics().get(0).getCode().getLeft());
+		PublishDiagnosticsParams params = actualDiagnostics.get(1);
+		List<Diagnostic> diagnostics = params.getDiagnostics();
+		assertTrue(diagnostics.size() > 0);
+		assertEquals("cvc-complex-type.2.4.f", diagnostics.get(0).getCode().getLeft());
+	}
+
+	private List<PublishDiagnosticsParams> getDiagnostic(int wanted) {
+		long deadline = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(5);
+		while (System.currentTimeMillis() < deadline) {
+			List<PublishDiagnosticsParams> list = new ArrayList<>(languageServer.getPublishDiagnostics());
+			if (list.size() >= wanted) {
+				return list;
+			}
+			Thread.yield();
+		}
+		fail("Did not recived at laest " + wanted + " diagnostics withing time frame!");
+		return new ArrayList<>();
 	}
 
 	private TextDocumentItem getXMLTextDocumentItem(String filename, String xmlContents) {

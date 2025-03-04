@@ -167,7 +167,7 @@ public class XMLValidationExternalResourcesBasedOnDTDTest extends AbstractCacheB
 		String dtdCachePath = CacheResourcesManager.getResourceCachePath("http://localhost:8080/sample.dtd").toString();
 		String fileURI = "test.xml";
 		// Downloading...
-		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls,
+		XMLAssert.testPublishDiagnosticsFor(TimeUnit.SECONDS.toMillis(5), xml, fileURI, validation, ls,
 				pd(fileURI,
 						new Diagnostic(r(2, 32, 2, 64),
 								"The resource 'http://localhost:8080/sample.dtd' is downloading in the cache path '"
@@ -177,10 +177,8 @@ public class XMLValidationExternalResourcesBasedOnDTDTest extends AbstractCacheB
 						new Diagnostic(r(6, 1, 6, 7), "The entity \"abcd\" was referenced, but not declared.",
 								DiagnosticSeverity.Error, "xml", DTDErrorCode.EntityNotDeclared.getCode())));
 
-		TimeUnit.SECONDS.sleep(5); // HACK: to make the timing work on slow machines
-
 		// Downloaded error
-		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls,
+		XMLAssert.testPublishDiagnosticsFor(TimeUnit.SECONDS.toMillis(5), xml, fileURI, validation, ls,
 				pd(fileURI,
 						new Diagnostic(r(2, 32, 2, 64),
 								"Error while downloading 'http://localhost:8080/sample.dtd' to '" + dtdCachePath
