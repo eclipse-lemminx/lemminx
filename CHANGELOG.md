@@ -1,5 +1,15 @@
 # Change Log
 
+## [0.30.0](https://github.com/eclipse-lemminx/lemminx/milestone/46?closed=1) (March 5, 2025)
+
+### Breaking Changes
+ * Update to Java 11. See [#1721](https://github.com/eclipse-lemminx/lemminx/pull/1721).
+    * _Rationale_: Several of lemminx's dependencies now require Java 11, so we were unable to update to the latest versions until we adopted it.
+
+### Bug Fixes
+ * Handle attribute with text equal to single quote (i.e. "). See [#1726](https://github.com/eclipse-lemminx/lemminx/pull/1726).
+ * Use GraalVM CPU architecture compatibility mode in order to support older CPUs. See [#1733](https://github.com/eclipse-lemminx/lemminx/pull/1733).
+
 ## [0.29.0](https://github.com/eclipse/lemminx/milestone/45?closed=1) (November 25, 2024)
 
 ### Bug Fixes
