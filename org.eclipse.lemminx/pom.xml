@@ -11,7 +11,7 @@
 		<maven.build.timestamp.format>yyyyMMdd-HHmm</maven.build.timestamp.format>
 		<dev.build.timestamp>${maven.build.timestamp}</dev.build.timestamp>
 		<cbi.jarsigner.skip>true</cbi.jarsigner.skip>
-		<native.maven.plugin.version>0.9.23</native.maven.plugin.version>
+		<native.maven.plugin.version>0.10.4</native.maven.plugin.version>
 		<graalvm.static />
 	</properties>
 	<build>
