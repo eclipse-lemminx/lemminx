@@ -90,7 +90,8 @@ public class DOMElementFormatter {
 		int startTagCloseOffset = element.getStartTagCloseOffset();
 
 		if (end != -1 && startTagOpenOffset > end
-				|| start != -1 && startTagCloseOffset != -1 && startTagCloseOffset < start) {
+				|| start != -1 && startTagCloseOffset != -1 && startTagCloseOffset < start
+				|| start != -1 && element.isSelfClosed() && element.getEnd() < start) {
 			return 0;
 		}
 		switch (formatElementCategory) {

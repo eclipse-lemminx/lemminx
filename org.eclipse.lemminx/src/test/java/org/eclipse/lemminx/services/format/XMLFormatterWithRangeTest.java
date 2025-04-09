@@ -416,6 +416,48 @@ public class XMLFormatterWithRangeTest {
 				te(10, 12, 11, 2, "\r\n  "));
 	}
 
+	@Test
+	public void testSelfClosingTags() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.splitNewLine);
+
+		String content = //
+				"<root>\n" + //
+				"  <tag value=\"1\" size=\"12\"/>\n" + //
+				"  <tag value=\"1\" size=\"12\"/>\n" + //
+				"  <tag value=\"1\" size=\"12\"/>\n" + //
+				"  <tag value=\"1\" size=\"12\"/>\n" + //
+				"  <tag value=\"1\" size=\"12\"/>\n" + //
+				"|\t<tag value=\"1\" size=\"12\"/>\n" + //
+				"\t<tag value=\"1\" size=\"12\"/>\n" + //
+				"\t<tag value=\"1\" size=\"12\"/>|\n" + //
+				"</root>\n";
+
+		String expected = //
+				"<root>\n" + //
+				"  <tag value=\"1\" size=\"12\"/>\n" + //
+				"  <tag value=\"1\" size=\"12\"/>\n" + //
+				"  <tag value=\"1\" size=\"12\"/>\n" + //
+				"  <tag value=\"1\" size=\"12\"/>\n" + //
+				"  <tag value=\"1\" size=\"12\"/>\n" + //
+				"  <tag\n" +
+				"      value=\"1\"\n" +
+				"      size=\"12\" />\n" + //
+				"  <tag\n" +
+				"      value=\"1\"\n" +
+				"      size=\"12\" />\n" + //
+				"  <tag\n" +
+				"      value=\"1\"\n" +
+				"      size=\"12\" />\n" + //
+				"</root>\n";
+
+		assertFormat(content, expected, settings, //
+				te(5, 28, 6, 1, "\n  "), te(6, 5, 6, 6, "\n      "), te(6, 15, 6, 16, "\n      "), te(6, 25, 6, 25, " "),
+				te(6, 27, 7, 1, "\n  "), te(7, 5, 7, 6, "\n      "), te(7, 15, 7, 16, "\n      "), te(7, 25, 7, 25, " "),
+				te(7, 27, 8, 1, "\n  "), te(8, 5, 8, 6, "\n      "), te(8, 15, 8, 16, "\n      "), te(8, 25, 8, 25, " ")
+				);
+	}
+
 	private static void assertFormat(String unformatted, String actual, TextEdit... expectedEdits)
 			throws BadLocationException {
 		assertFormat(unformatted, actual, new SharedSettings(), expectedEdits);
