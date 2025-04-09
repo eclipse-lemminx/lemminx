@@ -1,5 +1,10 @@
 # Change Log
 
+## [0.30.1](https://github.com/eclipse-lemminx/lemminx/milestone/47?closed=1) (April 9, 2025)
+
+### Bug Fixes
+ * Handle range formatting for self-closing tags. See [redhat-developer/vscode-xml#1059](https://github.com/redhat-developer/vscode-xml/issues/1059).
+
 ## [0.30.0](https://github.com/eclipse-lemminx/lemminx/milestone/46?closed=1) (March 5, 2025)
 
 ### Breaking Changes
