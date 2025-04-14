@@ -410,6 +410,18 @@
 		"allDeclaredFields": true
 	},
 	{
+		"name": "org.eclipse.lemminx.extensions.contentmodel.settings.XMLDTDSettings",
+		"allDeclaredFields": true,
+		"methods": [{
+			"name": "<init>",
+			"parameterTypes": []
+		}]
+	},
+	{
+		"name": "org.eclipse.lemminx.extensions.contentmodel.settings.DTDEnabled",
+		"allDeclaredFields": true
+	},
+	{
 		"name": "org.eclipse.lemminx.settings.XMLSymbolExpressionFilter",
 		"allDeclaredFields": true,
 		"methods": [{
