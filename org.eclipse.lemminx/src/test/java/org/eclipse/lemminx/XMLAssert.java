@@ -634,7 +634,7 @@ public class XMLAssert {
 		CompletionList resolved = new CompletionList(
 				list.getItems().stream() //
 						.map((item) -> {
-							return (CompletionItem) xmlLanguageService.resolveCompletionItem(item, htmlDoc,
+							return xmlLanguageService.resolveCompletionItem(item, htmlDoc,
 									sharedSettings,
 									() -> {
 									});
@@ -858,6 +858,24 @@ public class XMLAssert {
 	public static void testPublishDiagnosticsFor(String xml, String fileURI, XMLLanguageService xmlLanguageService,
 			PublishDiagnosticsParams... expected) {
 		testPublishDiagnosticsFor(xml, fileURI, null, xmlLanguageService, expected);
+	}
+
+	public static void testPublishDiagnosticsFor(long timeout, String xml, String fileURI,
+			XMLValidationRootSettings validationSettings, XMLLanguageService xmlLanguageService,
+			PublishDiagnosticsParams... expected) {
+		long deadline = System.currentTimeMillis() + timeout;
+		while (true) {
+			try {
+				testPublishDiagnosticsFor(xml, fileURI, validationSettings, xmlLanguageService, expected);
+				return;
+			} catch (AssertionError e) {
+				if (System.currentTimeMillis() < deadline) {
+					Thread.yield();
+					continue;
+				}
+				throw e;
+			}
+		}
 	}
 
 	public static void testPublishDiagnosticsFor(String xml, String fileURI,
