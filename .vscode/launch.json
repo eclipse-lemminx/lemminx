@@ -8,7 +8,7 @@
 		"name": "Debug (Attach) - Remote",
 		"request": "attach",
 		"hostName": "localhost",
-		"port": 1054,
+		"port": 36899,
 		"projectName": "org.eclipse.lemminx"
 	}]
 }

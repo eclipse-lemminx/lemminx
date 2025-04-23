@@ -336,8 +336,40 @@ public class ColorUtils {
 	}
 
 	private static Color colorFromHex(String text) {
-		if (text.isEmpty() || text.charAt(0) != '#') {
+		if (text.isEmpty()) {
 			return null;
+		}
+		if (text.charAt(0) != '#') {
+			switch (text.length()) {
+				case 3: {
+					double red = (hexDigit(text.codePointAt(0)) * 0x11) / 255.0;
+					double green = (hexDigit(text.codePointAt(1)) * 0x11) / 255.0;
+					double blue = (hexDigit(text.codePointAt(2)) * 0x11) / 255.0;
+					double alpha = 1;
+					return new Color(red, green, blue, alpha);
+				}
+				case 4: {
+					double red = (hexDigit(text.codePointAt(0)) * 0x11) / 255.0;
+					double green = (hexDigit(text.codePointAt(1)) * 0x11) / 255.0;
+					double blue = (hexDigit(text.codePointAt(2)) * 0x11) / 255.0;
+					double alpha = (hexDigit(text.codePointAt(3)) * 0x11) / 255.0;
+					return new Color(red, green, blue, alpha);
+				}
+				case 6: {
+					double red = (hexDigit(text.codePointAt(0)) * 0x10 + hexDigit(text.codePointAt(1))) / 255.0;
+					double green = (hexDigit(text.codePointAt(2)) * 0x10 + hexDigit(text.codePointAt(3))) / 255.0;
+					double blue = (hexDigit(text.codePointAt(4)) * 0x10 + hexDigit(text.codePointAt(5))) / 255.0;
+					double alpha = 1;
+					return new Color(red, green, blue, alpha);
+				}
+				case 8: {
+					double red = (hexDigit(text.codePointAt(0)) * 0x10 + hexDigit(text.codePointAt(1))) / 255.0;
+					double green = (hexDigit(text.codePointAt(2)) * 0x10 + hexDigit(text.codePointAt(3))) / 255.0;
+					double blue = (hexDigit(text.codePointAt(4)) * 0x10 + hexDigit(text.codePointAt(5))) / 255.0;
+					double alpha = (hexDigit(text.codePointAt(6)) * 0x10 + hexDigit(text.codePointAt(7))) / 255.0;
+					return new Color(red, green, blue, alpha);
+				}
+			}
 		}
 		switch (text.length()) {
 			case 4: {
