@@ -1,32 +1,29 @@
 /*******************************************************************************
-* Copyright (c) 2023 Red Hat Inc. and others.
-* All rights reserved. This program and the accompanying materials
-* which accompanies this distribution, and is available at
-* http://www.eclipse.org/legal/epl-v20.html
-*
-* SPDX-License-Identifier: EPL-2.0
-*
-* Contributors:
-*     Red Hat Inc. - initial API and implementation
-*******************************************************************************/
+ * Copyright (c) 2023 Red Hat Inc. and others.
+ * All rights reserved. This program and the accompanying materials
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v20.html
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Red Hat Inc. - initial API and implementation
+ *******************************************************************************/
 package org.eclipse.lemminx.extensions.colors.utils;
 
-import java.util.HashMap;
-import java.util.Map;
+import org.eclipse.lsp4j.*;
 
-import org.eclipse.lsp4j.Color;
-import org.eclipse.lsp4j.ColorPresentation;
-import org.eclipse.lsp4j.Range;
-import org.eclipse.lsp4j.TextEdit;
+import java.util.*;
+import java.util.function.*;
 
 /**
  * Color utilities.
- * 
+ * <p>
  * Some piece of code comes the vscode CSS language server written in TypeScript
  * which has been translated to Java.
- * 
+ *
  * @see <a href=
- *      "https://github.com/microsoft/vscode-css-languageservice/blob/main/src/languageFacts/colors.ts">https://github.com/microsoft/vscode-css-languageservice/blob/main/src/languageFacts/colors.ts</a>
+ * "https://github.com/microsoft/vscode-css-languageservice/blob/main/src/languageFacts/colors.ts">https://github.com/microsoft/vscode-css-languageservice/blob/main/src/languageFacts/colors.ts</a>
  */
 public class ColorUtils {
 
@@ -192,11 +189,10 @@ public class ColorUtils {
 	/**
 	 * Returns the {@link Color} instance value from the given <code>text</code> and
 	 * null otherwise.
-	 * 
+	 *
 	 * @param text the color text.
-	 * 
 	 * @return the {@link Color} instance value from the given <code>text</code> and
-	 *         null otherwise.
+	 * null otherwise.
 	 */
 	public static Color getColorValue(String text) {
 		String candidateColor = colors.get(text);
@@ -225,7 +221,9 @@ public class ColorUtils {
 		}
 
 		try {
-			double alpha = colorValues.length == 4 ? getNumericValue(colorValues[3], 1) : 1;
+			double alpha = colorValues.length == 4
+					? getNumericValue(colorValues[3], 1)
+					: 1;
 			if (name.equals("rgb") || name.equals("rgba")) {
 				double red = getNumericValue(colorValues[0], 255.0);
 				double green = getNumericValue(colorValues[1], 255.0);
@@ -249,12 +247,11 @@ public class ColorUtils {
 	/**
 	 * Returns the RGB color presentation of the given <code>color</code> and
 	 * <code>replace</code> range.
-	 * 
+	 *
 	 * @param color   the color.
 	 * @param replace the replace range.
-	 * 
 	 * @return the RGB color presentation of the given <code>color</code> and
-	 *         <code>range</code>.
+	 * <code>range</code>.
 	 */
 	public static ColorPresentation toRGB(Color color, Range replace) {
 		int red256 = (int) Math.round(color.getRed() * 255);
@@ -262,7 +259,12 @@ public class ColorUtils {
 		int blue256 = (int) Math.round(color.getBlue() * 255);
 		int alpha = (int) color.getAlpha();
 
-		String label = getRGB(red256, green256, blue256, alpha == 1 ? null : alpha);
+		String label = getRGB(red256,
+				green256,
+				blue256,
+				alpha == 1
+						? null
+						: alpha);
 		TextEdit textEdit = new TextEdit(replace, label);
 		return new ColorPresentation(label, textEdit);
 	}
@@ -285,12 +287,11 @@ public class ColorUtils {
 	/**
 	 * Returns the Hexa color presentation of the given <code>color</code> and
 	 * <code>replace</code> range.
-	 * 
+	 *
 	 * @param color   the color.
 	 * @param replace the replace range.
-	 * 
 	 * @return the Hexa color presentation of the given <code>color</code> and
-	 *         <code>range</code>.
+	 * <code>range</code>.
 	 */
 	public static ColorPresentation toHexa(Color color, Range replace) {
 		double red256 = Math.round(color.getRed() * 255);
@@ -298,7 +299,12 @@ public class ColorUtils {
 		double blue256 = Math.round(color.getBlue() * 255);
 		double alpha = color.getAlpha();
 
-		String label = getHexa(red256, green256, blue256, alpha == 1 ? null : alpha);
+		String label = getHexa(red256,
+				green256,
+				blue256,
+				alpha == 1
+						? null
+						: alpha);
 		TextEdit textEdit = new TextEdit(replace, label);
 		return new ColorPresentation(label, textEdit);
 	}
@@ -316,7 +322,9 @@ public class ColorUtils {
 
 	private static String toTwoDigitHex(double n) {
 		String r = Integer.toHexString((int) n);
-		return r.length() != 2 ? '0' + r : r;
+		return r.length() != 2
+				? '0' + r
+				: r;
 	}
 
 	public static int hexDigit(int charCode) {
@@ -339,68 +347,23 @@ public class ColorUtils {
 		if (text.isEmpty()) {
 			return null;
 		}
-		if (text.charAt(0) != '#') {
-			switch (text.length()) {
-				case 3: {
-					double red = (hexDigit(text.codePointAt(0)) * 0x11) / 255.0;
-					double green = (hexDigit(text.codePointAt(1)) * 0x11) / 255.0;
-					double blue = (hexDigit(text.codePointAt(2)) * 0x11) / 255.0;
-					double alpha = 1;
-					return new Color(red, green, blue, alpha);
-				}
-				case 4: {
-					double red = (hexDigit(text.codePointAt(0)) * 0x11) / 255.0;
-					double green = (hexDigit(text.codePointAt(1)) * 0x11) / 255.0;
-					double blue = (hexDigit(text.codePointAt(2)) * 0x11) / 255.0;
-					double alpha = (hexDigit(text.codePointAt(3)) * 0x11) / 255.0;
-					return new Color(red, green, blue, alpha);
-				}
-				case 6: {
-					double red = (hexDigit(text.codePointAt(0)) * 0x10 + hexDigit(text.codePointAt(1))) / 255.0;
-					double green = (hexDigit(text.codePointAt(2)) * 0x10 + hexDigit(text.codePointAt(3))) / 255.0;
-					double blue = (hexDigit(text.codePointAt(4)) * 0x10 + hexDigit(text.codePointAt(5))) / 255.0;
-					double alpha = 1;
-					return new Color(red, green, blue, alpha);
-				}
-				case 8: {
-					double red = (hexDigit(text.codePointAt(0)) * 0x10 + hexDigit(text.codePointAt(1))) / 255.0;
-					double green = (hexDigit(text.codePointAt(2)) * 0x10 + hexDigit(text.codePointAt(3))) / 255.0;
-					double blue = (hexDigit(text.codePointAt(4)) * 0x10 + hexDigit(text.codePointAt(5))) / 255.0;
-					double alpha = (hexDigit(text.codePointAt(6)) * 0x10 + hexDigit(text.codePointAt(7))) / 255.0;
-					return new Color(red, green, blue, alpha);
-				}
-			}
+		return parseText(text.startsWith("#")
+				? text.substring(1)
+				: text);
+	}
+
+	private static Color parseText(String text) {
+		int[] codePoints = text.codePoints().map(ColorUtils::hexDigit).toArray();
+		int length = text.length();
+		Color color = new Color(0, 0, 0, 1);
+		var channelSetters = new HashMap<Integer, Consumer<Integer>>();
+		channelSetters.put(0, color::setRed);
+		channelSetters.put(1, color::setGreen);
+		channelSetters.put(2, color::setBlue);
+		channelSetters.put(3, color::setAlpha);
+		for (int i = 0; i < Math.min(4, (length + length % 4) / 4); i++) {
+			channelSetters.get(i).accept(codePoints[i * 2] * 16 + codePoints[i * 2 + 1]);
 		}
-		switch (text.length()) {
-			case 4: {
-				double red = (hexDigit(text.codePointAt(1)) * 0x11) / 255.0;
-				double green = (hexDigit(text.codePointAt(2)) * 0x11) / 255.0;
-				double blue = (hexDigit(text.codePointAt(3)) * 0x11) / 255.0;
-				double alpha = 1;
-				return new Color(red, green, blue, alpha);
-			}
-			case 5: {
-				double red = (hexDigit(text.codePointAt(1)) * 0x11) / 255.0;
-				double green = (hexDigit(text.codePointAt(2)) * 0x11) / 255.0;
-				double blue = (hexDigit(text.codePointAt(3)) * 0x11) / 255.0;
-				double alpha = (hexDigit(text.codePointAt(4)) * 0x11) / 255.0;
-				return new Color(red, green, blue, alpha);
-			}
-			case 7: {
-				double red = (hexDigit(text.codePointAt(1)) * 0x10 + hexDigit(text.codePointAt(2))) / 255.0;
-				double green = (hexDigit(text.codePointAt(3)) * 0x10 + hexDigit(text.codePointAt(4))) / 255.0;
-				double blue = (hexDigit(text.codePointAt(5)) * 0x10 + hexDigit(text.codePointAt(6))) / 255.0;
-				double alpha = 1;
-				return new Color(red, green, blue, alpha);
-			}
-			case 9: {
-				double red = (hexDigit(text.codePointAt(1)) * 0x10 + hexDigit(text.codePointAt(2))) / 255.0;
-				double green = (hexDigit(text.codePointAt(3)) * 0x10 + hexDigit(text.codePointAt(4))) / 255.0;
-				double blue = (hexDigit(text.codePointAt(5)) * 0x10 + hexDigit(text.codePointAt(6))) / 255.0;
-				double alpha = (hexDigit(text.codePointAt(7)) * 0x10 + hexDigit(text.codePointAt(8))) / 255.0;
-				return new Color(red, green, blue, alpha);
-			}
-		}
-		return null;
+		return color;
 	}
 }
