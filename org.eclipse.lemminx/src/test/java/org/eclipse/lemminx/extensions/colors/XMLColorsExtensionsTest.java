@@ -122,7 +122,39 @@ public class XMLColorsExtensionsTest {
 				colorPres("rgb(0,128,0)", te(2, 14, 2, 19, "rgb(0,128,0)")), //
 				colorPres("#008000", te(2, 14, 2, 19, "#008000")));
 	}
-	
+
+	@Test
+	public void hexWithHashInfo() throws BadLocationException {
+		// Here color is done for color/text() only
+		XMLColorsSettings settings = createXMLColorsSettings();
+		String xml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n"
+				+ "<resources>\r\n"
+				+ "	<color name=\"opaque_red\">f00</color>\r\n" // <-- here color/text() is colorized
+				+ "	<color name=\"translucent_pale_red\">F110</color>\r\n"
+				+ "</resources>";
+		testColorInformationFor(xml, "file:///test/res/values/colors.xml", settings, //
+				colorInfo(1, 0, 0, 1, r(2, 26, 2, 29)), //
+				colorInfo(1, 0.06666666666666667, 0.06666666666666667, 0, r(3, 36, 3, 40)));
+	}
+
+	@Test
+	public void hexWithoutHashPresentation() throws BadLocationException {
+		ColorInformation green = colorInfo(1, 0, 1, 1, r(2, 14, 2, 20));
+		ColorInformation seeThroughRed = colorInfo(1,0, 0, 0, r(3, 14, 3, 22));
+
+		XMLColorsSettings settings = createXMLColorsSettings();
+		String xml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n"
+				+ "<resources>\r\n"
+				+ "	<item color=\"FF00FF\" />\r\n" // hex color
+				+ "	<item color=\"FF000000\" />\r\n" // hexa color
+				+ "</resources>";
+		testColorPresentationFor(xml, "file:///test/colors-attr.xml", green.getColor(), green.getRange(), settings, //
+				colorPres("ff00ff", te(2, 14, 2, 20, "ff00ff")));
+
+		testColorPresentationFor(xml, "file:///test/colors-attr.xml", seeThroughRed.getColor(), seeThroughRed.getRange(), settings, //
+				colorPres("ff000000", te(3, 14, 3, 22, "ff000000")));
+	}
+
 	private static XMLColorsSettings createXMLColorsSettings() {
 		XMLColorsSettings settings = new XMLColorsSettings();
 		List<XMLColors> colors = new ArrayList<>();

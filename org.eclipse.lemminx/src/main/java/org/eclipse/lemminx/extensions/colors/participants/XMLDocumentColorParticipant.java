@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.eclipse.lemminx.commons.BadLocationException;
 import org.eclipse.lemminx.dom.DOMAttr;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMElement;
@@ -28,6 +29,7 @@ import org.eclipse.lemminx.extensions.colors.XMLColorsPlugin;
 import org.eclipse.lemminx.extensions.colors.settings.XMLColorExpression;
 import org.eclipse.lemminx.extensions.colors.settings.XMLColors;
 import org.eclipse.lemminx.extensions.colors.settings.XMLColorsSettings;
+import org.eclipse.lemminx.extensions.colors.utils.ColorUtils;
 import org.eclipse.lemminx.services.extensions.IDocumentColorParticipant;
 import org.eclipse.lemminx.utils.XMLPositionUtility;
 import org.eclipse.lsp4j.Color;
@@ -39,7 +41,7 @@ import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
 /**
  * XML document color particpant based on the {@link XMLColorsSettings}.
- * 
+ *
  * @author Angelo ZERR
  *
  */
@@ -110,19 +112,34 @@ public class XMLDocumentColorParticipant implements IDocumentColorParticipant {
 			List<ColorPresentation> presentations, CancelChecker cancelChecker) {
 		Color color = params.getColor();
 		Range replace = params.getRange();
+		try {
+			DOMAttr attr = xmlDocument.findAttrAt(xmlDocument.offsetAt(params.getRange().getStart()));
+			String value = attr.getValue();
+			if (value.startsWith("rgb")) {
+				presentations.add(toRGB(color, replace));
+			} else if (value.startsWith("#") || ColorUtils.isHexNumber(value)) {
+				presentations.add(toHexa(color, replace, value.codePointAt(0) == "#".codePointAt(0)));
+			} else {
+				presentations.add(toRGB(color, replace));
+				presentations.add(toHexa(color, replace, true));
+			}
+			return;
+		} catch (BadLocationException e) {
+			// we can't identify the existing presentation, fall through to add both
+		}
 		// RGB color presentation
 		presentations.add(toRGB(color, replace));
 		// Hexa color presentation
-		presentations.add(toHexa(color, replace));
+		presentations.add(toHexa(color, replace, true));
 	}
 
 	/**
 	 * Returns true if the given <code>node>code> matches an XML color expression
 	 * and false otherwise.
-	 * 
+	 *
 	 * @param node        the node to match.
 	 * @param expressions XML color expressions.
-	 * 
+	 *
 	 * @return true if the given <code>node>code> matches an XML color expression
 	 *         and false otherwise.
 	 */
@@ -149,9 +166,9 @@ public class XMLDocumentColorParticipant implements IDocumentColorParticipant {
 	/**
 	 * Return the list of {@link XMLColorExpression} for the given document and an
 	 * empty list otherwise.
-	 * 
+	 *
 	 * @param xmlDocument the DOM document
-	 * 
+	 *
 	 * @return the list of {@link XMLColorExpression} for the given document and an
 	 *         empty list otherwise.
 	 */

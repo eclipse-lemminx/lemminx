@@ -21,10 +21,10 @@ import org.eclipse.lsp4j.TextEdit;
 
 /**
  * Color utilities.
- * 
+ *
  * Some piece of code comes the vscode CSS language server written in TypeScript
  * which has been translated to Java.
- * 
+ *
  * @see <a href=
  *      "https://github.com/microsoft/vscode-css-languageservice/blob/main/src/languageFacts/colors.ts">https://github.com/microsoft/vscode-css-languageservice/blob/main/src/languageFacts/colors.ts</a>
  */
@@ -192,9 +192,9 @@ public class ColorUtils {
 	/**
 	 * Returns the {@link Color} instance value from the given <code>text</code> and
 	 * null otherwise.
-	 * 
+	 *
 	 * @param text the color text.
-	 * 
+	 *
 	 * @return the {@link Color} instance value from the given <code>text</code> and
 	 *         null otherwise.
 	 */
@@ -249,10 +249,10 @@ public class ColorUtils {
 	/**
 	 * Returns the RGB color presentation of the given <code>color</code> and
 	 * <code>replace</code> range.
-	 * 
+	 *
 	 * @param color   the color.
 	 * @param replace the replace range.
-	 * 
+	 *
 	 * @return the RGB color presentation of the given <code>color</code> and
 	 *         <code>range</code>.
 	 */
@@ -285,26 +285,29 @@ public class ColorUtils {
 	/**
 	 * Returns the Hexa color presentation of the given <code>color</code> and
 	 * <code>replace</code> range.
-	 * 
+	 *
 	 * @param color   the color.
 	 * @param replace the replace range.
-	 * 
+	 *
 	 * @return the Hexa color presentation of the given <code>color</code> and
 	 *         <code>range</code>.
 	 */
-	public static ColorPresentation toHexa(Color color, Range replace) {
+	public static ColorPresentation toHexa(Color color, Range replace, boolean addHash) {
 		double red256 = Math.round(color.getRed() * 255);
 		double green256 = Math.round(color.getGreen() * 255);
 		double blue256 = Math.round(color.getBlue() * 255);
 		double alpha = color.getAlpha();
 
-		String label = getHexa(red256, green256, blue256, alpha == 1 ? null : alpha);
+		String label = getHexa(red256, green256, blue256, alpha == 1 ? null : alpha, addHash);
 		TextEdit textEdit = new TextEdit(replace, label);
 		return new ColorPresentation(label, textEdit);
 	}
 
-	private static String getHexa(double red256, double green256, double blue256, Double alpha) {
-		StringBuilder label = new StringBuilder("#");
+	private static String getHexa(double red256, double green256, double blue256, Double alpha, boolean addHash) {
+		StringBuilder label = new StringBuilder();
+		if (addHash) {
+			label.append("#");
+		}
 		label.append(toTwoDigitHex(red256));
 		label.append(toTwoDigitHex(green256));
 		label.append(toTwoDigitHex(blue256));
@@ -336,39 +339,58 @@ public class ColorUtils {
 	}
 
 	private static Color colorFromHex(String text) {
-		if (text.isEmpty() || text.charAt(0) != '#') {
+		if (text.isEmpty()) {
 			return null;
 		}
+
+		if (text.charAt(0) == '#') {
+			text = text.substring(1);
+		}
+
+		if (!isHexNumber(text)) {
+			return null;
+		}
+
 		switch (text.length()) {
+			case 3: {
+				double red = (hexDigit(text.codePointAt(0)) * 0x11) / 255.0;
+				double green = (hexDigit(text.codePointAt(1)) * 0x11) / 255.0;
+				double blue = (hexDigit(text.codePointAt(2)) * 0x11) / 255.0;
+				double alpha = 1;
+				return new Color(red, green, blue, alpha);
+			}
 			case 4: {
-				double red = (hexDigit(text.codePointAt(1)) * 0x11) / 255.0;
-				double green = (hexDigit(text.codePointAt(2)) * 0x11) / 255.0;
-				double blue = (hexDigit(text.codePointAt(3)) * 0x11) / 255.0;
+				double red = (hexDigit(text.codePointAt(0)) * 0x11) / 255.0;
+				double green = (hexDigit(text.codePointAt(1)) * 0x11) / 255.0;
+				double blue = (hexDigit(text.codePointAt(2)) * 0x11) / 255.0;
+				double alpha = (hexDigit(text.codePointAt(3)) * 0x11) / 255.0;
+				return new Color(red, green, blue, alpha);
+			}
+			case 6: {
+				double red = (hexDigit(text.codePointAt(0)) * 0x10 + hexDigit(text.codePointAt(1))) / 255.0;
+				double green = (hexDigit(text.codePointAt(2)) * 0x10 + hexDigit(text.codePointAt(3))) / 255.0;
+				double blue = (hexDigit(text.codePointAt(4)) * 0x10 + hexDigit(text.codePointAt(5))) / 255.0;
 				double alpha = 1;
 				return new Color(red, green, blue, alpha);
 			}
-			case 5: {
-				double red = (hexDigit(text.codePointAt(1)) * 0x11) / 255.0;
-				double green = (hexDigit(text.codePointAt(2)) * 0x11) / 255.0;
-				double blue = (hexDigit(text.codePointAt(3)) * 0x11) / 255.0;
-				double alpha = (hexDigit(text.codePointAt(4)) * 0x11) / 255.0;
-				return new Color(red, green, blue, alpha);
-			}
-			case 7: {
-				double red = (hexDigit(text.codePointAt(1)) * 0x10 + hexDigit(text.codePointAt(2))) / 255.0;
-				double green = (hexDigit(text.codePointAt(3)) * 0x10 + hexDigit(text.codePointAt(4))) / 255.0;
-				double blue = (hexDigit(text.codePointAt(5)) * 0x10 + hexDigit(text.codePointAt(6))) / 255.0;
-				double alpha = 1;
-				return new Color(red, green, blue, alpha);
-			}
-			case 9: {
-				double red = (hexDigit(text.codePointAt(1)) * 0x10 + hexDigit(text.codePointAt(2))) / 255.0;
-				double green = (hexDigit(text.codePointAt(3)) * 0x10 + hexDigit(text.codePointAt(4))) / 255.0;
-				double blue = (hexDigit(text.codePointAt(5)) * 0x10 + hexDigit(text.codePointAt(6))) / 255.0;
-				double alpha = (hexDigit(text.codePointAt(7)) * 0x10 + hexDigit(text.codePointAt(8))) / 255.0;
+			case 8: {
+				double red = (hexDigit(text.codePointAt(0)) * 0x10 + hexDigit(text.codePointAt(1))) / 255.0;
+				double green = (hexDigit(text.codePointAt(2)) * 0x10 + hexDigit(text.codePointAt(3))) / 255.0;
+				double blue = (hexDigit(text.codePointAt(4)) * 0x10 + hexDigit(text.codePointAt(5))) / 255.0;
+				double alpha = (hexDigit(text.codePointAt(6)) * 0x10 + hexDigit(text.codePointAt(7))) / 255.0;
 				return new Color(red, green, blue, alpha);
 			}
 		}
+
 		return null;
+	}
+
+	public static boolean isHexNumber(String text) {
+		try {
+			Long.parseLong(text, 16);
+			return true;
+		} catch (NumberFormatException e) {
+			return false;
+		}
 	}
 }
