@@ -14,7 +14,6 @@ package org.eclipse.lemminx.extensions.colors.utils;
 import org.eclipse.lsp4j.*;
 
 import java.util.*;
-import java.util.function.*;
 
 /**
  * Color utilities.
@@ -343,7 +342,7 @@ public class ColorUtils {
 		return 0;
 	}
 
-	private static Color colorFromHex(String text) {
+	static Color colorFromHex(String text) {
 		if (text.isEmpty()) {
 			return null;
 		}
@@ -353,17 +352,15 @@ public class ColorUtils {
 	}
 
 	private static Color parseText(String text) {
-		int[] codePoints = text.codePoints().map(ColorUtils::hexDigit).toArray();
-		int length = text.length();
-		Color color = new Color(0, 0, 0, 1);
-		var channelSetters = new HashMap<Integer, Consumer<Integer>>();
-		channelSetters.put(0, color::setRed);
-		channelSetters.put(1, color::setGreen);
-		channelSetters.put(2, color::setBlue);
-		channelSetters.put(3, color::setAlpha);
-		for (int i = 0; i < Math.min(4, (length + length % 4) / 4); i++) {
-			channelSetters.get(i).accept(codePoints[i * 2] * 16 + codePoints[i * 2 + 1]);
+		final var length = text.length();
+		final var channels = new double[]{0, 0, 0, 1};
+		final var codePoints = text.codePoints().map(ColorUtils::hexDigit).toArray();
+		final var duplicateSlot = length <= 4;
+		for (int i = 0, channel = 0; i < length; i++, channel++) {
+			channels[channel] = (codePoints[i] * 0x10 + (duplicateSlot
+					? codePoints[i]
+					: codePoints[++i])) / 255.;
 		}
-		return color;
+		return new Color(channels[0], channels[1], channels[2], channels[3]);
 	}
 }
