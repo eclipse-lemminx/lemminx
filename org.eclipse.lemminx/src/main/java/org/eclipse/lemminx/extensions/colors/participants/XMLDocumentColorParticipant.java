@@ -1,47 +1,33 @@
 /*******************************************************************************
-* Copyright (c) 2023 Red Hat Inc. and others.
-* All rights reserved. This program and the accompanying materials
-* which accompanies this distribution, and is available at
-* http://www.eclipse.org/legal/epl-v20.html
-*
-* SPDX-License-Identifier: EPL-2.0
-*
-* Contributors:
-*     Red Hat Inc. - initial API and implementation
-*******************************************************************************/
+ * Copyright (c) 2023 Red Hat Inc. and others.
+ * All rights reserved. This program and the accompanying materials
+ * which accompanies this distribution, and is available at
+ * http://www.eclipse.org/legal/epl-v20.html
+ *
+ * SPDX-License-Identifier: EPL-2.0
+ *
+ * Contributors:
+ *     Red Hat Inc. - initial API and implementation
+ *******************************************************************************/
 package org.eclipse.lemminx.extensions.colors.participants;
 
-import static org.eclipse.lemminx.extensions.colors.utils.ColorUtils.getColorValue;
-import static org.eclipse.lemminx.extensions.colors.utils.ColorUtils.toHexa;
-import static org.eclipse.lemminx.extensions.colors.utils.ColorUtils.toRGB;
+import org.eclipse.lemminx.commons.*;
+import org.eclipse.lemminx.dom.*;
+import org.eclipse.lemminx.extensions.colors.*;
+import org.eclipse.lemminx.extensions.colors.settings.*;
+import org.eclipse.lemminx.services.extensions.*;
+import org.eclipse.lemminx.utils.*;
+import org.eclipse.lsp4j.*;
+import org.eclipse.lsp4j.jsonrpc.*;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
-import org.eclipse.lemminx.dom.DOMAttr;
-import org.eclipse.lemminx.dom.DOMDocument;
-import org.eclipse.lemminx.dom.DOMElement;
-import org.eclipse.lemminx.dom.DOMNode;
-import org.eclipse.lemminx.dom.DOMText;
-import org.eclipse.lemminx.extensions.colors.XMLColorsPlugin;
-import org.eclipse.lemminx.extensions.colors.settings.XMLColorExpression;
-import org.eclipse.lemminx.extensions.colors.settings.XMLColors;
-import org.eclipse.lemminx.extensions.colors.settings.XMLColorsSettings;
-import org.eclipse.lemminx.services.extensions.IDocumentColorParticipant;
-import org.eclipse.lemminx.utils.XMLPositionUtility;
-import org.eclipse.lsp4j.Color;
-import org.eclipse.lsp4j.ColorInformation;
-import org.eclipse.lsp4j.ColorPresentation;
-import org.eclipse.lsp4j.ColorPresentationParams;
-import org.eclipse.lsp4j.Range;
-import org.eclipse.lsp4j.jsonrpc.CancelChecker;
+import static org.eclipse.lemminx.extensions.colors.utils.ColorUtils.*;
 
 /**
  * XML document color particpant based on the {@link XMLColorsSettings}.
- * 
- * @author Angelo ZERR
  *
+ * @author Angelo ZERR
  */
 public class XMLDocumentColorParticipant implements IDocumentColorParticipant {
 
@@ -60,8 +46,7 @@ public class XMLDocumentColorParticipant implements IDocumentColorParticipant {
 		doDocumentColor(xmlDocument, expressions, colors, cancelChecker);
 	}
 
-	private void doDocumentColor(DOMNode node, List<XMLColorExpression> expressions, List<ColorInformation> colors,
-			CancelChecker cancelChecker) {
+	private void doDocumentColor(DOMNode node, List<XMLColorExpression> expressions, List<ColorInformation> colors, CancelChecker cancelChecker) {
 		if (node.isElement()) {
 			DOMElement element = (DOMElement) node;
 			if (element.hasAttributes()) {
@@ -106,25 +91,30 @@ public class XMLDocumentColorParticipant implements IDocumentColorParticipant {
 	}
 
 	@Override
-	public void doColorPresentations(DOMDocument xmlDocument, ColorPresentationParams params,
-			List<ColorPresentation> presentations, CancelChecker cancelChecker) {
+	public void doColorPresentations(DOMDocument xmlDocument, ColorPresentationParams params, List<ColorPresentation> presentations, CancelChecker cancelChecker) {
 		Color color = params.getColor();
 		Range replace = params.getRange();
-		// RGB color presentation
-		presentations.add(toRGB(color, replace));
-		// Hexa color presentation
-		presentations.add(toHexa(color, replace));
+		Position replaceStart = replace.getStart();
+		Position replaceEnd = replace.getEnd();
+		try {
+			int startOffset = xmlDocument.offsetAt(replaceStart);
+			int endOffset = xmlDocument.offsetAt(replaceEnd);
+			String rangeText = xmlDocument.getText().substring(startOffset, endOffset);
+			presentations.add(toHex(color, replace, rangeText.startsWith("#")));
+			if (rangeText.startsWith("rgb"))
+				presentations.add(rangeText.startsWith("rgb") ? 0 : 1, toRGB(color, replace));
+		} catch (BadLocationException ignored) {
+		}
 	}
 
 	/**
 	 * Returns true if the given <code>node>code> matches an XML color expression
 	 * and false otherwise.
-	 * 
+	 *
 	 * @param node        the node to match.
 	 * @param expressions XML color expressions.
-	 * 
 	 * @return true if the given <code>node>code> matches an XML color expression
-	 *         and false otherwise.
+	 * and false otherwise.
 	 */
 	private static boolean isColorNode(DOMNode node, List<XMLColorExpression> expressions) {
 		if (node.isAttribute()) {
@@ -149,11 +139,10 @@ public class XMLDocumentColorParticipant implements IDocumentColorParticipant {
 	/**
 	 * Return the list of {@link XMLColorExpression} for the given document and an
 	 * empty list otherwise.
-	 * 
+	 *
 	 * @param xmlDocument the DOM document
-	 * 
 	 * @return the list of {@link XMLColorExpression} for the given document and an
-	 *         empty list otherwise.
+	 * empty list otherwise.
 	 */
 	private List<XMLColorExpression> findColorExpression(DOMDocument xmlDocument) {
 		XMLColorsSettings settings = xmlColorsPlugin.getColorsSettings();

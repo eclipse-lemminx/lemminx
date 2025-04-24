@@ -14,6 +14,8 @@ package org.eclipse.lemminx.extensions.colors.utils;
 import org.eclipse.lsp4j.*;
 
 import java.util.*;
+import java.util.function.*;
+import java.util.stream.*;
 
 /**
  * Color utilities.
@@ -220,9 +222,7 @@ public class ColorUtils {
 		}
 
 		try {
-			double alpha = colorValues.length == 4
-					? getNumericValue(colorValues[3], 1)
-					: 1;
+			double alpha = colorValues.length == 4 ? getNumericValue(colorValues[3], 1) : 1;
 			if (name.equals("rgb") || name.equals("rgba")) {
 				double red = getNumericValue(colorValues[0], 255.0);
 				double green = getNumericValue(colorValues[1], 255.0);
@@ -258,12 +258,7 @@ public class ColorUtils {
 		int blue256 = (int) Math.round(color.getBlue() * 255);
 		int alpha = (int) color.getAlpha();
 
-		String label = getRGB(red256,
-				green256,
-				blue256,
-				alpha == 1
-						? null
-						: alpha);
+		String label = getRGB(red256, green256, blue256, alpha == 1 ? null : alpha);
 		TextEdit textEdit = new TextEdit(replace, label);
 		return new ColorPresentation(label, textEdit);
 	}
@@ -284,46 +279,51 @@ public class ColorUtils {
 	}
 
 	/**
-	 * Returns the Hexa color presentation of the given <code>color</code> and
-	 * <code>replace</code> range.
+	 * Returns the Hex color presentation of the given color and replace range.
 	 *
-	 * @param color   the color.
-	 * @param replace the replace range.
-	 * @return the Hexa color presentation of the given <code>color</code> and
-	 * <code>range</code>.
+	 * @param color       the color
+	 * @param replace     the replace range
+	 * @param includeHash add leading "#"
+	 * @return the Hex color presentation
 	 */
-	public static ColorPresentation toHexa(Color color, Range replace) {
-		double red256 = Math.round(color.getRed() * 255);
-		double green256 = Math.round(color.getGreen() * 255);
-		double blue256 = Math.round(color.getBlue() * 255);
-		double alpha = color.getAlpha();
+	public static ColorPresentation toHex(Color color, Range replace, boolean includeHash) {
+		int[] channels = getChannelValues(color);
+		String hexString = getHex(channels, includeHash);
 
-		String label = getHexa(red256,
-				green256,
-				blue256,
-				alpha == 1
-						? null
-						: alpha);
-		TextEdit textEdit = new TextEdit(replace, label);
-		return new ColorPresentation(label, textEdit);
+		// Update the range end position based on the new text length
+		Position endPosition = replace.getEnd();
+		endPosition.setCharacter(replace.getStart().getCharacter() + hexString.length());
+
+		// Create text edit and presentation
+		TextEdit textEdit = new TextEdit(replace, hexString);
+		return new ColorPresentation(hexString, textEdit);
 	}
 
-	private static String getHexa(double red256, double green256, double blue256, Double alpha) {
-		StringBuilder label = new StringBuilder("#");
-		label.append(toTwoDigitHex(red256));
-		label.append(toTwoDigitHex(green256));
-		label.append(toTwoDigitHex(blue256));
-		if (alpha != null) {
-			label.append(toTwoDigitHex(Math.round(alpha * 255)));
-		}
+	/**
+	 * Converts a Color object to RGB integer components (0-255)
+	 *
+	 * @param color the color to convert
+	 * @return array containing [red, green, blue] as integers
+	 */
+	private static int[] getChannelValues(Color color) {
+		final DoubleToIntFunction transform = c -> (int) Math.round(255 * c);
+		return DoubleStream.of(color.getRed(), color.getGreen(), color.getBlue(), color.getAlpha())
+				.mapToInt(transform)
+				.toArray();
+	}
+
+	private static String getHex(int[] channels, boolean includeHash) {
+		StringBuilder label = new StringBuilder();
+		if (includeHash) label.append('#');
+		Arrays.stream(channels, 0, channels[3] < 0xff ? 4 : 3)
+				.mapToObj(ColorUtils::toTwoDigitHex)
+				.forEach(label::append);
 		return label.toString();
 	}
 
 	private static String toTwoDigitHex(double n) {
 		String r = Integer.toHexString((int) n);
-		return r.length() != 2
-				? '0' + r
-				: r;
+		return r.length() != 2 ? '0' + r : r;
 	}
 
 	public static int hexDigit(int charCode) {
@@ -343,12 +343,11 @@ public class ColorUtils {
 	}
 
 	static Color colorFromHex(String text) {
-		if (text.isEmpty()) {
+		String trimHash = text.startsWith("#") ? text.substring(1) : text;
+		if (!Set.of(3, 4, 6, 8).contains(trimHash.length())) {
 			return null;
 		}
-		return parseText(text.startsWith("#")
-				? text.substring(1)
-				: text);
+		return parseText(trimHash);
 	}
 
 	private static Color parseText(String text) {
@@ -357,8 +356,7 @@ public class ColorUtils {
 		final var codePoints = text.codePoints().map(ColorUtils::hexDigit).toArray();
 		final var duplicateSlot = length <= 4;
 		for (int i = 0, channel = 0; i < length; i++, channel++) {
-			channels[channel] = (codePoints[i] * 0x10 + (duplicateSlot
-					? codePoints[i]
+			channels[channel] = (codePoints[i] * 0x10 + (duplicateSlot ? codePoints[i]
 					: codePoints[++i])) / 255.;
 		}
 		return new Color(channels[0], channels[1], channels[2], channels[3]);
