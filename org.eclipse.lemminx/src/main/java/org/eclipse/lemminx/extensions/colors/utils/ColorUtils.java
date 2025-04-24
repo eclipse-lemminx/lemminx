@@ -244,62 +244,6 @@ public class ColorUtils {
 	}
 
 	/**
-	 * Returns the RGB color presentation of the given <code>color</code> and
-	 * <code>replace</code> range.
-	 *
-	 * @param color   the color.
-	 * @param replace the replace range.
-	 * @return the RGB color presentation of the given <code>color</code> and
-	 * <code>range</code>.
-	 */
-	public static ColorPresentation toRGB(Color color, Range replace) {
-		int red256 = (int) Math.round(color.getRed() * 255);
-		int green256 = (int) Math.round(color.getGreen() * 255);
-		int blue256 = (int) Math.round(color.getBlue() * 255);
-		int alpha = (int) color.getAlpha();
-
-		String label = getRGB(red256, green256, blue256, alpha == 1 ? null : alpha);
-		TextEdit textEdit = new TextEdit(replace, label);
-		return new ColorPresentation(label, textEdit);
-	}
-
-	private static String getRGB(int red256, int green256, int blue256, Integer alpha) {
-		StringBuilder label = new StringBuilder("rgb(");
-		label.append(red256);
-		label.append(",");
-		label.append(green256);
-		label.append(",");
-		label.append(blue256);
-		if (alpha != null) {
-			label.append(",");
-			label.append(alpha);
-		}
-		label.append(")");
-		return label.toString();
-	}
-
-	/**
-	 * Returns the Hex color presentation of the given color and replace range.
-	 *
-	 * @param color       the color
-	 * @param replace     the replace range
-	 * @param includeHash add leading "#"
-	 * @return the Hex color presentation
-	 */
-	public static ColorPresentation toHex(Color color, Range replace, boolean includeHash) {
-		int[] channels = getChannelValues(color);
-		String hexString = getHex(channels, includeHash);
-
-		// Update the range end position based on the new text length
-		Position endPosition = replace.getEnd();
-		endPosition.setCharacter(replace.getStart().getCharacter() + hexString.length());
-
-		// Create text edit and presentation
-		TextEdit textEdit = new TextEdit(replace, hexString);
-		return new ColorPresentation(hexString, textEdit);
-	}
-
-	/**
 	 * Converts a Color object to RGB integer components (0-255)
 	 *
 	 * @param color the color to convert
@@ -312,7 +256,15 @@ public class ColorUtils {
 				.toArray();
 	}
 
-	private static String getHex(int[] channels, boolean includeHash) {
+	public static String getRGB(Color color) {
+		int[] channels = getChannelValues(color);
+		return "rgb(" + Arrays.stream(channels, 0, channels[3] < 0xff ? 4 : 4)
+				.mapToObj(String::valueOf)
+				.collect(Collectors.joining(",")) + ")";
+	}
+
+	public static String getHex(Color color, boolean includeHash) {
+		int[] channels = getChannelValues(color);
 		StringBuilder label = new StringBuilder();
 		if (includeHash) label.append('#');
 		Arrays.stream(channels, 0, channels[3] < 0xff ? 4 : 3)

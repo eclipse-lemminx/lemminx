@@ -93,16 +93,20 @@ public class XMLDocumentColorParticipant implements IDocumentColorParticipant {
 	@Override
 	public void doColorPresentations(DOMDocument xmlDocument, ColorPresentationParams params, List<ColorPresentation> presentations, CancelChecker cancelChecker) {
 		Color color = params.getColor();
-		Range replace = params.getRange();
-		Position replaceStart = replace.getStart();
-		Position replaceEnd = replace.getEnd();
 		try {
-			int startOffset = xmlDocument.offsetAt(replaceStart);
-			int endOffset = xmlDocument.offsetAt(replaceEnd);
-			String rangeText = xmlDocument.getText().substring(startOffset, endOffset);
-			presentations.add(toHex(color, replace, rangeText.startsWith("#")));
-			if (rangeText.startsWith("rgb"))
-				presentations.add(rangeText.startsWith("rgb") ? 0 : 1, toRGB(color, replace));
+			int startOffset = xmlDocument.offsetAt(params.getRange().getStart());
+			var attribute = xmlDocument.findAttrAt(startOffset);
+			Range editRange = XMLPositionUtility.selectAttributeValue(attribute, true);
+			String rangeText = attribute.getValue();
+			var label = rangeText.startsWith("rgb") ? getRGB(color)
+					: getHex(color, rangeText.startsWith("#"));
+			var edit = new TextEdit(editRange, label) {
+				@Override
+				public Range getRange() {
+					return XMLPositionUtility.createRange(attribute.getNodeAttrValue());
+				}
+			};
+			presentations.add(new ColorPresentation(label, edit));
 		} catch (BadLocationException ignored) {
 		}
 	}
