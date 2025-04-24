@@ -38,7 +38,8 @@ public class XMLDocumentColorParticipant implements IDocumentColorParticipant {
 	}
 
 	@Override
-	public void doDocumentColor(DOMDocument xmlDocument, List<ColorInformation> colors, CancelChecker cancelChecker) {
+	public void doDocumentColor(DOMDocument xmlDocument, List<ColorInformation> colors,
+			CancelChecker cancelChecker) {
 		List<XMLColorExpression> expressions = findColorExpression(xmlDocument);
 		if (expressions.isEmpty()) {
 			return;
@@ -46,7 +47,8 @@ public class XMLDocumentColorParticipant implements IDocumentColorParticipant {
 		doDocumentColor(xmlDocument, expressions, colors, cancelChecker);
 	}
 
-	private void doDocumentColor(DOMNode node, List<XMLColorExpression> expressions, List<ColorInformation> colors, CancelChecker cancelChecker) {
+	private void doDocumentColor(DOMNode node, List<XMLColorExpression> expressions,
+			List<ColorInformation> colors, CancelChecker cancelChecker) {
 		if (node.isElement()) {
 			DOMElement element = (DOMElement) node;
 			if (element.hasAttributes()) {
@@ -91,21 +93,18 @@ public class XMLDocumentColorParticipant implements IDocumentColorParticipant {
 	}
 
 	@Override
-	public void doColorPresentations(DOMDocument xmlDocument, ColorPresentationParams params, List<ColorPresentation> presentations, CancelChecker cancelChecker) {
+	public void doColorPresentations(DOMDocument xmlDocument, ColorPresentationParams params,
+			List<ColorPresentation> presentations, CancelChecker cancelChecker) {
 		Color color = params.getColor();
 		try {
 			int startOffset = xmlDocument.offsetAt(params.getRange().getStart());
 			var attribute = xmlDocument.findAttrAt(startOffset);
 			Range editRange = XMLPositionUtility.selectAttributeValue(attribute, true);
 			String rangeText = attribute.getValue();
-			var label = rangeText.startsWith("rgb") ? getRGB(color)
+			var label = rangeText.startsWith("rgb")
+					? getRGB(color)
 					: getHex(color, rangeText.startsWith("#"));
-			var edit = new TextEdit(editRange, label) {
-				@Override
-				public Range getRange() {
-					return XMLPositionUtility.createRange(attribute.getNodeAttrValue());
-				}
-			};
+			var edit = new TextEdit(editRange, label);
 			presentations.add(new ColorPresentation(label, edit));
 		} catch (BadLocationException ignored) {
 		}

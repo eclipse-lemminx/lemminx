@@ -258,7 +258,7 @@ public class ColorUtils {
 
 	public static String getRGB(Color color) {
 		int[] channels = getChannelValues(color);
-		return "rgb(" + Arrays.stream(channels, 0, channels[3] < 0xff ? 4 : 4)
+		return "rgb(" + Arrays.stream(channels, 0, channels[3] < 0xff ? 4 : 3)
 				.mapToObj(String::valueOf)
 				.collect(Collectors.joining(",")) + ")";
 	}
