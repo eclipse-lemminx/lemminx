@@ -38,8 +38,7 @@ public class XMLDocumentColorParticipant implements IDocumentColorParticipant {
 	}
 
 	@Override
-	public void doDocumentColor(DOMDocument xmlDocument, List<ColorInformation> colors,
-			CancelChecker cancelChecker) {
+	public void doDocumentColor(DOMDocument xmlDocument, List<ColorInformation> colors, CancelChecker cancelChecker) {
 		List<XMLColorExpression> expressions = findColorExpression(xmlDocument);
 		if (expressions.isEmpty()) {
 			return;
@@ -47,8 +46,8 @@ public class XMLDocumentColorParticipant implements IDocumentColorParticipant {
 		doDocumentColor(xmlDocument, expressions, colors, cancelChecker);
 	}
 
-	private void doDocumentColor(DOMNode node, List<XMLColorExpression> expressions,
-			List<ColorInformation> colors, CancelChecker cancelChecker) {
+	private void doDocumentColor(DOMNode node, List<XMLColorExpression> expressions, List<ColorInformation> colors,
+			CancelChecker cancelChecker) {
 		if (node.isElement()) {
 			DOMElement element = (DOMElement) node;
 			if (element.hasAttributes()) {
@@ -101,23 +100,32 @@ public class XMLDocumentColorParticipant implements IDocumentColorParticipant {
 			var attribute = xmlDocument.findAttrAt(startOffset);
 			var editRange = XMLPositionUtility.selectAttributeValue(attribute, true);
 			var rangeText = attribute.getValue();
-			var label = rangeText.startsWith("rgb") ? getRGB(color)
-					: getHex(color, rangeText.startsWith("#"));
-			var edit = new TextEdit(editRange, label);
-			presentations.add(new ColorPresentation(label, edit));
+			var isNamedColor = isNamedColor(rangeText);
+			var hexFormat = rangeText.startsWith("#") || isNamedColor
+					? ColorFormat.PREFIXED_HEX
+					: ColorFormat.BLANK_HEX;
+			var hexPresentation = getPresentation(color, hexFormat, editRange);
+			var rgbPresentation = getPresentation(color, ColorFormat.RGB, editRange);
+			presentations.addAll(Arrays.asList(rgbPresentation, hexPresentation));
+			if (!rangeText.startsWith("rgb") && !isNamedColor) {
+				Collections.reverse(presentations);
+			}
 		} catch (BadLocationException ignored) {
 		}
 	}
 
+	private static ColorPresentation getPresentation(Color color, ColorFormat format, Range editRange) {
+		var label = format.formatColor(color);
+		return new ColorPresentation(label, new TextEdit(editRange, label));
+	}
+
 	/**
-	 * Returns true if the given <code>node>code> matches an XML color expression and false
-	 * otherwise.
+	 * Returns true if the given <code>node>code> matches an XML color expression and false otherwise.
 	 *
 	 * @param node        the node to match.
 	 * @param expressions XML color expressions.
 	 *
-	 * @return true if the given <code>node>code> matches an XML color expression and false
-	 * 		otherwise.
+	 * @return true if the given <code>node>code> matches an XML color expression and false otherwise.
 	 */
 	private static boolean isColorNode(DOMNode node, List<XMLColorExpression> expressions) {
 		if (node.isAttribute()) {
@@ -140,13 +148,11 @@ public class XMLDocumentColorParticipant implements IDocumentColorParticipant {
 	}
 
 	/**
-	 * Return the list of {@link XMLColorExpression} for the given document and an empty list
-	 * otherwise.
+	 * Return the list of {@link XMLColorExpression} for the given document and an empty list otherwise.
 	 *
 	 * @param xmlDocument the DOM document
 	 *
-	 * @return the list of {@link XMLColorExpression} for the given document and an empty list
-	 * 		otherwise.
+	 * @return the list of {@link XMLColorExpression} for the given document and an empty list otherwise.
 	 */
 	private List<XMLColorExpression> findColorExpression(DOMDocument xmlDocument) {
 		XMLColorsSettings settings = xmlColorsPlugin.getColorsSettings();

@@ -1,16 +1,6 @@
-/*******************************************************************************
- * Copyright (c) 2023 Red Hat Inc. and others.
- * All rights reserved. This program and the accompanying materials
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v20.html
- *
- * SPDX-License-Identifier: EPL-2.0
- *
- * Contributors:
- *     Red Hat Inc. - initial API and implementation
- *******************************************************************************/
 package org.eclipse.lemminx.extensions.colors.utils;
 
+import com.google.common.base.*;
 import org.eclipse.lsp4j.*;
 
 import java.util.*;
@@ -20,11 +10,10 @@ import java.util.stream.*;
 /**
  * Color utilities.
  * <p>
- * Some piece of code comes the vscode CSS language server written in TypeScript
- * which has been translated to Java.
+ * Some piece of code comes the vscode CSS language server written in TypeScript which has been translated to Java.
  *
  * @see <a href=
- * "https://github.com/microsoft/vscode-css-languageservice/blob/main/src/languageFacts/colors.ts">https://github.com/microsoft/vscode-css-languageservice/blob/main/src/languageFacts/colors.ts</a>
+ * 		"https://github.com/microsoft/vscode-css-languageservice/blob/main/src/languageFacts/colors.ts">https://github.com/microsoft/vscode-css-languageservice/blob/main/src/languageFacts/colors.ts</a>
  */
 public class ColorUtils {
 
@@ -187,9 +176,12 @@ public class ColorUtils {
 		colors.put("yellowgreen", "#9acd32");
 	}
 
+	public static boolean isNamedColor(String text) {
+		return colors.containsKey(text);
+	}
+
 	/**
-	 * Returns the {@link Color} instance value from the given <code>text</code> and null
-	 * otherwise.
+	 * Returns the {@link Color} instance value from the given <code>text</code> and null otherwise.
 	 *
 	 * @param text the color text.
 	 *
@@ -248,35 +240,14 @@ public class ColorUtils {
 	 *
 	 * @param color the color to convert
 	 *
-	 * @return array containing [red, green, blue, alpha] as integers
+	 * @return array containing RGB(A) as integers, omitting alpha if opaque
 	 */
 	private static int[] getChannelValues(Color color) {
-		final DoubleToIntFunction transform = c -> (int) Math.round(255 * c);
-		return DoubleStream.of(color.getRed(), color.getGreen(), color.getBlue(), color.getAlpha())
-				.mapToInt(transform)
-				.toArray();
-	}
-
-	public static String getRGB(Color color) {
-		var channels = getChannelValues(color);
-		return "rgb(" + Arrays.stream(channels, 0, channels[3] < 0xff ? 4 : 3)
-				.mapToObj(String::valueOf)
-				.collect(Collectors.joining(",")) + ")";
-	}
-
-	public static String getHex(Color color, boolean includeHash) {
-		var channels = getChannelValues(color);
-		var label = new StringBuilder();
-		if (includeHash) label.append('#');
-		Arrays.stream(channels, 0, channels[3] < 0xff ? 4 : 3)
-				.mapToObj(ColorUtils::toTwoDigitHex)
-				.forEach(label::append);
-		return label.toString();
-	}
-
-	private static String toTwoDigitHex(double n) {
-		String r = Integer.toHexString((int) n);
-		return r.length() != 2 ? '0' + r : r;
+		return DoubleStream.concat(DoubleStream.of(color.getRed(),
+								color.getGreen(),
+								color.getBlue()),
+						DoubleStream.of(color.getAlpha()).filter(c -> c < 1)) // Omit if opaque
+				.mapToInt(c -> (int) Math.round(255 * c)).toArray();
 	}
 
 	public static int hexDigit(int charCode) {
@@ -313,5 +284,37 @@ public class ColorUtils {
 					: codePoints[++i])) / 255.;
 		}
 		return new Color(channels[0], channels[1], channels[2], channels[3]);
+	}
+
+	public enum ColorFormat {
+		RGB(Collectors.joining(",", "rgb(", ")"), String::valueOf),
+		BLANK_HEX(Collectors.joining("", "", ""), ColorFormat::getPaddedHexValue),
+		PREFIXED_HEX(Collectors.joining("", "#", ""), ColorFormat::getPaddedHexValue);
+
+		private final Collector<CharSequence, ?, String> collector;
+		private final IntFunction<String> transform;
+
+		ColorFormat(Collector<CharSequence, ?, String> collector,
+				IntFunction<String> transform) {
+			this.transform = transform;
+			this.collector = collector;
+		}
+
+		/**
+		 * Formats a color according to this format.
+		 *
+		 * @param color the color to format
+		 *
+		 * @return the formatted color string
+		 */
+		public String formatColor(Color color) {
+			return Arrays.stream(getChannelValues(color))
+					.mapToObj(transform)
+					.collect(collector);
+		}
+
+		private static String getPaddedHexValue(int value) {
+			return Strings.padStart(Integer.toHexString(value), 2, '0');
+		}
 	}
 }
