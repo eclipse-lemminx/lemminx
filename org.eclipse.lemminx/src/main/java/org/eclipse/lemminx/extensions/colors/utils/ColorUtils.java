@@ -188,12 +188,12 @@ public class ColorUtils {
 	}
 
 	/**
-	 * Returns the {@link Color} instance value from the given <code>text</code> and
-	 * null otherwise.
+	 * Returns the {@link Color} instance value from the given <code>text</code> and null
+	 * otherwise.
 	 *
 	 * @param text the color text.
-	 * @return the {@link Color} instance value from the given <code>text</code> and
-	 * null otherwise.
+	 *
+	 * @return the {@link Color} instance value from the given <code>text</code> and null otherwise.
 	 */
 	public static Color getColorValue(String text) {
 		String candidateColor = colors.get(text);
@@ -247,7 +247,8 @@ public class ColorUtils {
 	 * Converts a Color object to RGB integer components (0-255)
 	 *
 	 * @param color the color to convert
-	 * @return array containing [red, green, blue] as integers
+	 *
+	 * @return array containing [red, green, blue, alpha] as integers
 	 */
 	private static int[] getChannelValues(Color color) {
 		final DoubleToIntFunction transform = c -> (int) Math.round(255 * c);
@@ -257,15 +258,15 @@ public class ColorUtils {
 	}
 
 	public static String getRGB(Color color) {
-		int[] channels = getChannelValues(color);
+		var channels = getChannelValues(color);
 		return "rgb(" + Arrays.stream(channels, 0, channels[3] < 0xff ? 4 : 3)
 				.mapToObj(String::valueOf)
 				.collect(Collectors.joining(",")) + ")";
 	}
 
 	public static String getHex(Color color, boolean includeHash) {
-		int[] channels = getChannelValues(color);
-		StringBuilder label = new StringBuilder();
+		var channels = getChannelValues(color);
+		var label = new StringBuilder();
 		if (includeHash) label.append('#');
 		Arrays.stream(channels, 0, channels[3] < 0xff ? 4 : 3)
 				.mapToObj(ColorUtils::toTwoDigitHex)
@@ -295,7 +296,7 @@ public class ColorUtils {
 	}
 
 	static Color colorFromHex(String text) {
-		String trimHash = text.startsWith("#") ? text.substring(1) : text;
+		var trimHash = text.startsWith("#") ? text.substring(1) : text;
 		if (!Set.of(3, 4, 6, 8).contains(trimHash.length())) {
 			return null;
 		}

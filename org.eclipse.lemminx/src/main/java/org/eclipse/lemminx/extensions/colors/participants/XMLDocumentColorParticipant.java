@@ -95,14 +95,13 @@ public class XMLDocumentColorParticipant implements IDocumentColorParticipant {
 	@Override
 	public void doColorPresentations(DOMDocument xmlDocument, ColorPresentationParams params,
 			List<ColorPresentation> presentations, CancelChecker cancelChecker) {
-		Color color = params.getColor();
+		var color = params.getColor();
 		try {
-			int startOffset = xmlDocument.offsetAt(params.getRange().getStart());
+			var startOffset = xmlDocument.offsetAt(params.getRange().getStart());
 			var attribute = xmlDocument.findAttrAt(startOffset);
-			Range editRange = XMLPositionUtility.selectAttributeValue(attribute, true);
-			String rangeText = attribute.getValue();
-			var label = rangeText.startsWith("rgb")
-					? getRGB(color)
+			var editRange = XMLPositionUtility.selectAttributeValue(attribute, true);
+			var rangeText = attribute.getValue();
+			var label = rangeText.startsWith("rgb") ? getRGB(color)
 					: getHex(color, rangeText.startsWith("#"));
 			var edit = new TextEdit(editRange, label);
 			presentations.add(new ColorPresentation(label, edit));
@@ -111,13 +110,14 @@ public class XMLDocumentColorParticipant implements IDocumentColorParticipant {
 	}
 
 	/**
-	 * Returns true if the given <code>node>code> matches an XML color expression
-	 * and false otherwise.
+	 * Returns true if the given <code>node>code> matches an XML color expression and false
+	 * otherwise.
 	 *
 	 * @param node        the node to match.
 	 * @param expressions XML color expressions.
-	 * @return true if the given <code>node>code> matches an XML color expression
-	 * and false otherwise.
+	 *
+	 * @return true if the given <code>node>code> matches an XML color expression and false
+	 * 		otherwise.
 	 */
 	private static boolean isColorNode(DOMNode node, List<XMLColorExpression> expressions) {
 		if (node.isAttribute()) {
@@ -140,12 +140,13 @@ public class XMLDocumentColorParticipant implements IDocumentColorParticipant {
 	}
 
 	/**
-	 * Return the list of {@link XMLColorExpression} for the given document and an
-	 * empty list otherwise.
+	 * Return the list of {@link XMLColorExpression} for the given document and an empty list
+	 * otherwise.
 	 *
 	 * @param xmlDocument the DOM document
-	 * @return the list of {@link XMLColorExpression} for the given document and an
-	 * empty list otherwise.
+	 *
+	 * @return the list of {@link XMLColorExpression} for the given document and an empty list
+	 * 		otherwise.
 	 */
 	private List<XMLColorExpression> findColorExpression(DOMDocument xmlDocument) {
 		XMLColorsSettings settings = xmlColorsPlugin.getColorsSettings();
