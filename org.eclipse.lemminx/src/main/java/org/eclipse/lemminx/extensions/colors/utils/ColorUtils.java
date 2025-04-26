@@ -4,7 +4,6 @@ import com.google.common.base.*;
 import org.eclipse.lsp4j.*;
 
 import java.util.*;
-import java.util.function.*;
 import java.util.stream.*;
 
 /**
@@ -235,21 +234,6 @@ public class ColorUtils {
 		return result / factor;
 	}
 
-	/**
-	 * Converts a Color object to RGB integer components (0-255)
-	 *
-	 * @param color the color to convert
-	 *
-	 * @return array containing RGB(A) as integers, omitting alpha if opaque
-	 */
-	private static int[] getChannelValues(Color color) {
-		return DoubleStream.concat(DoubleStream.of(color.getRed(),
-								color.getGreen(),
-								color.getBlue()),
-						DoubleStream.of(color.getAlpha()).filter(c -> c < 1)) // Omit if opaque
-				.mapToInt(c -> (int) Math.round(255 * c)).toArray();
-	}
-
 	public static int hexDigit(int charCode) {
 		if (charCode < Digit0) {
 			return 0;
@@ -287,17 +271,14 @@ public class ColorUtils {
 	}
 
 	public enum ColorFormat {
-		RGB(Collectors.joining(",", "rgb(", ")"), String::valueOf),
-		BLANK_HEX(Collectors.joining("", "", ""), ColorFormat::getPaddedHexValue),
-		PREFIXED_HEX(Collectors.joining("", "#", ""), ColorFormat::getPaddedHexValue);
+		RGB(String::valueOf, ",", "rgb(", ")"),
+		BLANK_HEX(ColorFormat::getPaddedHexValue, "", "", ""),
+		PREFIXED_HEX(ColorFormat::getPaddedHexValue, "", "#", "");
 
-		private final Collector<CharSequence, ?, String> collector;
-		private final IntFunction<String> transform;
+		private final Collector<Long, ?, String> collector;
 
-		ColorFormat(Collector<CharSequence, ?, String> collector,
-				IntFunction<String> transform) {
-			this.transform = transform;
-			this.collector = collector;
+		ColorFormat(LongToString mapper, String delimiter, String prefix, String suffix) {
+			this.collector = Collectors.mapping(mapper, Collectors.joining(delimiter, prefix, suffix));
 		}
 
 		/**
@@ -308,13 +289,30 @@ public class ColorUtils {
 		 * @return the formatted color string
 		 */
 		public String formatColor(Color color) {
-			return Arrays.stream(getChannelValues(color))
-					.mapToObj(transform)
-					.collect(collector);
+			return getChannelValues(color).boxed().collect(collector);
 		}
 
-		private static String getPaddedHexValue(int value) {
-			return Strings.padStart(Integer.toHexString(value), 2, '0');
+		private static String getPaddedHexValue(long value) {
+			return Strings.padStart(Long.toHexString(value), 2, '0');
+		}
+
+		/**
+		 * Converts a Color object to RGB integer components (0-255)
+		 *
+		 * @param color the color to convert
+		 *
+		 * @return array containing RGB(A) as integers, omitting alpha if opaque
+		 */
+		private LongStream getChannelValues(Color color) {
+			return DoubleStream.concat(
+							DoubleStream.of(color.getRed(), color.getGreen(), color.getBlue()),
+							DoubleStream.of(color.getAlpha()).filter(c -> c < 1)) // Omit if opaque
+					.mapToLong(c -> Math.round(255 * c));
+		}
+
+		@FunctionalInterface
+		private interface LongToString extends Function<Long, String> {
+			String apply(Long t);
 		}
 	}
 }
