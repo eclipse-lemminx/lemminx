@@ -338,8 +338,9 @@ public class XMLLanguageServer implements ProcessLanguageServer, XMLLanguageServ
 	}
 
 	@Override
-	public void validate(DOMDocument document, Map<String, Object> validationArgs) {
-		xmlTextDocumentService.validate(document, validationArgs);
+	public void validate(DOMDocument document, Map<String, Object> validationArgs,
+			XMLValidationRootSettings validationSettings) {
+		xmlTextDocumentService.validate(document, validationArgs, validationSettings);
 	}
 
 	public XMLCapabilityManager getCapabilityManager() {
