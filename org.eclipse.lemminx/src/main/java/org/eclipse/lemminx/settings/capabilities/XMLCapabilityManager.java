@@ -203,10 +203,10 @@ public class XMLCapabilityManager {
 	}
 
 	public void registerExecuteCommand(List<String> commands) {
-    if (this.getClientCapabilities().isExecuteCommandRegistered()) {
-      registerCapability(WORKSPACE_EXECUTE_COMMAND_ID, WORKSPACE_EXECUTE_COMMAND,
-              new ExecuteCommandOptions(commands));
-    }
+		if (this.getClientCapabilities().isExecuteCommandDynamicRegistrationSupported()) {
+			registerCapability(WORKSPACE_EXECUTE_COMMAND_ID, WORKSPACE_EXECUTE_COMMAND,
+				new ExecuteCommandOptions(commands));
+		}
 	}
 
 	/**
