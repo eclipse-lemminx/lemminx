@@ -176,7 +176,7 @@ public class XMLCapabilityManager {
 		if (this.getClientCapabilities().isDefinitionDynamicRegistered()) {
 			registerCapability(DEFINITION_ID, TEXT_DOCUMENT_DEFINITION);
 		}
-		if (this.getClientCapabilities().isDefinitionDynamicRegistered()) {
+		if (this.getClientCapabilities().isTypeDefinitionDynamicRegistered()) {
 			registerCapability(TYPEDEFINITION_ID, TEXT_DOCUMENT_TYPEDEFINITION);
 		}
 		if (this.getClientCapabilities().isReferencesDynamicRegistrationSupported()) {
@@ -203,8 +203,10 @@ public class XMLCapabilityManager {
 	}
 
 	public void registerExecuteCommand(List<String> commands) {
-		registerCapability(WORKSPACE_EXECUTE_COMMAND_ID, WORKSPACE_EXECUTE_COMMAND,
-				new ExecuteCommandOptions(commands));
+    if (this.getClientCapabilities().isExecuteCommandRegistered()) {
+      registerCapability(WORKSPACE_EXECUTE_COMMAND_ID, WORKSPACE_EXECUTE_COMMAND,
+          new ExecuteCommandOptions(commands));
+    }
 	}
 
 	/**
