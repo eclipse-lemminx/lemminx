@@ -165,6 +165,12 @@ public class TestPartitionFormatterXML {
 	}
 
 	@Test
+	public void testPreserveCDATAFormat3() throws Exception {
+		// <script> is treated specially, because it likely contains formatted source code
+		formatAndAssertEquals("testfiles/xml/usecdata3.xml", "testfiles/xml/usecdata3-fmt.xml");
+	}
+
+	@Test
 	@Disabled
 	public void testSplitAttributesFormat() throws Exception {
 		// BUG113584
