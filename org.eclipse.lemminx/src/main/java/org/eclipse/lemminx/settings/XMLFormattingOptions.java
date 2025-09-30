@@ -54,7 +54,9 @@ public class XMLFormattingOptions extends org.eclipse.lemminx.settings.LSPFormat
 			"screen", //
 			"synopsis", //
 			"pre", //
-			"xd:pre");
+			"xd:pre", //
+			"style", //
+			"script");
 
 	private boolean legacy;
 	private int maxLineWidth;
