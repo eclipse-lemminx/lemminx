@@ -14,12 +14,21 @@ pipeline {
   }
 
   stages {
-    stage('build') {
+	stage('build') {
       steps {
         script {
-          maven cmd: "clean install -DskipTests"
+          def phase = isReleaseOrMasterBranch() ? 'deploy' : 'verify'
+          maven cmd: "clean ${phase} -DskipTests"
+        }
+        archiveArtifacts 'target/*.zip'
+        withChecks('Maven Issues') {
+          recordIssues tools: [mavenConsole()], qualityGates: [[threshold: 1, type: 'TOTAL']]
         }
       }
     }
   }
+}
+
+def isReleaseOrMasterBranch() {
+  return env.BRANCH_NAME == 'main' || env.BRANCH_NAME.startsWith('release/') 
 }

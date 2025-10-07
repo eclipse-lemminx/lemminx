@@ -190,16 +190,15 @@
 	</build>
 	<distributionManagement>
 		<repository>
-			<id>nexus.ivyteam.io.release</id>
+			<id>nexus.ivyteam.io</id>
 			<url>https://nexus.ivyteam.io/repository/maven-releases/</url>
 		</repository>
-
 		<snapshotRepository>
-			<id>nexus.ivyteam.io.snapshot</id>
+			<id>nexus.ivyteam.io</id>
 			<url>https://nexus.ivyteam.io/repository/maven-snapshots/</url>
 		</snapshotRepository>
 	</distributionManagement>
-  	<profiles>
+	<profiles>
 		<profile>
 			<id>ci</id>
 			<build>
