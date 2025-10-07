@@ -1,48 +1,34 @@
-pipeline{
-  agent any
-  tools {
-    jdk 'adoptopenjdk-hotspot-jdk11-latest'
-  }
-  environment {
-    MAVEN_HOME = "$WORKSPACE/.m2/"
-    MAVEN_USER_HOME = "$MAVEN_HOME"
-  }
-  stages{
-    stage("Maven Build"){
-      when {
-        branch 'main'
-      }
-      steps {
-        withMaven {
-          sh './mvnw clean verify -B -Pci,generate-p2 -Dcbi.jarsigner.skip=false'
-        }
-      }
+pipeline {
+  agent {
+    dockerfile {
+      filename 'Dockerfile'
     }
-    stage('Deploy to downloads.eclipse.org') {
-      when {
-        branch 'main'
-      }
+  }
+
+  options {
+    buildDiscarder(logRotator(numToKeepStr: '60', artifactNumToKeepStr: '2'))
+  }
+
+  triggers {
+    cron '@midnight'
+  }
+
+  stages {
+	stage('build') {
       steps {
-        sshagent ( ['projects-storage.eclipse.org-bot-ssh']) {
-          sh '''
-            targetDir=/home/data/httpd/download.eclipse.org/lemminx/snapshots
-            ssh genie.lemminx@projects-storage.eclipse.org rm -rf $targetDir
-            ssh genie.lemminx@projects-storage.eclipse.org mkdir -p $targetDir
-            scp -r org.eclipse.lemminx/target/org.eclipse.lemminx-* genie.lemminx@projects-storage.eclipse.org:$targetDir
-            ssh genie.lemminx@projects-storage.eclipse.org unzip $targetDir/org.eclipse.lemminx-p2repo.zip -d $targetDir/repository
-            '''
+        script {
+          def phase = isReleaseOrMasterBranch() ? 'deploy' : 'verify'
+          maven cmd: "clean ${phase} -DskipTests"
         }
-      }
-    }
-    stage ('Deploy Maven artifacts') {
-      when {
-          branch 'main'
-      }
-      steps {
-        withMaven {
-          sh './mvnw clean deploy -B -Pci,generate-p2 -DskipTests -Dcbi.jarsigner.skip=false'
+        archiveArtifacts 'org.eclipse.lemminx/target/*.jar'
+        withChecks('Maven Issues') {
+          recordIssues tools: [mavenConsole()], qualityGates: [[threshold: 1, type: 'TOTAL']]
         }
       }
     }
   }
+}
+
+def isReleaseOrMasterBranch() {
+  return env.BRANCH_NAME == 'main' || env.BRANCH_NAME.startsWith('release/') 
 }
