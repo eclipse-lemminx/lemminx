@@ -1,6 +1,6 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<groupId>org.eclipse.lemminx</groupId>
+	<groupId>ch.ivyteam.lemminx</groupId>
 	<artifactId>lemminx-parent</artifactId>
 	<version>0.31.1-SNAPSHOT</version>
 	<packaging>pom</packaging>
@@ -190,17 +190,16 @@
 	</build>
 	<distributionManagement>
 		<repository>
-			<id>repo.eclipse.org</id>
-			<name>lemminx-releases</name>
-			<url>https://repo.eclipse.org/content/repositories/lemminx-releases/</url>
+			<id>nexus.ivyteam.io.release</id>
+			<url>https://nexus.ivyteam.io/repository/maven-releases/</url>
 		</repository>
+
 		<snapshotRepository>
-			<id>repo.eclipse.org</id>
-			<name>lemminx-snapshots</name>
-			<url>https://repo.eclipse.org/content/repositories/lemminx-snapshots/</url>
+			<id>nexus.ivyteam.io.snapshot</id>
+			<url>https://nexus.ivyteam.io/repository/maven-snapshots/</url>
 		</snapshotRepository>
 	</distributionManagement>
-	<profiles>
+  	<profiles>
 		<profile>
 			<id>ci</id>
 			<build>
