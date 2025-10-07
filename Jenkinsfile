@@ -13,15 +13,11 @@ pipeline {
     cron '@midnight'
   }
 
-//   parameters {
-//     booleanParam(name: 'dryRun', defaultValue: true, description: 'whether the build should push the changes or not')
-//   }
-
   stages {
     stage('build') {
       steps {
         script {
-          maven cmd: "-f build/lemminx/pom.xml clean install -DskipTests"
+          maven cmd: "clean install -DskipTests"
         }
       }
     }
