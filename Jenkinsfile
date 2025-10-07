@@ -20,7 +20,7 @@ pipeline {
           def phase = isReleaseOrMasterBranch() ? 'deploy' : 'verify'
           maven cmd: "clean ${phase} -DskipTests"
         }
-        archiveArtifacts 'target/*.zip'
+        archiveArtifacts 'org.eclipse.lemminx/target/*.jar'
         withChecks('Maven Issues') {
           recordIssues tools: [mavenConsole()], qualityGates: [[threshold: 1, type: 'TOTAL']]
         }
