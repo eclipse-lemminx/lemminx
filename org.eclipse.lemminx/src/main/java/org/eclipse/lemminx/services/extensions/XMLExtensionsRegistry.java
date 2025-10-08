@@ -563,4 +563,8 @@ public class XMLExtensionsRegistry implements IComponentProvider {
 		return progressSupport;
 	}
 
+	public boolean isInitialized() {
+		return initialized;
+	}
+
 }
