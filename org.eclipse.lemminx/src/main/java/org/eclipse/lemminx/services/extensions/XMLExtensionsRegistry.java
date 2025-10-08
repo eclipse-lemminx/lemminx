@@ -278,7 +278,7 @@ public class XMLExtensionsRegistry implements IComponentProvider {
 		}
 	}
 
-	void registerExtension(IXMLExtension extension) {
+	public void registerExtension(IXMLExtension extension) {
 		try {
 			extensions.add(extension);
 			extension.start(params, this);
@@ -290,7 +290,7 @@ public class XMLExtensionsRegistry implements IComponentProvider {
 		}
 	}
 
-	void unregisterExtension(IXMLExtension extension) {
+	public void unregisterExtension(IXMLExtension extension) {
 		try {
 			extensions.remove(extension);
 			extension.stop(this);
