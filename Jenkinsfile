@@ -24,6 +24,10 @@ pipeline {
             uploadBOM(projectName: 'lemminx.ivyteam.io', projectVersion: 'main', bomFile: 'target/bom.json')
           }
         }
+        if (isReleaseOrMasterBranch()) {
+          maven cmd: "org.cyclonedx:cyclonedx-maven-plugin:makeAggregateBom -DincludeLicenseText=true -DoutputFormat=json"
+          uploadBOM(projectName: 'lemminx.ivyteam.io', projectVersion: 'main', bomFile: 'target/bom.json')
+        }
         archiveArtifacts 'org.eclipse.lemminx/target/*.jar'
         withChecks('Maven Issues') {
           recordIssues skipPublishingChecks: true, 
@@ -32,6 +36,7 @@ pipeline {
           filters: [excludeMessage('.*Skipped.*')]
         }
         junit 'org.eclipse.lemminx/target/surefire-reports/**/*.xml' 
+
       }
     }
   }
