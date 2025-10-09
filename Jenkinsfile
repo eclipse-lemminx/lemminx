@@ -38,5 +38,5 @@ pipeline {
 }
 
 def isReleaseOrMasterBranch() {
-  return env.BRANCH_NAME == 'main' || env.BRANCH_NAME.startsWith('release/') 
+  return env.BRANCH_NAME == 'master' || env.BRANCH_NAME.startsWith('release/') 
 }
