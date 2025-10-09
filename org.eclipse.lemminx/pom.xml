@@ -4,6 +4,7 @@
 		<groupId>ch.ivyteam.lemminx</groupId>
 		<artifactId>lemminx-parent</artifactId>
 		<version>0.31.1-SNAPSHOT</version>
+		<relativePath>../</relativePath>
 	</parent>
 	<artifactId>org.eclipse.lemminx</artifactId>
 	<properties>
@@ -227,11 +228,12 @@
 			<groupId>xerces</groupId>
 			<artifactId>xercesImpl</artifactId>
 			<version>2.12.2</version>
-		</dependency>
-		<dependency>
-			<groupId>xml-apis</groupId>
-			<artifactId>xml-apis</artifactId>
-			<version>1.4.01</version>
+			<exclusions>
+			  <exclusion>
+			    <groupId>xml-apis</groupId>
+			    <artifactId>xml-apis</artifactId>
+			  </exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.commons</groupId>

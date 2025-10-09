@@ -88,4 +88,8 @@ public class PathPatternMatcher {
 		return false;
 	}
 
+	@Override
+	public int hashCode() {
+	  return Objects.hash(pattern, pathMatcher);
+	}
 }
