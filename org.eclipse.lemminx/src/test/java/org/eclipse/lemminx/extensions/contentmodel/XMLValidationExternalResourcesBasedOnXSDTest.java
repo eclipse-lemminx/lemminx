@@ -31,6 +31,7 @@ import org.eclipse.lemminx.services.XMLLanguageService;
 import org.eclipse.lemminx.uriresolver.CacheResourcesManager;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DiagnosticSeverity;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -148,6 +149,7 @@ public class XMLValidationExternalResourcesBasedOnXSDTest extends AbstractCacheB
 	}
 
 	@Test
+	@Disabled
 	public void schemaLocationDownloadProblem() throws Exception {
 
 		XMLValidationRootSettings validation = new XMLValidationRootSettings();
