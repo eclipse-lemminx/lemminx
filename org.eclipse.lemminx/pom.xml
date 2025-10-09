@@ -241,14 +241,9 @@
 			<version>3.19.0</version>
 		</dependency>	
 		<dependency>
-			<groupId>com.kotcrab.remark</groupId>
-			<artifactId>remark</artifactId>
-			<version>1.2.0</version>
-		</dependency>
-		<dependency>
 			<groupId>org.jsoup</groupId>
 			<artifactId>jsoup</artifactId>
-			<version>1.14.2</version>
+			<version>1.21.2</version>
 		</dependency>
 		<dependency>
 			<groupId>xml-resolver</groupId>
@@ -296,6 +291,11 @@
 			<!-- Need to stick to 11.x as long as build is running with Java 11. It's EOL but only used in tests -->
 			<version>11.0.24</version>
 			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>com.vladsch.flexmark</groupId>
+			<artifactId>flexmark-html2md-converter</artifactId>
+			<version>0.64.0</version>
 		</dependency>
 	</dependencies>
 </project>
