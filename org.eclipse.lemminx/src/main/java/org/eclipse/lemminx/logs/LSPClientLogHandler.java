@@ -19,6 +19,7 @@ import java.io.StringWriter;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Locale;
+import java.util.Objects;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogRecord;
@@ -105,4 +106,8 @@ public class LSPClientLogHandler extends Handler {
 		return this.languageClient == c.getLanguageClient();
 	}
 
+	@Override
+	public int hashCode() {
+	  return Objects.hash(languageClient);
+	}
 }
