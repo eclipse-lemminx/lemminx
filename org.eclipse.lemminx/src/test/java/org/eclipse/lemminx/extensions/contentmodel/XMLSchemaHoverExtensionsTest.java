@@ -71,7 +71,7 @@ public class XMLSchemaHoverExtensionsTest extends AbstractCacheBasedTest {
 
 	@Test
 	public void testTagHoverFromXSType() throws BadLocationException, MalformedURIException {
-		String schemaURI = getXMLSchemaFileURI("invoice.xsd");
+		String schemaURI = getXMLSchemaFileURIconvert("invoice.xsd");
 		// web.xml servlet, servlet-name declares their xs:annotation not in the element
 		// declaration but in type (servletType),
 		// this test checks that
@@ -173,7 +173,7 @@ public class XMLSchemaHoverExtensionsTest extends AbstractCacheBasedTest {
 
 	@Test
 	public void testHoverAttributeValueEuro() throws BadLocationException, MalformedURIException {
-		String schemaURI = getXMLSchemaFileURI("money.xsd");
+		String schemaURI = getXMLSchemaFileURIconvert("money.xsd");
 		String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" + //
 				"<money xmlns=\"http://money\" currency=\"eu|ros\"\r\n" + // <- Hover
 				"	xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
@@ -185,7 +185,7 @@ public class XMLSchemaHoverExtensionsTest extends AbstractCacheBasedTest {
 
 	@Test
 	public void testHoverAttributeValuePound() throws BadLocationException, MalformedURIException {
-		String schemaURI = getXMLSchemaFileURI("money.xsd");
+		String schemaURI = getXMLSchemaFileURIconvert("money.xsd");
 		String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" + //
 				"<money xmlns=\"http://money\" currency=\"pou|nds\"\r\n" + // <- Hover
 				"	xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
@@ -197,7 +197,7 @@ public class XMLSchemaHoverExtensionsTest extends AbstractCacheBasedTest {
 
 	@Test
 	public void testHoverAttributeValueNonExistent() throws BadLocationException, MalformedURIException {
-		String schemaURI = getXMLSchemaFileURI("money.xsd");
+		String schemaURI = getXMLSchemaFileURIconvert("money.xsd");
 		String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" + //
 				"<money xmlns=\"http://money\" curr|ency=\"pounds\"\r\n" + // <- Hover
 				"	xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
@@ -217,7 +217,7 @@ public class XMLSchemaHoverExtensionsTest extends AbstractCacheBasedTest {
 	 */
 	@Test
 	public void hoverCacheBug() throws BadLocationException, MalformedURIException {
-		String schemaURI = getXMLSchemaFileURI("money.xsd");
+		String schemaURI = getXMLSchemaFileURIconvert("money.xsd");
 
 		XMLLanguageService ls = new XMLLanguageService();
 
@@ -241,7 +241,7 @@ public class XMLSchemaHoverExtensionsTest extends AbstractCacheBasedTest {
 
 	@Test
 	public void hoverAttributeValueWithUnion() throws BadLocationException, MalformedURIException {
-		String schemaURI = getXMLSchemaFileURI("dressSize.xsd");
+		String schemaURI = getXMLSchemaFileURIconvert("dressSize.xsd");
 		String xml = "<dress\r\n" + //
 				"	xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
 				"	xsi:noNamespaceSchemaLocation=\"xsd/dressSize.xsd\"\r\n" + //
@@ -256,7 +256,7 @@ public class XMLSchemaHoverExtensionsTest extends AbstractCacheBasedTest {
 
 	@Test
 	public void hoverAttributeValueWithUnion2() throws BadLocationException, MalformedURIException {
-		String schemaURI = getXMLSchemaFileURI("dressSize.xsd");
+		String schemaURI = getXMLSchemaFileURIconvert("dressSize.xsd");
 		String xml = "<dress\r\n" + //
 				"	xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
 				"	xsi:noNamespaceSchemaLocation=\"xsd/dressSize.xsd\"\r\n" + //
@@ -271,7 +271,7 @@ public class XMLSchemaHoverExtensionsTest extends AbstractCacheBasedTest {
 
 	@Test
 	public void hoverTextWithUnion() throws BadLocationException, MalformedURIException {
-		String schemaURI = getXMLSchemaFileURI("dressSize.xsd");
+		String schemaURI = getXMLSchemaFileURIconvert("dressSize.xsd");
 		String xml = "<dresssize\r\n" + //
 				"	xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
 				"	xsi:noNamespaceSchemaLocation=\"xsd/dressSize.xsd\" >\r\n" + //
@@ -287,7 +287,7 @@ public class XMLSchemaHoverExtensionsTest extends AbstractCacheBasedTest {
 
 	@Test
 	public void hoverTextWithUnion2() throws BadLocationException, MalformedURIException {
-		String schemaURI = getXMLSchemaFileURI("dressSize.xsd");
+		String schemaURI = getXMLSchemaFileURIconvert("dressSize.xsd");
 		String xml = "<dresssize\r\n" + //
 				"	xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
 				"	xsi:noNamespaceSchemaLocation=\"xsd/dressSize.xsd\" >\r\n" + //
@@ -303,7 +303,7 @@ public class XMLSchemaHoverExtensionsTest extends AbstractCacheBasedTest {
 
 	@Test
 	public void hoverTextWithUnion3() throws BadLocationException, MalformedURIException {
-		String schemaURI = getXMLSchemaFileURI("dressSize.xsd");
+		String schemaURI = getXMLSchemaFileURIconvert("dressSize.xsd");
 		String xml = "<dresssize\r\n" + //
 				"	xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
 				"	xsi:noNamespaceSchemaLocation=\"xsd/dressSize.xsd\" >\r\n" + //
@@ -319,7 +319,7 @@ public class XMLSchemaHoverExtensionsTest extends AbstractCacheBasedTest {
 
 	@Test
 	public void attrValueEnumWithDoc() throws BadLocationException, MalformedURIException {
-		String schemaURI = getXMLSchemaFileURI("attr-enum.xsd");
+		String schemaURI = getXMLSchemaFileURIconvert("attr-enum.xsd");
 		String xml = "<root xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" \r\n" + //
 				"      xsi:noNamespaceSchemaLocation=\"xsd/attr-enum.xsd\"\r\n" + //
 				"      attribute=\"va|lue1\" />";
@@ -333,7 +333,7 @@ public class XMLSchemaHoverExtensionsTest extends AbstractCacheBasedTest {
 
 	@Test
 	public void attrValueEnumWithNoDoc() throws BadLocationException, MalformedURIException {
-		String schemaURI = getXMLSchemaFileURI("attr-enum.xsd");
+		String schemaURI = getXMLSchemaFileURIconvert("attr-enum.xsd");
 		String xml = "<root xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" \r\n" + //
 				"      xsi:noNamespaceSchemaLocation=\"xsd/attr-enum.xsd\"\r\n" + //
 				"      attribute=\"va|lue2\" />";
@@ -430,9 +430,15 @@ public class XMLSchemaHoverExtensionsTest extends AbstractCacheBasedTest {
 		XMLAssert.assertHover(new XMLLanguageService(), value, "src/test/resources/catalogs/catalog.xml", null,
 				expectedHoverLabel, expectedHoverRange);
 	}
-
+	
 	private static String getXMLSchemaFileURI(String schemaURI) throws MalformedURIException {
 		return XMLEntityManager.expandSystemId("xsd/" + schemaURI, "src/test/resources/test.xml", true).replace("///",
 				"/");
+	}
+	
+	private static String getXMLSchemaFileURIconvert(String schemaURI) throws MalformedURIException {
+		String res = XMLEntityManager.expandSystemId("xsd/" + schemaURI, "src/test/resources/test.xml", true);
+		return res.replaceAll("^file:/(?!/)", "file:///");
+		
 	}
 }

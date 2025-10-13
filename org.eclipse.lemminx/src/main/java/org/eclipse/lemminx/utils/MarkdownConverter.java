@@ -19,9 +19,6 @@ import java.util.logging.Logger;
 
 import com.vladsch.flexmark.html2md.converter.FlexmarkHtmlConverter;
 
-import org.jsoup.safety.Cleaner;
-import org.jsoup.safety.Safelist;
-
 /**
  * Converts HTML content into Markdown equivalent.
  *
@@ -37,6 +34,7 @@ public class MarkdownConverter {
 		//no public instanciation
 	}
 
+	@SuppressWarnings("deprecation")
 	public static String convert(String html) {
 		if(!StringUtils.isTagOutsideOfBackticks(html)) {
 			return unescapeXml(html); // is not html so it can be returned as is (aside from unescaping)

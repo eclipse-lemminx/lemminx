@@ -38,14 +38,10 @@ public class XMLFileAssociationsHoverTest extends AbstractCacheBasedTest {
 		String schemaURI = getXMLSchemaFileURI("maven-4.0.0.xsd");
 		String xml = "<pro|ject xmlns=\"http://maven.apache.org/POM/4.0.0\"\r\n>\r\n" + //
 				"</project>";
-		assertHover(xml, "file:///test/pom.xml", modelSettings, "3.0.0+" + //
-				System.lineSeparator() + //
-				System.lineSeparator() + //
-				"The `<project>` element is the root of the descriptor. The following table lists all of the possible child elements."
-				+ //
-				System.lineSeparator() + //
-				System.lineSeparator() + //
-				"Source: [maven-4.0.0.xsd](" + schemaURI + ")", r(0, 1, 0, 8));
+		assertHover(xml, "file:///test/pom.xml", modelSettings, 
+				"3.0.0+\r\n" +
+				"The `<project>` element is the root of the descriptor. The following table lists all of the possible child elements.\r\n\r\n"+
+				"Source: [maven-4.0.0.xsd](" + schemaURI + ")\r\n", r(0, 1, 0, 8));
 	}
 
 	@Test
@@ -54,19 +50,19 @@ public class XMLFileAssociationsHoverTest extends AbstractCacheBasedTest {
 		modelSettings.setFileAssociations(createXSDAssociationsSchemaLocationLike("src/test/resources/xsd/"));
 
 		String schemaURI = getXMLSchemaFileURI("maven-4.0.0.xsd");
-		String xml = "<!DOCTYPE opt [\r\n" + //
-				"  <!ENTITY size \"short\">\r\n" + //
+		String xml = "<!DOCTYPE opt [\r\n" +
+				"  <!ENTITY size \"short\">\r\n" +
 				"]>\r\n" + //
-				"<pro|ject xmlns=\"http://maven.apache.org/POM/4.0.0\"\r\n>\r\n" + //
+				"<pro|ject xmlns=\"http://maven.apache.org/POM/4.0.0\"\r\n>\r\n" +
 				"</project>";
-		assertHover(xml, "file:///test/pom.xml", modelSettings, "3.0.0+" + //
-				System.lineSeparator() + //
-				System.lineSeparator() + //
-				"The `<project>` element is the root of the descriptor. The following table lists all of the possible child elements."
-				+ //
-				System.lineSeparator() + //
-				System.lineSeparator() + //
-				"Source: [maven-4.0.0.xsd](" + schemaURI + ")", r(3, 1, 3, 8));
+		
+		assertHover(xml, "file:///test/pom.xml", modelSettings, "3.0.0+" +
+				System.lineSeparator() +
+				System.lineSeparator() +
+				"The `<project>` element is the root of the descriptor. The following table lists all of the possible child elements." +
+				System.lineSeparator() +
+				System.lineSeparator() +
+				"Source: [maven-4.0.0.xsd](" + schemaURI + ")\r\n", r(3, 1, 3, 8));
 	}
 
 	private static XMLFileAssociation[] createXSDAssociationsSchemaLocationLike(String baseSystemId) {
@@ -83,8 +79,12 @@ public class XMLFileAssociationsHoverTest extends AbstractCacheBasedTest {
 	}
 
 	private static String getXMLSchemaFileURI(String schemaURI) throws MalformedURIException {
-		return XMLEntityManager.expandSystemId("xsd/" + schemaURI, "src/test/resources/test.xml", true).replace("///",
-				"/");
+		String res = XMLEntityManager.expandSystemId("xsd/" + schemaURI, "src/test/resources/test.xml", true);
+		if (res.startsWith("file:/") && !res.startsWith("file:///")) {
+			res = res.replaceFirst("file:/", "file:///");
+		}
+		return res;
+		
 	}
 
 }

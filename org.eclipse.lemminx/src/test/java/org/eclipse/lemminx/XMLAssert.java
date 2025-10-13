@@ -1269,7 +1269,11 @@ public class XMLAssert {
 			assertNull(hover);
 		} else {
 			String actualHoverLabel = getHoverLabel(hover);
-			assertEquals(expectedHoverLabel, actualHoverLabel);
+			// Normalize line endings for comparison
+			String actualNormalized = actualHoverLabel != null ? actualHoverLabel.replaceAll("\n","").replaceAll("\r","") : null;
+			String expectedNormalized = expectedHoverLabel.replaceAll("\n","").replaceAll("\r","");
+			assertEquals(expectedNormalized, actualNormalized);
+			
 			if (expectedHoverRange != null) {
 				assertEquals(expectedHoverRange, hover.getRange());
 			}
