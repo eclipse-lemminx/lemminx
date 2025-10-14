@@ -1,45 +1,28 @@
-/*******************************************************************************
- * Copyright (c) 2016-2017 Red Hat Inc. and others.
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/legal/epl-v10.html
- *
- * SPDX-License-Identifier: EPL-2.0
- *
- * Contributors:
- *     Red Hat, Inc. - initial API and implementation
- *******************************************************************************/
 package org.eclipse.lemminx.utils;
 
-import static org.apache.commons.lang3.StringEscapeUtils.unescapeJava;
-import static org.apache.commons.lang3.StringEscapeUtils.unescapeXml;
+import com.vladsch.flexmark.html.HtmlRenderer;
+import com.vladsch.flexmark.html2md.converter.*;
+import com.vladsch.flexmark.util.data.MutableDataSet;
 
-import java.util.logging.Logger;
+import static org.apache.commons.text.StringEscapeUtils.unescapeJava;
+import static org.apache.commons.text.StringEscapeUtils.unescapeXml;
 
-import com.vladsch.flexmark.html2md.converter.FlexmarkHtmlConverter;
-
-/**
- * Converts HTML content into Markdown equivalent.
- *
- * @author Fred Bricon
- */
 public class MarkdownConverter {
 
-	private static final Logger LOGGER = Logger.getLogger(MarkdownConverter.class.getName());
-
-	private static final FlexmarkHtmlConverter converter = FlexmarkHtmlConverter.builder().build();
-
-	private MarkdownConverter(){
-		//no public instanciation
-	}
-
-	@SuppressWarnings("deprecation")
 	public static String convert(String html) {
-		if(!StringUtils.isTagOutsideOfBackticks(html)) {
-			return unescapeXml(html); // is not html so it can be returned as is (aside from unescaping)
-		}
-		return unescapeJava(converter.convert(html));
-	}
 
+		if (!StringUtils.isTagOutsideOfBackticks(html)) {
+			return unescapeXml(html);
+		}
+		MutableDataSet options = new MutableDataSet();
+		options.set(FlexmarkHtmlConverter.SETEXT_HEADINGS, false);
+		options.set(FlexmarkHtmlConverter.MAX_BLANK_LINES, 1);
+		options.set(FlexmarkHtmlConverter.BR_AS_PARA_BREAKS, false);
+//		options.set(HtmlRenderer.SOFT_BREAK, "\n");
+//		options.set(FlexmarkHtmlConverter.BR_AS_EXTRA_BLANK_LINES, false);
+
+		var converter = FlexmarkHtmlConverter.builder(options).build();
+		return unescapeJava(converter.convert(html, -1));
+
+	}
 }

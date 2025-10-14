@@ -32,7 +32,7 @@ public class XMLModelHoverExtensionsTest extends AbstractCacheBasedTest {
 
 	@Test
 	public void hoverBasedOnXSDWithXMLModel() throws BadLocationException, MalformedURIException {
-		String schemaURI = getXMLSchemaFileURI("spring-beans-3.0.xsd");
+		String schemaURI = getXMLSchemaFileURINormalize("spring-beans-3.0.xsd");
 		String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" + //
 				"<?xml-model href=\"http://www.springframework.org/schema/beans/spring-beans.xsd\"?>\r\n" + //
 				"<beans xmlns=\"http://www.springframework.org/schema/beans\" >\r\n" + //
@@ -82,13 +82,15 @@ public class XMLModelHoverExtensionsTest extends AbstractCacheBasedTest {
 				expectedHoverLabel, expectedHoverRange);
 	}
 
+	private static String getXMLSchemaFileURINormalize(String schemaURI) throws MalformedURIException {
+		return XMLEntityManager.expandSystemId("xsd/" + schemaURI, "src/test/resources/test.xml", true).replaceAll("file:///", "file:/");
+	}	
+	
 	private static String getXMLSchemaFileURI(String schemaURI) throws MalformedURIException {
-		return XMLEntityManager.expandSystemId("xsd/" + schemaURI, "src/test/resources/test.xml", true).replace("///",
-				"/");
+		return XMLEntityManager.expandSystemId("xsd/" + schemaURI, "src/test/resources/test.xml", true);
 	}
 
 	private static String getXMLModelFileURI(String grammarURI) throws MalformedURIException {
-		return XMLEntityManager.expandSystemId(grammarURI, "src/test/resources/xml-model/grammar.xml", true)
-				.replace("///", "/");
+		return XMLEntityManager.expandSystemId(grammarURI, "src/test/resources/xml-model/grammar.xml", true);
 	}
 }

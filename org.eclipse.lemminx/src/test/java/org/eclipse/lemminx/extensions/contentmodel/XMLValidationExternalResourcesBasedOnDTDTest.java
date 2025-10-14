@@ -73,6 +73,7 @@ public class XMLValidationExternalResourcesBasedOnDTDTest extends AbstractCacheB
 	}
 
 	@Test
+	@Disabled // because of download issue
 	public void docTypeDownloadProblem() throws Exception {
 
 		XMLValidationRootSettings validation = new XMLValidationRootSettings();
