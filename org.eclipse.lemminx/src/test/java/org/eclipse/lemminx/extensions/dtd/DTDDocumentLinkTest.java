@@ -31,4 +31,10 @@ public class DTDDocumentLinkTest extends AbstractCacheBasedTest {
 		XMLAssert.testDocumentLinkFor(xml, "src/test/resources/xml/base.dtd",
 				dl(r(0, 28, 0, 43), "src/test/resources/document.ent"));
 	}
+	
+	@Test
+	public void entityZeroLength() throws BadLocationException {
+		String xml = "<!ENTITY % document SYSTEM \"\">";
+		XMLAssert.testDocumentLinkFor(xml, "src/test/resources/xml/base.dtd");
+	}
 }

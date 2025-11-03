@@ -1040,8 +1040,13 @@ public class XMLPositionUtility {
 	public static DocumentLink createDocumentLink(DOMRange target, String location, boolean adjust)
 			throws BadLocationException {
 		DOMDocument document = target.getOwnerDocument();
-		Position start = document.positionAt(target.getStart() + (adjust ? 1 : 0));
-		Position end = document.positionAt(target.getEnd() - (adjust ? 1 : 0));
+		int startOffset = target.getStart() + (adjust ? 1 : 0);
+		int endOffset = target.getEnd() - (adjust ? 1 : 0);
+		if (startOffset == endOffset) {
+			throw new IllegalArgumentException("empty range");
+		}
+		Position start = document.positionAt(startOffset);
+		Position end = document.positionAt(endOffset);
 		return new DocumentLink(new Range(start, end), location);
 	}
 

@@ -37,6 +37,16 @@ public class DTDDocumentLinkTest extends AbstractCacheBasedTest {
 	}
 
 	@Test
+	public void docTypeSYSTEMZeroLengh() throws BadLocationException {
+		String xml = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\r\n" + //
+				"<!DOCTYPE root-element SYSTEM \"\" [\r\n" + //
+				"\r\n" + //
+				"]>\r\n" + //
+				"<root-element />";
+		XMLAssert.testDocumentLinkFor(xml, "src/test/resources/xml/base.xml");
+	}
+
+	@Test
 	public void docTypePUBLIC() throws BadLocationException {
 		String xml = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\r\n" + //
 				"<!DOCTYPE root-element PUBLIC \"ABCD\" \"../dtd/entities/base.dtd\" [\r\n" + //
@@ -45,6 +55,16 @@ public class DTDDocumentLinkTest extends AbstractCacheBasedTest {
 				"<root-element />";
 		XMLAssert.testDocumentLinkFor(xml, "src/test/resources/xml/base.xml",
 				dl(r(1, 38, 1, 62), "src/test/resources/dtd/entities/base.dtd"));
+	}
+
+	@Test
+	public void docTypePUBLICZeroLength() throws BadLocationException {
+		String xml = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\r\n" + //
+				"<!DOCTYPE root-element PUBLIC \"ABCD\" \"\" [\r\n" + //
+				"\r\n" + //
+				"]>\r\n" + //
+				"<root-element />";
+		XMLAssert.testDocumentLinkFor(xml, "src/test/resources/xml/base.xml");
 	}
 
 	@Test

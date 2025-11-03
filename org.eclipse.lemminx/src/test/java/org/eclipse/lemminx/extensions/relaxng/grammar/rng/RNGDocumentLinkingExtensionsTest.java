@@ -103,4 +103,55 @@ public class RNGDocumentLinkingExtensionsTest extends AbstractCacheBasedTest {
 		XMLAssert.testDocumentLinkFor(xml, "src/test/resources/relaxng/main.rng",
 				dl(r(11, 24, 11, 34), "src/test/resources/relaxng/inline.rng"));
 	}
+
+	@Test
+	public void emptyIncludeHref() throws BadLocationException {
+		String xml = "<grammar xmlns=\"http://relaxng.org/ns/structure/1.0\" >\n"
+				+ "	<include href=\"\">\n"
+				+ "		<define name=\"cardContent\">\n"
+				+ "			<element name=\"name\">\n"
+				+ "				<text />\n"
+				+ "			</element>\n"
+				+ "			<element name=\"emailAddress\">\n"
+				+ "				<text />\n"
+				+ "			</element>\n"
+				+ "		</define>\n"
+				+ "	</include>\n"
+				+ "</grammar>";
+		XMLAssert.testDocumentLinkFor(xml, "src/test/resources/relaxng/main.rng");
+	}
+
+	@Test
+	public void emptyIncludeHref2() throws BadLocationException {
+		String xml = "<grammar xmlns=\"http://relaxng.org/ns/structure/1.0\" >\n"
+				+ "	<include href= >\n"
+				+ "		<define name=\"cardContent\">\n"
+				+ "			<element name=\"name\">\n"
+				+ "				<text />\n"
+				+ "			</element>\n"
+				+ "			<element name=\"emailAddress\">\n"
+				+ "				<text />\n"
+				+ "			</element>\n"
+				+ "		</define>\n"
+				+ "	</include>\n"
+				+ "</grammar>";
+		XMLAssert.testDocumentLinkFor(xml, "src/test/resources/relaxng/main.rng");
+	}
+
+	@Test
+	public void emptyIncludeHref3() throws BadLocationException {
+		String xml = "<grammar xmlns=\"http://relaxng.org/ns/structure/1.0\" >\n"
+				+ "	<include href >\n"
+				+ "		<define name=\"cardContent\">\n"
+				+ "			<element name=\"name\">\n"
+				+ "				<text />\n"
+				+ "			</element>\n"
+				+ "			<element name=\"emailAddress\">\n"
+				+ "				<text />\n"
+				+ "			</element>\n"
+				+ "		</define>\n"
+				+ "	</include>\n"
+				+ "</grammar>";
+		XMLAssert.testDocumentLinkFor(xml, "src/test/resources/relaxng/main.rng");
+	}
 }
