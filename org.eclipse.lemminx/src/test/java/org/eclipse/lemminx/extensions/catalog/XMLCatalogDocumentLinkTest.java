@@ -70,6 +70,20 @@ public class XMLCatalogDocumentLinkTest extends AbstractCacheBasedTest {
 	}
 
 	@Test
+	public void testCatalogWithCatalogDOCTYPEZeroLength() {
+		String xml = "<!DOCTYPE catalog PUBLIC \"-//OASIS//DTD XML Catalogs V1.1//EN\" \"catalog.dtd\" >\n"
+				+ //
+				"<catalog xmlns=\"urn:oasis:names:tc:entity:xmlns:xml:catalog\">\n" + //
+				"  <uri\n" + //
+				"    id=\"\"\n" + //
+				"    uri=\"\" />\n" + //
+				"</catalog>";
+		testDocumentLinkFor(xml, CATALOG_PATH,
+				dl(r(0, 64, 0, 75), "src/test/resources/catalog.dtd"));
+
+	}
+
+	@Test
 	public void testSystemSuffixEntryDocumentLink() {
 		String xml = "<catalog xmlns=\"urn:oasis:names:tc:entity:xmlns:xml:catalog\">\n" + //
 				"  <systemSuffix id=\"http://example.org\" uri=\"mySchema.xsd\"></systemSuffix>\n" + //
@@ -79,12 +93,28 @@ public class XMLCatalogDocumentLinkTest extends AbstractCacheBasedTest {
 	}
 
 	@Test
+	public void testSystemSuffixEntryZeroLengthDocumentLink() {
+		String xml = "<catalog xmlns=\"urn:oasis:names:tc:entity:xmlns:xml:catalog\">\n" + //
+				"  <systemSuffix id=\"http://example.org\" uri=\"\"></systemSuffix>\n" + //
+				"</catalog>";
+		testDocumentLinkFor(xml, CATALOG_PATH);
+	}
+
+	@Test
 	public void testURISuffixEntryDocumentLink() {
 		String xml = "<catalog xmlns=\"urn:oasis:names:tc:entity:xmlns:xml:catalog\">\n" + //
 				"  <uriSuffix id=\"http://example.org\" uri=\"mySchema.xsd\"></uriSuffix>\n" + //
 				"</catalog>";
 		testDocumentLinkFor(xml, CATALOG_PATH, //
 				dl(r(1, 42, 1, 54), "src/test/resources/mySchema.xsd"));
+	}
+
+	@Test
+	public void testURISuffixEntryZeroLengthDocumentLink() {
+		String xml = "<catalog xmlns=\"urn:oasis:names:tc:entity:xmlns:xml:catalog\">\n" + //
+				"  <uriSuffix id=\"\" uri=\"\"></uriSuffix>\n" + //
+				"</catalog>";
+		testDocumentLinkFor(xml, CATALOG_PATH);
 	}
 
 	@Test
@@ -128,12 +158,28 @@ public class XMLCatalogDocumentLinkTest extends AbstractCacheBasedTest {
 	}
 
 	@Test
+	public void testDelegatePublicEntryZeroLength() {
+		String xml = "<catalog xmlns=\"urn:oasis:names:tc:entity:xmlns:xml:catalog\">\n" + //
+				"  <delegatePublic catalog=\"\" />\n" + //
+				"</catalog>";
+		testDocumentLinkFor(xml, CATALOG_PATH);
+	}
+
+	@Test
 	public void testDelegateSystemEntry() {
 		String xml = "<catalog xmlns=\"urn:oasis:names:tc:entity:xmlns:xml:catalog\">\n" + //
 				"  <delegateSystem catalog=\"catalogs/catalog-public.xml\" />\n" + //
 				"</catalog>";
 		testDocumentLinkFor(xml, CATALOG_PATH, //
 				dl(r(1, 27, 1, 54), "src/test/resources/catalogs/catalog-public.xml"));
+	}
+
+	@Test
+	public void testDelegateSystemEntryZeroLength() {
+		String xml = "<catalog xmlns=\"urn:oasis:names:tc:entity:xmlns:xml:catalog\">\n" + //
+				"  <delegateSystem catalog=\"\" />\n" + //
+				"</catalog>";
+		testDocumentLinkFor(xml, CATALOG_PATH);
 	}
 
 	@Test

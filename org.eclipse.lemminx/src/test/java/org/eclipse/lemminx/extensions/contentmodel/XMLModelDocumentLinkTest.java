@@ -35,4 +35,34 @@ public class XMLModelDocumentLinkTest extends AbstractCacheBasedTest {
 		XMLAssert.testDocumentLinkFor(xml, "src/test/resources/Format.xml",
 				dl(r(1, 18, 1, 32), "src/test/resources/xsd/Format.xsd"));
 	}
+
+	@Test
+	public void xmlModelHrefZeroLength() throws BadLocationException {
+		String xml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n" + //
+				"<?xml-model href=\"\" ?>\r\n" + //
+				"<Configuration>\r\n" + //
+				"  <ViewDefinitions>\r\n" + //
+				"    <View>";
+		XMLAssert.testDocumentLinkFor(xml, "src/test/resources/Format.xml");
+	}
+
+	@Test
+	public void xmlModelHrefZeroLength2() throws BadLocationException {
+		String xml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n" + //
+				"<?xml-model href= ?>\r\n" + //
+				"<Configuration>\r\n" + //
+				"  <ViewDefinitions>\r\n" + //
+				"    <View>";
+		XMLAssert.testDocumentLinkFor(xml, "src/test/resources/Format.xml");
+	}
+
+	@Test
+	public void xmlModelHrefZeroLength3() throws BadLocationException {
+		String xml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n" + //
+				"<?xml-model href ?>\r\n" + //
+				"<Configuration>\r\n" + //
+				"  <ViewDefinitions>\r\n" + //
+				"    <View>";
+		XMLAssert.testDocumentLinkFor(xml, "src/test/resources/Format.xml");
+	}
 }

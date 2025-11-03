@@ -45,4 +45,15 @@ public class XIncludeDocumentLinkTest extends AbstractCacheBasedTest {
 		XMLAssert.testDocumentLinkFor(xml, "src/test/resources/xinclude/main.xml",
 				dl(r(3, 22, 3, 35), "src/test/resources/xinclude/reference.xml"));
 	}
+
+	@Test
+	public void includeHrefZeroLength() throws BadLocationException {
+		String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" + //
+				"<book xmlns:xi=\"http://www.w3.org/2001/XInclude\"> \n" + //
+				"  <author> \n" + //
+				"    <xi:include href=\"\" />\n" + // <-- documentLink
+				"  </author>\n" + //
+				"</book>\n";
+		XMLAssert.testDocumentLinkFor(xml, "src/test/resources/xinclude/main.xml");
+	}
 }
