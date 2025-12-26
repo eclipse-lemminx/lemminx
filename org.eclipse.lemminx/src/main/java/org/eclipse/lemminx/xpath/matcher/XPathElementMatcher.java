@@ -143,7 +143,10 @@ public class XPathElementMatcher extends AbstractXPathNodeMatcher {
 	 * org.eclipse.wst.xml.search.core.xpath.matcher.IXPathNodeMatcher#isAny()
 	 */
 	public boolean isAny() {
-		return anyElementName;
+		var hasAttributes = attributes != null && !attributes.isEmpty();
+
+		// if the element has attribute predicates, it is no longer a wildcard "any" element.
+		return anyElementName && !hasAttributes;
 	}
 
 	/**
