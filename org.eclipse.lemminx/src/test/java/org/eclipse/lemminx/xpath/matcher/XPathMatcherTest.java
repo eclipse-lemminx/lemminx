@@ -128,6 +128,52 @@ public class XPathMatcherTest {
 		assertFalse(matcher.match(textOfBar));
 	}
 
+	@Test
+	public void matchAnyWithPredicate() {
+		String xml = "<foo>\r\n" + //
+				"	<bar attr1=\"value1\" attr2=\"value1\">ABCD</bar>\r\n" + //
+				"	<bar attr1=\"bar-value1\" attr2=\"value1\">EFGH</bar>\r\n" + //
+				"	<baz attr1=\"value1\" attr2=\"value1\">IJKL</baz>\r\n" + //
+				"	<baz attr1=\"baz-value1\" attr2=\"value1\">MNOP</baz>\r\n" + //
+				"</foo>";
+		DOMDocument document = DOMParser.getInstance().parse(xml, "test.xml", null);
+		DOMElement root = document.getDocumentElement();
+
+		DOMElement bar1 = (DOMElement) root.getChildren().get(0);
+		DOMElement bar2 = (DOMElement) root.getChildren().get(1);
+		DOMElement baz1 = (DOMElement) root.getChildren().get(2);
+		DOMElement baz2 = (DOMElement) root.getChildren().get(3);
+
+		XPathMatcher matcher = new XPathMatcher("//*[@attr1='value1']");
+		assertTrue(matcher.match(bar1), "Expected bar1 to match //*[@attr1='value1']");
+		assertFalse(matcher.match(bar2), "Expected bar2 NOT to match //*[@attr1='value1'] due to mismatched attr1 value");
+		assertTrue(matcher.match(baz1), "Expected baz1 to match //*[@attr1='value1']");
+		assertFalse(matcher.match(baz2), "Expected baz2 NOT to match //*[@attr1='value1'] due to mismatched attr1 value");
+	}
+
+	@Test
+	public void matchOneWithPredicate() {
+		String xml = "<foo>\r\n" + //
+				"	<bar attr1=\"value1\" attr2=\"value1\">ABCD</bar>\r\n" + //
+				"	<bar attr1=\"bar-value1\" attr2=\"value1\">EFGH</bar>\r\n" + //
+				"	<baz attr1=\"value1\" attr2=\"value1\">IJKL</baz>\r\n" + //
+				"	<baz attr1=\"baz-value1\" attr2=\"value1\">MNOP</baz>\r\n" + //
+				"</foo>";
+		DOMDocument document = DOMParser.getInstance().parse(xml, "test.xml", null);
+		DOMElement root = document.getDocumentElement();
+
+		DOMElement bar1 = (DOMElement) root.getChildren().get(0);
+		DOMElement bar2 = (DOMElement) root.getChildren().get(1);
+		DOMElement baz1 = (DOMElement) root.getChildren().get(2);
+		DOMElement baz2 = (DOMElement) root.getChildren().get(3);
+
+		XPathMatcher matcher = new XPathMatcher("//bar[@attr1='value1']");
+		assertTrue(matcher.match(bar1), "Expected bar1 to match //bar[@attr1='value1']");
+		assertFalse(matcher.match(bar2), "Expected bar2 NOT to match //bar[@attr1='value1'] due to mismatched attr1 value");
+		assertFalse(matcher.match(baz1), "Expected baz1 NOT to match //bar[@attr1='value1'] due to mismatched tag name");
+		assertFalse(matcher.match(baz2), "Expected baz2 NOT to match //bar[@attr1='value1'] due to mismatched tag name and attr1 value");
+	}
+
 	private static DOMElement getElementByTagName(DOMElement parent, String tagName) {
 		List<DOMNode> children = parent.getChildren();
 		if (children != null) {
@@ -139,5 +185,4 @@ public class XPathMatcherTest {
 		}
 		return null;
 	}
-
 }
