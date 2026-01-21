@@ -204,7 +204,7 @@ public class XMLTextDocumentService implements TextDocumentService {
 		this.limitExceededWarner = null;
 		this.xmlValidatorDelayer = new ModelValidatorDelayer<DOMDocument>((document) -> {
 			DOMDocument xmlDocument = document.getModel();
-			validate(xmlDocument, Collections.emptyMap());
+			validate(xmlDocument, Collections.emptyMap(), null);
 
 			getXMLLanguageService().getDocumentLifecycleParticipants().forEach(participant -> {
 				try {
@@ -653,7 +653,7 @@ public class XMLTextDocumentService implements TextDocumentService {
 			xmlLanguageServer.schedule(() -> {
 				documents.forEach(document -> {
 					try {
-						validate(document.getModel(), Collections.emptyMap());
+						validate(document.getModel(), Collections.emptyMap(), null);
 					} catch (CancellationException e) {
 						// Ignore the error and continue to validate other documents
 					}
@@ -692,7 +692,7 @@ public class XMLTextDocumentService implements TextDocumentService {
 		} else {
 			CompletableFuture.runAsync(() -> {
 				DOMDocument xmlDocument = ((ModelTextDocument<DOMDocument>) document).getModel();
-				validate(xmlDocument, Collections.emptyMap());
+				validate(xmlDocument, Collections.emptyMap(), null);
 				getXMLLanguageService().getDocumentLifecycleParticipants().forEach(participant -> {
 					try {
 						participant.didOpen(xmlDocument);
@@ -708,19 +708,22 @@ public class XMLTextDocumentService implements TextDocumentService {
 	/**
 	 * Validate and publish diagnostics for the given DOM document.
 	 *
-	 * @param xmlDocument    the DOM document.
-	 * @param validationArgs the validation arguments.
+	 * @param xmlDocument        the DOM document.
+	 * @param validationArgs     the validation arguments.
+	 * @param validationSettings
 	 *
 	 * @throws CancellationException when the DOM document content changed and
 	 *                               diagnostics must be stopped.
 	 */
-	void validate(DOMDocument xmlDocument, Map<String, Object> validationArgs) throws CancellationException {
+	void validate(DOMDocument xmlDocument, Map<String, Object> validationArgs,
+			XMLValidationRootSettings validationSettings)
+			throws CancellationException {
 		CancelChecker cancelChecker = xmlDocument.getCancelChecker();
 		cancelChecker.checkCanceled();
 		getXMLLanguageService().publishDiagnostics(xmlDocument,
 				params -> xmlLanguageServer.getLanguageClient().publishDiagnostics(params),
 				(doc) -> triggerValidationFor(doc, TriggeredBy.Other),
-				sharedSettings.getValidationSettings(),
+				validationSettings != null ? validationSettings : sharedSettings.getValidationSettings(),
 				validationArgs, cancelChecker);
 	}
 

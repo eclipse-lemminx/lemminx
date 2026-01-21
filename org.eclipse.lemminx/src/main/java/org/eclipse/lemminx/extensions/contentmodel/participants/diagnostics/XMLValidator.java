@@ -35,8 +35,10 @@ import org.eclipse.lemminx.dom.SchemaLocationHint;
 import org.eclipse.lemminx.dom.XMLModel;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
 import org.eclipse.lemminx.extensions.contentmodel.participants.XMLSyntaxErrorCode;
+import org.eclipse.lemminx.extensions.contentmodel.settings.DTDEnabled;
 import org.eclipse.lemminx.extensions.contentmodel.settings.NamespacesEnabled;
 import org.eclipse.lemminx.extensions.contentmodel.settings.SchemaEnabled;
+import org.eclipse.lemminx.extensions.contentmodel.settings.XMLDTDSettings;
 import org.eclipse.lemminx.extensions.contentmodel.settings.XMLNamespacesSettings;
 import org.eclipse.lemminx.extensions.contentmodel.settings.XMLSchemaSettings;
 import org.eclipse.lemminx.extensions.contentmodel.settings.XMLValidationSettings;
@@ -86,8 +88,10 @@ public class XMLValidator {
 		LSPXMLEntityManager entityManager = new LSPXMLEntityManager(reporterForXML, grammarPool);
 		try {
 
+			boolean dtdValidationEnabled = !isDisableOnlyDTDValidation(document, validationSettings);
 			LSPXMLParserConfiguration configuration = new LSPXMLParserConfiguration(grammarPool,
-					isDisableOnlyDTDValidation(document), reporterForXML, reporterForGrammar, entityManager,
+					!dtdValidationEnabled, reporterForXML, reporterForGrammar,
+					entityManager,
 					validationSettings);
 
 			if (entityResolver != null) {
@@ -118,6 +122,8 @@ public class XMLValidator {
 			boolean hasGrammar = document.hasDTD() || hasSchemaGrammar
 					|| (!hasRelaxNG && document.hasExternalGrammar());
 			if (hasSchemaGrammar && !schemaValidationEnabled) {
+				hasGrammar = false;
+			} else if (document.hasDTD() && !dtdValidationEnabled) {
 				hasGrammar = false;
 			}
 			parser.setFeature("http://xml.org/sax/features/validation", hasGrammar); //$NON-NLS-1$
@@ -324,7 +330,7 @@ public class XMLValidator {
 	 * @param document the DOM document
 	 * @return true is DTD validation must be disabled and false otherwise.
 	 */
-	private static boolean isDisableOnlyDTDValidation(DOMDocument document) {
+	private static boolean isDisableOnlyDTDValidation(DOMDocument document, XMLValidationSettings validationSettings) {
 		Map<String, String> externalGrammarLocation = document.getExternalGrammarLocation();
 		if (externalGrammarLocation != null
 				&& externalGrammarLocation.containsKey(IExternalGrammarLocationProvider.DOCTYPE)) {
@@ -343,10 +349,39 @@ public class XMLValidator {
 		}
 		DOMDocumentType docType = document.getDoctype();
 		if (docType.getKindNode() != null) {
-			return false;
+			return !isDTDValidationEnabled(document, validationSettings);
 		}
 		// Disable the DTD validation only if there are not <!ELEMENT or an <!ATTRLIST
 		return !docType.getChildren().stream().anyMatch(node -> node.isDTDElementDecl() || node.isDTDAttListDecl());
+	}
+
+	private static boolean isValidDTDLocation(DOMDocument document) {
+		DOMDocumentType docType = document.getDoctype();
+		if (docType == null) {
+			return false;
+		}
+		return isValidLocation(document.getDocumentURI(), docType.getPublicId());
+	}
+
+	private static boolean isDTDValidationEnabled(DOMDocument document, XMLValidationSettings validationSettings) {
+		if (validationSettings == null) {
+			return true;
+		}
+		DTDEnabled enabled = DTDEnabled.always;
+		XMLDTDSettings dtdSettings = validationSettings.getDtd();
+		if (dtdSettings != null && dtdSettings.getEnabled() != null) {
+			enabled = dtdSettings.getEnabled();
+		}
+		switch (enabled) {
+			case always:
+				return true;
+			case never:
+				return false;
+			case onValidDTD:
+				return isValidDTDLocation(document);
+			default:
+				return true;
+		}
 	}
 
 	/**
