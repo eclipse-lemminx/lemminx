@@ -26,7 +26,6 @@ import org.eclipse.lemminx.extensions.contentmodel.participants.ExternalResource
 import org.eclipse.lemminx.extensions.contentmodel.participants.XMLSchemaErrorCode;
 import org.eclipse.lemminx.extensions.contentmodel.participants.codeactions.DownloadDisabledResourceCodeAction;
 import org.eclipse.lemminx.extensions.contentmodel.settings.XMLValidationRootSettings;
-import org.eclipse.lemminx.extensions.contentmodel.settings.XMLValidationRootSettings;
 import org.eclipse.lemminx.services.XMLLanguageService;
 import org.eclipse.lemminx.uriresolver.CacheResourcesManager;
 import org.eclipse.lsp4j.Diagnostic;
@@ -91,7 +90,7 @@ public class XMLValidationExternalResourcesBasedOnXSDTest extends AbstractCacheB
 		String xsdCachePath = CacheResourcesManager.getResourceCachePath("http://localhost:8080/sample.xsd").toString();
 		String fileURI = "test.xml";
 		// Downloading...
-		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls, pd(fileURI,
+		XMLAssert.testPublishDiagnosticsFor(TimeUnit.SECONDS.toMillis(5), xml, fileURI, validation, ls, pd(fileURI,
 				new Diagnostic(r(2, 32, 2, 64),
 						"The resource 'http://localhost:8080/sample.xsd' is downloading in the cache path '"
 								+ xsdCachePath + "'.",
@@ -99,10 +98,9 @@ public class XMLValidationExternalResourcesBasedOnXSDTest extends AbstractCacheB
 				new Diagnostic(r(0, 1, 0, 13), "cvc-elt.1.a: Cannot find the declaration of element 'root-element'.",
 						DiagnosticSeverity.Error, "xml", XMLSchemaErrorCode.cvc_elt_1_a.getCode())));
 
-		TimeUnit.SECONDS.sleep(5); // HACK: to make the timing work on slow machines
 
 		// Downloaded error
-		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls, pd(fileURI,
+		XMLAssert.testPublishDiagnosticsFor(TimeUnit.SECONDS.toMillis(5), xml, fileURI, validation, ls, pd(fileURI,
 				new Diagnostic(r(2, 32, 2, 64),
 						"Error while downloading 'http://localhost:8080/sample.xsd' to '" + xsdCachePath
 								+ "' : '[java.net.ConnectException] Connection refused'.",
@@ -165,7 +163,7 @@ public class XMLValidationExternalResourcesBasedOnXSDTest extends AbstractCacheB
 		String xsdCachePath = CacheResourcesManager.getResourceCachePath("http://localhost:8080/sample.xsd").toString();
 		String fileURI = "test.xml";
 		// Downloading...
-		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls, pd(fileURI,
+		XMLAssert.testPublishDiagnosticsFor(TimeUnit.SECONDS.toMillis(5), xml, fileURI, validation, ls, pd(fileURI,
 				new Diagnostic(r(3, 37, 3, 69),
 						"The resource 'http://localhost:8080/sample.xsd' is downloading in the cache path '"
 								+ xsdCachePath + "'.",
@@ -173,10 +171,8 @@ public class XMLValidationExternalResourcesBasedOnXSDTest extends AbstractCacheB
 				new Diagnostic(r(0, 1, 0, 13), "cvc-elt.1.a: Cannot find the declaration of element 'root-element'.",
 						DiagnosticSeverity.Error, "xml", XMLSchemaErrorCode.cvc_elt_1_a.getCode())));
 
-		TimeUnit.SECONDS.sleep(5); // HACK: to make the timing work on slow machines
-
 		// Downloaded error
-		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls, pd(fileURI,
+		XMLAssert.testPublishDiagnosticsFor(TimeUnit.SECONDS.toMillis(5), xml, fileURI, validation, ls, pd(fileURI,
 				new Diagnostic(r(3, 37, 3, 69),
 						"Error while downloading 'http://localhost:8080/sample.xsd' to '" + xsdCachePath
 								+ "' : '[java.net.ConnectException] Connection refused'.",

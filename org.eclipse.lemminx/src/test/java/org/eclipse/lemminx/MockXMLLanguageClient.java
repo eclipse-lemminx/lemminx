@@ -14,6 +14,7 @@ package org.eclipse.lemminx;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.lemminx.customservice.ActionableNotification;
 import org.eclipse.lemminx.customservice.XMLLanguageClientAPI;
@@ -43,7 +44,7 @@ public class MockXMLLanguageClient implements XMLLanguageClientAPI {
 	private final List<MessageParams> logMessages;
 
 	public MockXMLLanguageClient() {
-		publishDiagnostics = new ArrayList<>();
+		publishDiagnostics = new CopyOnWriteArrayList<>();
 		showMessages = new ArrayList<>();
 		logMessages = new ArrayList<>();
 		actionableNotifications = new ArrayList<>();
