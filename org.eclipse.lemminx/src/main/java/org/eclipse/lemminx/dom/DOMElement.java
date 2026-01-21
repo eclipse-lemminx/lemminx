@@ -34,7 +34,7 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 
 	String tag;
 	boolean selfClosed;
-
+	
 	// DomElement.start == startTagOpenOffset
 	int startTagOpenOffset = NULL_VALUE; // |<root>
 	int startTagCloseOffset = NULL_VALUE; // <root |>
@@ -519,8 +519,8 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	}
 
 	@Override
-	public String getAttributeNS(String arg0, String arg1) throws DOMException {
-		return null;
+	public String getAttributeNS(String namespace, String name) throws DOMException {
+		return this.getAttribute(namespace, name);
 	}
 
 	@Override
@@ -529,67 +529,85 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	}
 
 	@Override
-	public DOMAttr getAttributeNodeNS(String arg0, String arg1) throws DOMException {
-		return null;
+	public DOMAttr getAttributeNodeNS(String namespace, String name) throws DOMException {
+		return super.getAttributeNode(namespace, name);
 	}
 
 	@Override
 	public NodeList getElementsByTagName(String arg0) {
-		return null;
+		throw new DOMException(DOMException.NOT_SUPPORTED_ERR, this.getImplementationError());
 	}
 
 	@Override
 	public NodeList getElementsByTagNameNS(String arg0, String arg1) throws DOMException {
-		return null;
+		throw new DOMException(DOMException.NOT_SUPPORTED_ERR, this.getImplementationError());
 	}
 
 	@Override
 	public TypeInfo getSchemaTypeInfo() {
-		return null;
+		throw new DOMException(DOMException.NOT_SUPPORTED_ERR, this.getImplementationError());
 	}
 
 	@Override
-	public boolean hasAttributeNS(String arg0, String arg1) throws DOMException {
-		return false;
+	public boolean hasAttributeNS(String namespace, String name) throws DOMException {
+		return this.getAttributeNS(namespace, name) != null;
 	}
 
 	@Override
-	public void removeAttribute(String arg0) throws DOMException {
+	public void removeAttribute(String name) throws DOMException {
+		this.removeAttributeNS(null, name);
 	}
 
 	@Override
-	public void removeAttributeNS(String arg0, String arg1) throws DOMException {
+	public void removeAttributeNS(String namespace, String name) throws DOMException {
+		List<DOMAttr> nodes = this.getAttributeNodes();
+		if (nodes == null || nodes.isEmpty()) return;
+		DOMAttr node = this.getAttributeNode(namespace, name);
+		if (node == null) return;
+		nodes.remove(node);
 	}
 
 	@Override
 	public DOMAttr removeAttributeNode(org.w3c.dom.Attr arg0) throws DOMException {
-		return null;
+		throw new DOMException(DOMException.NOT_SUPPORTED_ERR, this.getImplementationError());
 	}
 
 	@Override
-	public void setAttributeNS(String arg0, String arg1, String arg2) throws DOMException {
+	public void setAttributeNS(String namespace, String name, String value) throws DOMException {
+		if (namespace != null) {
+			if (namespace.isBlank()) throw new DOMException(DOMException.NAMESPACE_ERR, "set namespace to <null> if you want no namespace");
+			throw new DOMException(DOMException.NOT_SUPPORTED_ERR, "this implementation does now allow namespaces for setAttribute yet");			
+		}
+		this.setAttribute(name, value);
 	}
 
 	@Override
 	public DOMAttr setAttributeNode(org.w3c.dom.Attr arg0) throws DOMException {
-		return null;
+		throw new DOMException(DOMException.NOT_SUPPORTED_ERR, this.getImplementationError());
 	}
 
 	@Override
 	public DOMAttr setAttributeNodeNS(org.w3c.dom.Attr arg0) throws DOMException {
-		return null;
+		throw new DOMException(DOMException.NOT_SUPPORTED_ERR, this.getImplementationError());
 	}
 
 	@Override
 	public void setIdAttribute(String arg0, boolean arg1) throws DOMException {
+		throw new DOMException(DOMException.NOT_SUPPORTED_ERR, this.getImplementationError());
 	}
 
 	@Override
 	public void setIdAttributeNS(String arg0, String arg1, boolean arg2) throws DOMException {
+		throw new DOMException(DOMException.NOT_SUPPORTED_ERR, this.getImplementationError());
 	}
 
 	@Override
 	public void setIdAttributeNode(org.w3c.dom.Attr arg0, boolean arg1) throws DOMException {
+		throw new DOMException(DOMException.NOT_SUPPORTED_ERR, this.getImplementationError());
+	}
+	
+	private String getImplementationError() {
+		return this.getClass() + " is no full implementation of " + org.w3c.dom.Element.class; 
 	}
 
 	/**
