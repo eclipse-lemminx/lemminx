@@ -81,14 +81,16 @@ public class XMLValidationExternalResourcesBasedOnXSDTest extends AbstractCacheB
 		validation.setResolveExternalEntities(true);
 
 		XMLLanguageService ls = new XMLLanguageService();
-
+		ls.setRetriggerValidationWhenDownloadError(false);
+		
 		String xml = "<root-element\r\n" + //
 				"	xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
 				"	xsi:noNamespaceSchemaLocation=\"http://localhost:8080/sample.xsd\">\r\n" + //
 				"	\r\n" + //
 				"</root-element>";
 
-		String xsdCachePath = CacheResourcesManager.getResourceCachePath("http://localhost:8080/sample.xsd").toString();
+		String resourceUri = "http://localhost:8080/sample.xsd";
+		String xsdCachePath = CacheResourcesManager.getResourceCachePath(resourceUri).toString();
 		String fileURI = "test.xml";
 		// Downloading...
 		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls, pd(fileURI,
@@ -99,7 +101,8 @@ public class XMLValidationExternalResourcesBasedOnXSDTest extends AbstractCacheB
 				new Diagnostic(r(0, 1, 0, 13), "cvc-elt.1.a: Cannot find the declaration of element 'root-element'.",
 						DiagnosticSeverity.Error, "xml", XMLSchemaErrorCode.cvc_elt_1_a.getCode())));
 
-		TimeUnit.SECONDS.sleep(5); // HACK: to make the timing work on slow machines
+		ContentModelManager contentModelManager = ls.getComponent(ContentModelManager.class);
+		contentModelManager.waitForDownload(resourceUri);
 
 		// Downloaded error
 		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls, pd(fileURI,
@@ -154,7 +157,8 @@ public class XMLValidationExternalResourcesBasedOnXSDTest extends AbstractCacheB
 		validation.setResolveExternalEntities(true);
 
 		XMLLanguageService ls = new XMLLanguageService();
-
+		ls.setRetriggerValidationWhenDownloadError(false);
+		
 		String xml = "<root-element xmlns=\"https://github.com/eclipse/lemminx\"\r\n" + //
 				"	xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
 				"	xsi:schemaLocation=\"\r\n" + //
@@ -162,7 +166,8 @@ public class XMLValidationExternalResourcesBasedOnXSDTest extends AbstractCacheB
 				"	\r\n" + //
 				"</root-element>";
 
-		String xsdCachePath = CacheResourcesManager.getResourceCachePath("http://localhost:8080/sample.xsd").toString();
+		String resourceUri = "http://localhost:8080/sample.xsd";
+		String xsdCachePath = CacheResourcesManager.getResourceCachePath(resourceUri).toString();
 		String fileURI = "test.xml";
 		// Downloading...
 		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls, pd(fileURI,
@@ -173,7 +178,8 @@ public class XMLValidationExternalResourcesBasedOnXSDTest extends AbstractCacheB
 				new Diagnostic(r(0, 1, 0, 13), "cvc-elt.1.a: Cannot find the declaration of element 'root-element'.",
 						DiagnosticSeverity.Error, "xml", XMLSchemaErrorCode.cvc_elt_1_a.getCode())));
 
-		TimeUnit.SECONDS.sleep(5); // HACK: to make the timing work on slow machines
+		ContentModelManager contentModelManager = ls.getComponent(ContentModelManager.class);
+		contentModelManager.waitForDownload(resourceUri);
 
 		// Downloaded error
 		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls, pd(fileURI,

@@ -172,4 +172,8 @@ public class XMLCacheResolverExtension implements URIResolverExtension {
 	public void forceDownloadExternalResource(String url) {
 		cacheResourcesManager.forceDownloadExternalResource(url);
 	}
+
+	public void waitForDownload(String resourceUri) {
+		cacheResourcesManager.waitForDownload(resourceUri);
+	}
 }
