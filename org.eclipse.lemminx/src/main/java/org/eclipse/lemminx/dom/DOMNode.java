@@ -65,7 +65,7 @@ public abstract class DOMNode implements Node, DOMRange {
 	private XMLNamedNodeMap<DOMAttr> attributeNodes;
 	private XMLNodeList<DOMNode> children;
 
-	final int start; // |<root> </root>
+	int start; // |<root> </root>
 	int end; // <root> </root>|
 
 	DOMNode parent;
