@@ -233,11 +233,26 @@ public abstract class DOMCharacterData extends DOMNode implements org.w3c.dom.Ch
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see org.w3c.dom.CharacterData#substringData(int, int)
 	 */
 	@Override
 	public String substringData(int offset, int count) throws DOMException {
 		throw new UnsupportedOperationException();
+	}
+
+	/**
+	 * Clear cached data when the node content changes during incremental parsing.
+	 * This forces the node to reload its content from the updated document.
+	 *
+	 * Note: isWhitespace is intentionally NOT cleared here because it's set during
+	 * parsing based on the node's structure, not derived from the text content.
+	 * The parser will update this flag if needed when reparsing.
+	 */
+	public void clearCache() {
+		this.data = null;
+		this.normalizedData = null;
+		this.delimiter = null;
+		// Note: isWhitespace is not cleared - it's set by the parser, not derived from content
 	}
 }

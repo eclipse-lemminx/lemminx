@@ -1243,7 +1243,7 @@ public class TreeLineTracker implements ILineTracker {
 		int endLineOffset = lineOffset + lineLength;
 		if (offset > endLineOffset) {
 			throw new BadLocationException(
-					"The character value, {" + character + "} of the line" + line + "}, is out of bounds.");
+					"The character value, {" + character + "} of the line {" + line + "}, is out of bounds.");
 		}
 		return offset;
 

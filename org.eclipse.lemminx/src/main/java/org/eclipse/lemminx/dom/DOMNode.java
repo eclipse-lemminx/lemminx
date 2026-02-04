@@ -68,6 +68,12 @@ public abstract class DOMNode implements Node, DOMRange {
 	int start; // |<root> </root>
 	int end; // <root> </root>|
 
+	/**
+	 * Index of this node in parent's children list. -1 if not set or if this is a
+	 * root node.
+	 */
+	int indexInParent = -1;
+
 	DOMNode parent;
 
 	private static final NodeList EMPTY_CHILDREN = new NodeList() {
@@ -191,6 +197,41 @@ public abstract class DOMNode implements Node, DOMRange {
 		result.append(getNodeName());
 		result.append(", closed: ");
 		result.append(closed);
+		
+		// Add attributes if this is an element with attributes
+		if (this instanceof DOMElement && hasAttributes()) {
+			result.append(", \n");
+			for (int i = 0; i < indent + 1; i++) {
+				result.append("\t");
+			}
+			result.append("attributes:[");
+			List<DOMAttr> attrs = ((DOMElement) this).getAttributeNodes();
+			for (int i = 0; i < attrs.size(); i++) {
+				DOMAttr attr = attrs.get(i);
+				result.append("\n");
+				for (int j = 0; j < indent + 2; j++) {
+					result.append("\t");
+				}
+				result.append("{name: ");
+				result.append(attr.getName());
+				result.append(", start: ");
+				result.append(attr.getStart());
+				result.append(", end: ");
+				result.append(attr.getEnd());
+				result.append(", value: \"");
+				result.append(attr.getValue());
+				result.append("\"}");
+				if (i < attrs.size() - 1) {
+					result.append(",");
+				}
+			}
+			result.append("\n");
+			for (int i = 0; i < indent + 1; i++) {
+				result.append("\t");
+			}
+			result.append("]");
+		}
+		
 		if (children != null && children.size() > 0) {
 			result.append(", \n");
 			for (int i = 0; i < indent + 1; i++) {
@@ -497,7 +538,39 @@ public abstract class DOMNode implements Node, DOMRange {
 		if (children == null) {
 			children = new XMLNodeList<>();
 		}
-		getChildren().add(child);
+		// Set the index
+		child.indexInParent = children.size();
+		children.add(child);
+	}
+
+	/**
+	 * Replace a child node at the given index and update indices
+	 */
+	protected void replaceChildAt(int index, DOMNode newChild) {
+		if (children == null || index < 0 || index >= children.size()) {
+			return;
+		}
+
+		// Set new child's parent and index
+		newChild.parent = this;
+		newChild.indexInParent = index;
+
+		// Replace in list
+		children.set(index, newChild);
+	}
+
+	/**
+	 * Clear all children and invalidate their indices
+	 */
+	protected void clearChildren() {
+		if (children != null) {
+			// Invalidate indices of removed children
+			for (DOMNode child : children) {
+				child.indexInParent = -1;
+				child.parent = null;
+			}
+			children.clear();
+		}
 	}
 
 	/**
@@ -727,11 +800,11 @@ public abstract class DOMNode implements Node, DOMRange {
 	@Override
 	public DOMNode getNextSibling() {
 		DOMNode parentNode = getParentNode();
-		if (parentNode == null) {
+		if (parentNode == null || indexInParent < 0) {
 			return null;
 		}
 		List<DOMNode> children = parentNode.getChildren();
-		int nextIndex = children.indexOf(this) + 1;
+		int nextIndex = indexInParent + 1;
 		return nextIndex < children.size() ? children.get(nextIndex) : null;
 	}
 
@@ -751,15 +824,14 @@ public abstract class DOMNode implements Node, DOMRange {
 	 * @see org.w3c.dom.Node#getPreviousSibling()
 	 */
 	@Override
-	public DOMNode getPreviousSibling() {
-		DOMNode parentNode = getParentNode();
-		if (parentNode == null) {
-			return null;
-		}
-		List<DOMNode> children = parentNode.getChildren();
-		int previousIndex = children.indexOf(this) - 1;
-		return previousIndex >= 0 ? children.get(previousIndex) : null;
-	}
+    public DOMNode getPreviousSibling() {
+        DOMNode parentNode = getParentNode();
+        if (parentNode == null || indexInParent < 0) {
+            return null;
+        }
+        int previousIndex = indexInParent - 1;
+        return previousIndex >= 0 ? parentNode.getChildren().get(previousIndex) : null;
+    }
 
 	public DOMNode getPreviousNonTextSibling() {
 		DOMNode prev = getPreviousSibling();
@@ -776,8 +848,7 @@ public abstract class DOMNode implements Node, DOMRange {
 	 * The following sample sample with tagName=foo will returns the <\foo> orphan
 	 * end element:
 	 * <p>
-	 * |
-	 * <\foo>
+	 * | <\foo>
 	 * </p>
 	 * 
 	 * @param offset  the offset.
@@ -797,8 +868,7 @@ public abstract class DOMNode implements Node, DOMRange {
 	 * The following sample sample with tagName=bar will returns the <\foo> orphan
 	 * end element:
 	 * <p>
-	 * |
-	 * <\foo>
+	 * | <\foo>
 	 * </p>
 	 * 
 	 * @param offset    the offset.

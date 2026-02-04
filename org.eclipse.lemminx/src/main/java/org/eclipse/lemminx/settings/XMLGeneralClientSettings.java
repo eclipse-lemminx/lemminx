@@ -17,8 +17,8 @@ import org.eclipse.lemminx.utils.JSONUtility;
 /**
  * Class to hold all settings from the client side.
  *
- * See https://github.com/eclipse/lemminx/blob/main/docs/Configuration.md for more
- * information.
+ * See https://github.com/eclipse/lemminx/blob/main/docs/Configuration.md for
+ * more information.
  *
  * This class is created through the deseralization of a JSON object. Each
  * internal setting must be represented by a class and have:
@@ -54,7 +54,9 @@ public class XMLGeneralClientSettings {
 	private XMLTelemetrySettings telemetry;
 
 	private boolean linkedEditingEnabled;
-	
+
+	private XMLIncrementalParserSettings incrementalParser;
+
 	public void setLogs(LogsSettings logs) {
 		this.logs = logs;
 	}
@@ -146,11 +148,11 @@ public class XMLGeneralClientSettings {
 	public void setLinkedEditingEnabled(boolean linkedEditingEnabled) {
 		this.linkedEditingEnabled = linkedEditingEnabled;
 	}
-	
+
 	public boolean isLinkedEditingEnabled() {
 		return linkedEditingEnabled;
 	}
-	
+
 	/**
 	 * Returns the XML preferences
 	 *
@@ -205,15 +207,24 @@ public class XMLGeneralClientSettings {
 		this.telemetry = telemetry;
 	}
 
+	public void setIncrementalParser(XMLIncrementalParserSettings incrementalParser) {
+		this.incrementalParser = incrementalParser;
+	}
+
+	public XMLIncrementalParserSettings getIncrementalParser() {
+		return incrementalParser;
+	}
+
 	/**
-	 * Returns a new instance of <code>XMLGeneralClientSettings</code>
-	 * with contents from <code>initializationOptionsSettings</code>
+	 * Returns a new instance of <code>XMLGeneralClientSettings</code> with contents
+	 * from <code>initializationOptionsSettings</code>
 	 *
 	 * @param initializationOptionsSettings
-	 * @return a new instance of <code>XMLGeneralClientSettings</code>
-	 * with contents from <code>initializationOptionsSettings</code>
+	 * @return a new instance of <code>XMLGeneralClientSettings</code> with contents
+	 *         from <code>initializationOptionsSettings</code>
 	 */
 	public static XMLGeneralClientSettings getGeneralXMLSettings(Object initializationOptionsSettings) {
 		return JSONUtility.toModel(initializationOptionsSettings, XMLGeneralClientSettings.class);
 	}
+
 }

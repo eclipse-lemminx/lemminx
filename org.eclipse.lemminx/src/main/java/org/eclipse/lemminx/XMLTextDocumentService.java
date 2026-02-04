@@ -36,8 +36,11 @@ import org.eclipse.lemminx.commons.ModelTextDocument;
 import org.eclipse.lemminx.commons.ModelTextDocuments;
 import org.eclipse.lemminx.commons.ModelValidatorDelayer;
 import org.eclipse.lemminx.commons.TextDocument;
+import org.eclipse.lemminx.commons.TextDocumentChange;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMParser;
+import org.eclipse.lemminx.dom.IncrementalDOMParser;
+import org.eclipse.lemminx.dom.IncrementalDOMParserTestGenerator;
 import org.eclipse.lemminx.extensions.contentmodel.settings.XMLValidationRootSettings;
 import org.eclipse.lemminx.services.DocumentSymbolsResult;
 import org.eclipse.lemminx.services.SymbolInformationResult;
@@ -50,6 +53,7 @@ import org.eclipse.lemminx.settings.XMLCodeLensSettings;
 import org.eclipse.lemminx.settings.XMLCompletionSettings;
 import org.eclipse.lemminx.settings.XMLFoldingSettings;
 import org.eclipse.lemminx.settings.XMLFormattingOptions;
+import org.eclipse.lemminx.settings.XMLIncrementalParserSettings;
 import org.eclipse.lemminx.settings.XMLPreferences;
 import org.eclipse.lemminx.settings.XMLSymbolSettings;
 import org.eclipse.lemminx.utils.XMLPositionUtility;
@@ -127,7 +131,7 @@ public class XMLTextDocumentService implements TextDocumentService {
 
 	private SharedSettings sharedSettings;
 	private LimitExceededWarner limitExceededWarner;
-
+	
 	/**
 	 * Enumeration for Validation triggered by.
 	 *
@@ -194,12 +198,30 @@ public class XMLTextDocumentService implements TextDocumentService {
 
 	private Boolean clientConfigurationSupport;
 
+	private XMLIncrementalParserSettings incrementalParser;
+
 	public XMLTextDocumentService(XMLLanguageServer xmlLanguageServer) {
 		this.xmlLanguageServer = xmlLanguageServer;
 		DOMParser parser = DOMParser.getInstance();
 		this.documents = new ModelTextDocuments<DOMDocument>((document, cancelChecker) -> {
 			return parser.parse(document, getXMLLanguageService().getResolverExtensionManager(), true, cancelChecker);
-		});
+		}, //
+				(document, changes, oldText) -> {
+					IncrementalDOMParser p = IncrementalDOMParser.getInstance();
+					p.parseIncremental(document, changes);
+					
+					String generateTestWhen = incrementalParser != null ? incrementalParser.getGenerateTestWhen() : null;
+					if (generateTestWhen != null) {
+						if ("always".equals(generateTestWhen)) {
+							generateTest(document, changes, oldText);
+						} else if ("error".equals(generateTestWhen)) {
+							DOMDocument newDoc = parser.parse(document.getTextDocument(), getXMLLanguageService().getResolverExtensionManager(), true, () -> {});
+							if (!newDoc.toString().equals(document.toString())) {
+								generateTest(document, changes, oldText);
+							}
+						}
+					}					
+				});
 		this.sharedSettings = new SharedSettings();
 		this.limitExceededWarner = null;
 		this.xmlValidatorDelayer = new ModelValidatorDelayer<DOMDocument>((document) -> {
@@ -217,6 +239,20 @@ public class XMLTextDocumentService implements TextDocumentService {
 		});
 	}
 
+
+	private void generateTest(DOMDocument document, List<TextDocumentChange> changes, String oldText) {
+		IncrementalDOMParserTestGenerator.getInstance().generateTest(document, changes, oldText);
+	}
+
+	public void setIncrementalParsing(boolean incrementalParsing) {
+		this.documents.setIncrementalModel(incrementalParsing);
+	}
+	
+	public void setIncrementalParserSettings(XMLIncrementalParserSettings incrementalParser) {
+		this.incrementalParser = incrementalParser;
+		this.documents.setIncrementalModel(incrementalParser != null ? incrementalParser.isEnabled() : false);
+	}
+	
 	public void updateClientCapabilities(ClientCapabilities capabilities,
 			ExtendedClientCapabilities extendedClientCapabilities) {
 		if (capabilities != null) {
@@ -719,8 +755,7 @@ public class XMLTextDocumentService implements TextDocumentService {
 		cancelChecker.checkCanceled();
 		getXMLLanguageService().publishDiagnostics(xmlDocument,
 				params -> xmlLanguageServer.getLanguageClient().publishDiagnostics(params),
-				(doc) -> triggerValidationFor(doc, TriggeredBy.Other),
-				sharedSettings.getValidationSettings(),
+				(doc) -> triggerValidationFor(doc, TriggeredBy.Other), sharedSettings.getValidationSettings(),
 				validationArgs, cancelChecker);
 	}
 
@@ -827,4 +862,5 @@ public class XMLTextDocumentService implements TextDocumentService {
 		}
 		return this.limitExceededWarner;
 	}
+
 }

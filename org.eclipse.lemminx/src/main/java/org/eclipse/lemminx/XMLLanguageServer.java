@@ -50,6 +50,7 @@ import org.eclipse.lemminx.settings.XMLCompletionSettings;
 import org.eclipse.lemminx.settings.XMLFoldingSettings;
 import org.eclipse.lemminx.settings.XMLFormattingOptions;
 import org.eclipse.lemminx.settings.XMLGeneralClientSettings;
+import org.eclipse.lemminx.settings.XMLIncrementalParserSettings;
 import org.eclipse.lemminx.settings.XMLPreferences;
 import org.eclipse.lemminx.settings.XMLSymbolSettings;
 import org.eclipse.lemminx.settings.XMLTelemetrySettings;
@@ -225,6 +226,9 @@ public class XMLLanguageServer implements ProcessLanguageServer, XMLLanguageServ
 				String workDir = serverSettings.getNormalizedWorkDir();
 				FilesUtils.setCachePathSetting(workDir);
 			}
+			
+			XMLIncrementalParserSettings incrementalParserSettings = xmlClientSettings.getIncrementalParser();			
+			xmlTextDocumentService.setIncrementalParserSettings(incrementalParserSettings);
 		}
 		ContentModelSettings cmSettings = ContentModelSettings.getContentModelXMLSettings(initSettings);
 		if (cmSettings != null) {

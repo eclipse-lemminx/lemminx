@@ -67,6 +67,7 @@ public class DOMParser {
 
 	public DOMDocument parse(TextDocument document, URIResolverExtensionManager resolverExtensionManager,
 			boolean ignoreWhitespaceContent, CancelChecker monitor) {
+
 		boolean isDTD = DOMUtils.isDTD(document.getUri());
 		boolean inDTDInternalSubset = false;
 		String text = document.getText();
@@ -129,152 +130,738 @@ public class DOMParser {
 				}
 			}
 			switch (token) {
+			case StartTagOpen: {
+				if (!curr.isClosed() && curr.parent != null) {
+					// The next node's parent (curr) is not closed at this point
+					// so the node's parent (curr) will have its end position updated
+					// to a newer end position.
+					curr.end = scanner.getTokenOffset();
+				}
+				if ((curr.isClosed()) || curr.isDoctype()) {
+					// The next node being considered is a child of 'curr'
+					// and if 'curr' is already closed then 'curr' was not updated properly.
+					// Or if we get a Doctype node then we know it was not closed and 'curr'
+					// wasn't updated properly.
+					curr = curr.parent;
+					inDTDInternalSubset = false; // In case it was previously in the internal subset
+				}
+				DOMElement child = xmlDocument.createElement(scanner.getTokenOffset(), scanner.getTokenEnd());
+				child.startTagOpenOffset = scanner.getTokenOffset();
+				curr.addChild(child);
+				curr = child;
+				break;
+			}
+
+			case StartTag: {
+				DOMElement element = (DOMElement) curr;
+				element.tag = scanner.getTokenText();
+				curr.end = scanner.getTokenEnd();
+				break;
+			}
+
+			case StartTagClose:
+				if (curr.isElement()) {
+					DOMElement element = (DOMElement) curr;
+					curr.end = scanner.getTokenEnd(); // might be later set to end tag position
+					element.startTagCloseOffset = scanner.getTokenOffset();
+
+					// never enters isEmptyElement() is always false
+					if (element.hasTagName() && isEmptyElement(element.getTagName()) && curr.parent != null) {
+						curr.closed = true;
+						curr = curr.parent;
+					}
+				} else if (curr.isProcessingInstruction() || curr.isProlog()) {
+					DOMProcessingInstruction element = (DOMProcessingInstruction) curr;
+					curr.end = scanner.getTokenEnd(); // might be later set to end tag position
+					element.startTagClose = true;
+					if (element.getTarget() != null && isEmptyElement(element.getTarget()) && curr.parent != null) {
+						curr.closed = true;
+						curr = curr.parent;
+					}
+				}
+				curr.end = scanner.getTokenEnd();
+				break;
+
+			case EndTagOpen:
+				endTagOpenOffset = scanner.getTokenOffset();
+				curr.end = scanner.getTokenOffset();
+				previousTokenWasEndTagOpen = true;
+				break;
+
+			case EndTag:
+				// end tag (ex: </root>)
+				String closeTag = scanner.getTokenText();
+				
+				// Add temp whitespace content only if the closing tag matches the current element
+				if (tempWhitespaceContent != null) {
+					if (curr.isElement() && ((DOMElement) curr).isSameTag(closeTag)) {
+						// Closing tag matches current element - add the whitespace
+						curr.addChild(tempWhitespaceContent);
+					}
+					// Clear temp whitespace in all cases
+					tempWhitespaceContent = null;
+				}
+				DOMNode current = curr;
+
+				/**
+				 * eg: <a><b><c></d> will set a,b,c end position to the start of |</d>
+				 */
+				while (!(curr.isElement() && ((DOMElement) curr).isSameTag(closeTag)) && curr.parent != null) {
+					curr.end = endTagOpenOffset;
+					curr = curr.parent;
+				}
+				if (curr != xmlDocument) {
+					curr.closed = true;
+					if (curr.isElement()) {
+						((DOMElement) curr).endTagOpenOffset = endTagOpenOffset;
+					} else if (curr.isProcessingInstruction() || curr.isProlog()) {
+						((DOMProcessingInstruction) curr).endTagOpenOffset = endTagOpenOffset;
+					}
+					curr.end = scanner.getTokenEnd();
+				} else {
+					// element open tag not found (ex: <root>) add a fake element which only has an
+					// end tag (no start tag).
+					DOMElement element = xmlDocument.createElement(scanner.getTokenOffset() - 2, scanner.getTokenEnd());
+					element.endTagOpenOffset = endTagOpenOffset;
+					element.tag = closeTag;
+					current.addChild(element);
+					curr = element;
+				}
+				break;
+
+			case StartTagSelfClose:
+				if (curr.parent != null) {
+					curr.closed = true;
+					((DOMElement) curr).selfClosed = true;
+					curr.end = scanner.getTokenEnd();
+					lastClosed = curr;
+					curr = curr.parent;
+				}
+				break;
+
+			case EndTagClose:
+				if (curr.parent != null) {
+					curr.end = scanner.getTokenEnd();
+					lastClosed = curr;
+					if (lastClosed.isElement()) {
+						((DOMElement) curr).endTagCloseOffset = scanner.getTokenOffset();
+					}
+					if (curr.isDoctype()) {
+						curr.closed = true;
+					}
+					curr = curr.parent;
+
+				}
+				break;
+
+			case AttributeName: {
+				attr = new DOMAttr(null, scanner.getTokenOffset(), scanner.getTokenEnd(), curr);
+				curr.setAttributeNode(attr);
+				curr.end = scanner.getTokenEnd();
+				break;
+			}
+
+			case DelimiterAssign: {
+				if (attr != null) {
+					// Sets the value to the '=' position in case there is no AttributeValue
+					attr.setDelimiter(scanner.getTokenOffset());
+				}
+				break;
+			}
+
+			case AttributeValue: {
+				if (curr.hasAttributes() && attr != null) {
+					attr.setValue(null, scanner.getTokenOffset(), scanner.getTokenEnd());
+				}
+				attr = null;
+				curr.end = scanner.getTokenEnd();
+				break;
+			}
+
+			case CDATATagOpen: {
+				DOMCDATASection cdataNode = xmlDocument.createCDataSection(scanner.getTokenOffset(), text.length());
+				curr.addChild(cdataNode);
+				curr = cdataNode;
+				break;
+			}
+
+			case CDATAContent: {
+				DOMCDATASection cdataNode = (DOMCDATASection) curr;
+				cdataNode.startContent = scanner.getTokenOffset();
+				cdataNode.endContent = scanner.getTokenEnd();
+				curr.end = scanner.getTokenEnd();
+				break;
+			}
+
+			case CDATATagClose: {
+				curr.end = scanner.getTokenEnd();
+				curr.closed = true;
+				curr = curr.parent;
+				break;
+			}
+
+			case StartPrologOrPI: {
+				DOMProcessingInstruction prologOrPINode = xmlDocument
+						.createProcessingInstruction(scanner.getTokenOffset(), text.length());
+				curr.addChild(prologOrPINode);
+				curr = prologOrPINode;
+				break;
+			}
+
+			case PIName: {
+				DOMProcessingInstruction processingInstruction = ((DOMProcessingInstruction) curr);
+				processingInstruction.target = scanner.getTokenText();
+				processingInstruction.processingInstruction = true;
+				break;
+			}
+
+			case PrologName: {
+				DOMProcessingInstruction processingInstruction = ((DOMProcessingInstruction) curr);
+				processingInstruction.target = scanner.getTokenText();
+				processingInstruction.prolog = true;
+				break;
+			}
+
+			case PIContent: {
+				DOMProcessingInstruction processingInstruction = (DOMProcessingInstruction) curr;
+				processingInstruction.startContent = scanner.getTokenOffset();
+				processingInstruction.endContent = scanner.getTokenEnd();
+				break;
+			}
+
+			case PIEnd:
+			case PrologEnd: {
+				curr.end = scanner.getTokenEnd();
+				curr.closed = true;
+				curr = curr.parent;
+				break;
+			}
+
+			case StartCommentTag: {
+				// Incase the tag before the comment tag (curr) was not properly closed
+				// curr should be set to the root node.
+				if (xmlDocument.isDTD() || inDTDInternalSubset) {
+					while (!curr.isDoctype()) {
+						curr = curr.parent;
+					}
+				} else if ((curr.isClosed())) {
+					curr = curr.parent;
+				}
+				DOMComment comment = xmlDocument.createComment(scanner.getTokenOffset(), text.length());
+				curr.addChild(comment);
+				curr = comment;
+				try {
+					int endLine = document.positionAt(lastClosed.end).getLine();
+					int startLine = document.positionAt(curr.start).getLine();
+					if (endLine == startLine && lastClosed.end <= curr.start) {
+						comment.commentSameLineEndTag = true;
+					}
+				} catch (BadLocationException e) {
+					LOGGER.log(Level.SEVERE, "XMLParser StartCommentTag bad offset in document", e);
+				}
+				break;
+			}
+
+			case Comment: {
+				DOMComment comment = (DOMComment) curr;
+				comment.startContent = scanner.getTokenOffset();
+				comment.endContent = scanner.getTokenEnd();
+				break;
+			}
+
+			case EndCommentTag: {
+				curr.end = scanner.getTokenEnd();
+				curr.closed = true;
+				curr = curr.parent;
+				break;
+			}
+
+			case Content: {
+				boolean currIsDeclNode = curr instanceof DTDDeclNode;
+				if (currIsDeclNode) {
+					curr.end = scanner.getTokenOffset() - 1;
+					while (!curr.isDoctype()) {
+						curr = curr.getParentNode();
+					}
+				}
+				int start = scanner.getTokenOffset();
+				int end = scanner.getTokenEnd();
+				DOMText textNode = xmlDocument.createText(start, end);
+				textNode.closed = true;
+
+				if (scanner.isTokenTextBlank()) {
+					if (ignoreWhitespaceContent) {
+						if (curr.hasChildNodes()) {
+							break;
+						}
+
+						tempWhitespaceContent = textNode;
+						break;
+
+					} else if (!currIsDeclNode) {
+						textNode.setWhitespace(true);
+					} else {
+						break;
+					}
+
+				}
+
+				curr.addChild(textNode);
+				break;
+			}
+
+			// DTD
+
+			case DTDStartDoctypeTag: {
+				DOMDocumentType doctype = xmlDocument.createDocumentType(scanner.getTokenOffset(), text.length());
+				curr.addChild(doctype);
+				doctype.parent = curr;
+				curr = doctype;
+				break;
+			}
+
+			case DTDDoctypeName: {
+				DOMDocumentType doctype = (DOMDocumentType) curr;
+				doctype.setName(scanner.getTokenOffset(), scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDDocTypeKindPUBLIC: {
+				DOMDocumentType doctype = (DOMDocumentType) curr;
+				doctype.setKind(scanner.getTokenOffset(), scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDDocTypeKindSYSTEM: {
+				DOMDocumentType doctype = (DOMDocumentType) curr;
+				doctype.setKind(scanner.getTokenOffset(), scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDDoctypePublicId: {
+				DOMDocumentType doctype = (DOMDocumentType) curr;
+				doctype.setPublicId(scanner.getTokenOffset(), scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDDoctypeSystemId: {
+				DOMDocumentType doctype = (DOMDocumentType) curr;
+				doctype.setSystemId(scanner.getTokenOffset(), scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDStartInternalSubset: {
+				DOMDocumentType doctype = (DOMDocumentType) curr;
+				doctype.setStartInternalSubset(scanner.getTokenOffset());
+				inDTDInternalSubset = true;
+				break;
+			}
+
+			case DTDEndInternalSubset: {
+				while (!curr.isDoctype()) {
+					curr.end = scanner.getTokenOffset() - 1;
+					curr = curr.getParentNode();
+				}
+				inDTDInternalSubset = false;
+				DOMDocumentType doctype = (DOMDocumentType) curr;
+				doctype.setEndInternalSubset(scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDStartElement: {
+				// If previous 'curr' was an unclosed DTD Declaration
+				while (!curr.isDoctype()) {
+					curr.end = scanner.getTokenOffset();
+					curr = curr.getParentNode();
+				}
+
+				DTDElementDecl child = new DTDElementDecl(scanner.getTokenOffset(), text.length());
+				curr.addChild(child);
+				curr = child;
+				break;
+			}
+
+			case DTDElementDeclName: {
+				DTDElementDecl element = (DTDElementDecl) curr;
+				element.setName(scanner.getTokenOffset(), scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDElementCategory: {
+				DTDElementDecl element = (DTDElementDecl) curr;
+				element.setCategory(scanner.getTokenOffset(), scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDStartElementContent: {
+				DTDElementDecl element = (DTDElementDecl) curr;
+				element.setContent(scanner.getTokenOffset(), scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDElementContent: {
+				DTDElementDecl element = (DTDElementDecl) curr;
+				element.updateLastParameterEnd(scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDEndElementContent: {
+				DTDElementDecl element = (DTDElementDecl) curr;
+				element.updateLastParameterEnd(scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDStartAttlist: {
+				while (!curr.isDoctype()) { // If previous DTD Decl was unclosed
+					curr.end = scanner.getTokenOffset();
+					curr = curr.getParentNode();
+				}
+				DTDAttlistDecl child = new DTDAttlistDecl(scanner.getTokenOffset(), text.length());
+
+				isInitialDeclaration = true;
+				curr.addChild(child);
+				curr = child;
+				break;
+			}
+
+			case DTDAttlistElementName: {
+				DTDAttlistDecl attribute = (DTDAttlistDecl) curr;
+				attribute.setName(scanner.getTokenOffset(), scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDAttlistAttributeName: {
+				DTDAttlistDecl attribute = (DTDAttlistDecl) curr;
+				if (isInitialDeclaration == false) {
+					// All additional declarations are created as new DTDAttlistDecl's
+					DTDAttlistDecl child = new DTDAttlistDecl(attribute.getStart(), attribute.getEnd());
+					attribute.addAdditionalAttDecl(child);
+					child.parent = attribute;
+
+					attribute = child;
+					curr = child;
+				}
+				attribute.setAttributeName(scanner.getTokenOffset(), scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDAttlistAttributeType: {
+				DTDAttlistDecl attribute = (DTDAttlistDecl) curr;
+				attribute.setAttributeType(scanner.getTokenOffset(), scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDAttlistAttributeValue: {
+				DTDAttlistDecl attribute = (DTDAttlistDecl) curr;
+				attribute.setAttributeValue(scanner.getTokenOffset(), scanner.getTokenEnd());
+
+				if (attribute.parent.isDTDAttListDecl()) { // Is not the root/main ATTLIST node
+					curr = attribute.parent;
+				} else {
+					isInitialDeclaration = false;
+				}
+				break;
+			}
+
+			case DTDStartEntity: {
+				while (!curr.isDoctype()) { // If previous DTD Decl was unclosed
+					curr.end = scanner.getTokenOffset();
+					curr = curr.getParentNode();
+				}
+				DTDEntityDecl child = new DTDEntityDecl(scanner.getTokenOffset(), text.length());
+				curr.addChild(child);
+				curr = child;
+				break;
+			}
+
+			case DTDEntityPercent: {
+				DTDEntityDecl entity = (DTDEntityDecl) curr;
+				entity.setPercent(scanner.getTokenOffset(), scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDEntityName: {
+				DTDEntityDecl entity = (DTDEntityDecl) curr;
+				entity.setName(scanner.getTokenOffset(), scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDEntityValue: {
+				DTDEntityDecl entity = (DTDEntityDecl) curr;
+				entity.setValue(scanner.getTokenOffset(), scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDEntityKindPUBLIC:
+			case DTDEntityKindSYSTEM: {
+				DTDEntityDecl entity = (DTDEntityDecl) curr;
+				entity.setKind(scanner.getTokenOffset(), scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDEntityPublicId: {
+				DTDEntityDecl entity = (DTDEntityDecl) curr;
+				entity.setPublicId(scanner.getTokenOffset(), scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDEntitySystemId: {
+				DTDEntityDecl entity = (DTDEntityDecl) curr;
+				entity.setSystemId(scanner.getTokenOffset(), scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDStartNotation: {
+				while (!curr.isDoctype()) { // If previous DTD Decl was unclosed
+					curr.end = scanner.getTokenOffset();
+					curr = curr.getParentNode();
+				}
+				DTDNotationDecl child = new DTDNotationDecl(scanner.getTokenOffset(), text.length());
+				curr.addChild(child);
+				curr = child;
+				isInitialDeclaration = true;
+				break;
+			}
+
+			case DTDNotationName: {
+				DTDNotationDecl notation = (DTDNotationDecl) curr;
+				notation.setName(scanner.getTokenOffset(), scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDNotationKindPUBLIC: {
+				DTDNotationDecl notation = (DTDNotationDecl) curr;
+				notation.setKind(scanner.getTokenOffset(), scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDNotationKindSYSTEM: {
+				DTDNotationDecl notation = (DTDNotationDecl) curr;
+				notation.setKind(scanner.getTokenOffset(), scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDNotationPublicId: {
+				DTDNotationDecl notation = (DTDNotationDecl) curr;
+				notation.setPublicId(scanner.getTokenOffset(), scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDNotationSystemId: {
+				DTDNotationDecl notation = (DTDNotationDecl) curr;
+				notation.setSystemId(scanner.getTokenOffset(), scanner.getTokenEnd());
+				break;
+			}
+
+			case DTDEndTag: {
+				if ((curr.isDTDElementDecl() || curr.isDTDAttListDecl() || curr.isDTDEntityDecl()
+						|| curr.isDTDNotationDecl())) {
+					while (curr.parent != null && !curr.parent.isDoctype()) {
+						curr = curr.parent;
+					}
+					curr.end = scanner.getTokenEnd();
+					curr.closed = true;
+					curr = curr.parent;
+				}
+				break;
+			}
+
+			case DTDEndDoctypeTag: {
+				((DOMDocumentType) curr).end = scanner.getTokenEnd();
+				curr.closed = true;
+				curr = curr.parent;
+				break;
+			}
+
+			case DTDUnrecognizedParameters: {
+				DTDDeclNode node = (DTDDeclNode) curr;
+				node.setUnrecognized(scanner.getTokenOffset(), ((XMLScanner) scanner).getLastNonWhitespaceOffset());
+				break;
+			}
+
+			default:
+			}
+			token = scanner.scan();
+		}
+		if (previousTokenWasEndTagOpen) {
+			previousTokenWasEndTagOpen = false;
+			if (token != TokenType.EndTag) {
+				// The excepted token is not an EndTag, create a fake end tag element
+				DOMElement element = xmlDocument.createElement(endTagOpenOffset, endTagOpenOffset + 2);
+				element.endTagOpenOffset = endTagOpenOffset;
+				curr.addChild(element);
+			}
+		}
+		while (curr.parent != null) {
+			curr.end = text.length();
+			curr = curr.parent;
+		}
+		return xmlDocument;
+	}
+
+	/**
+	 * Parse a fragment of XML text starting at a specific offset.
+	 *
+	 * This method parses XML content without using substring, directly using the
+	 * scanner's offset capabilities. It only handles XML tokens (not DTD) and uses
+	 * the provided ownerDocument for creating nodes.
+	 *
+	 * Key features: - No substring() call - uses scanner with startOffset directly
+	 * - Nodes created with ownerDocument.createElement() - correct document
+	 * references - Offsets are absolute (relative to full document text)
+	 *
+	 * @param text          the full document text (not a substring!)
+	 * @param startOffset   the offset where the fragment starts
+	 * @param endOffset     the offset where the fragment ends
+	 * @param ownerDocument the document that will own the parsed nodes
+	 * @return the root element of the parsed fragment, or null if parsing fails
+	 */
+	public DOMElement parseFragment(String text, int startOffset, int endOffset, DOMDocument ownerDocument) {
+		try {
+			// Create scanner with startOffset - no substring needed!
+			Scanner scanner = XMLScanner.createScanner(text, startOffset, false);
+
+			DOMElement fragmentRoot = null;
+			DOMNode curr = null;
+			DOMAttr attr = null;
+			int endTagOpenOffset = -1;
+			boolean previousTokenWasEndTagOpen = false;
+
+			TokenType token = scanner.scan();
+			while (token != TokenType.EOS && scanner.getTokenOffset() < endOffset) {
+
+				// Handle previous EndTagOpen without matching EndTag
+				if (previousTokenWasEndTagOpen) {
+					previousTokenWasEndTagOpen = false;
+					if (token != TokenType.EndTag) {
+						// Create fake end tag element
+						DOMElement element = ownerDocument.createElement(endTagOpenOffset, endTagOpenOffset + 2);
+						element.endTagOpenOffset = endTagOpenOffset;
+						if (curr != null) {
+							curr.addChild(element);
+						}
+					}
+				}
+
+				switch (token) {
 				case StartTagOpen: {
-					if (!curr.isClosed() && curr.parent != null) {
-						// The next node's parent (curr) is not closed at this point
-						// so the node's parent (curr) will have its end position updated
-						// to a newer end position.
+					// Close previous unclosed element
+					if (curr != null && !curr.isClosed()) {
 						curr.end = scanner.getTokenOffset();
 					}
-					if ((curr.isClosed()) || curr.isDoctype()) {
-						// The next node being considered is a child of 'curr'
-						// and if 'curr' is already closed then 'curr' was not updated properly.
-						// Or if we get a Doctype node then we know it was not closed and 'curr'
-						// wasn't updated properly.
+					if (curr != null && curr.isClosed()) {
 						curr = curr.parent;
-						inDTDInternalSubset = false; // In case it was previously in the internal subset
 					}
-					DOMElement child = xmlDocument.createElement(scanner.getTokenOffset(), scanner.getTokenEnd());
+
+					// Create new element using ownerDocument - correct document reference!
+					DOMElement child = ownerDocument.createElement(scanner.getTokenOffset(), scanner.getTokenEnd());
 					child.startTagOpenOffset = scanner.getTokenOffset();
-					curr.addChild(child);
-					curr = child;
+
+					if (curr == null) {
+						// This is the root of the fragment
+						fragmentRoot = child;
+						curr = child;
+					} else {
+						curr.addChild(child);
+						curr = child;
+					}
 					break;
 				}
 
 				case StartTag: {
-					DOMElement element = (DOMElement) curr;
-					element.tag = scanner.getTokenText();
-					curr.end = scanner.getTokenEnd();
+					if (curr instanceof DOMElement) {
+						DOMElement element = (DOMElement) curr;
+						element.tag = scanner.getTokenText();
+						curr.end = scanner.getTokenEnd();
+					}
 					break;
 				}
 
-				case StartTagClose:
-					if (curr.isElement()) {
+				case StartTagClose: {
+					if (curr instanceof DOMElement) {
 						DOMElement element = (DOMElement) curr;
-						curr.end = scanner.getTokenEnd(); // might be later set to end tag position
+						curr.end = scanner.getTokenEnd();
 						element.startTagCloseOffset = scanner.getTokenOffset();
-
-						// never enters isEmptyElement() is always false
-						if (element.hasTagName() && isEmptyElement(element.getTagName()) && curr.parent != null) {
-							curr.closed = true;
-							curr = curr.parent;
-						}
-					} else if (curr.isProcessingInstruction() || curr.isProlog()) {
-						DOMProcessingInstruction element = (DOMProcessingInstruction) curr;
-						curr.end = scanner.getTokenEnd(); // might be later set to end tag position
-						element.startTagClose = true;
-						if (element.getTarget() != null && isEmptyElement(element.getTarget()) && curr.parent != null) {
-							curr.closed = true;
-							curr = curr.parent;
-						}
 					}
-					curr.end = scanner.getTokenEnd();
 					break;
+				}
 
-				case EndTagOpen:
-					if (tempWhitespaceContent != null) {
-						curr.addChild(tempWhitespaceContent);
-						tempWhitespaceContent = null;
-					}
+				case EndTagOpen: {
 					endTagOpenOffset = scanner.getTokenOffset();
-					curr.end = scanner.getTokenOffset();
+					if (curr != null) {
+						curr.end = scanner.getTokenOffset();
+					}
 					previousTokenWasEndTagOpen = true;
 					break;
+				}
 
-				case EndTag:
-					// end tag (ex: </root>)
+				case EndTag: {
 					String closeTag = scanner.getTokenText();
-					DOMNode current = curr;
 
-					/**
-					 * eg: <a><b><c></d> will set a,b,c end position to the start of |</d>
-					 */
-					while (!(curr.isElement() && ((DOMElement) curr).isSameTag(closeTag)) && curr.parent != null) {
+					// Find matching start tag
+					while (curr != null && !(curr instanceof DOMElement && ((DOMElement) curr).isSameTag(closeTag))) {
 						curr.end = endTagOpenOffset;
 						curr = curr.parent;
 					}
-					if (curr != xmlDocument) {
+
+					if (curr != null) {
 						curr.closed = true;
-						if (curr.isElement()) {
+						if (curr instanceof DOMElement) {
 							((DOMElement) curr).endTagOpenOffset = endTagOpenOffset;
-						} else if (curr.isProcessingInstruction() || curr.isProlog()) {
-							((DOMProcessingInstruction) curr).endTagOpenOffset = endTagOpenOffset;
 						}
 						curr.end = scanner.getTokenEnd();
-					} else {
-						// element open tag not found (ex: <root>) add a fake element which only has an
-						// end tag (no start tag).
-						DOMElement element = xmlDocument.createElement(scanner.getTokenOffset() - 2,
-								scanner.getTokenEnd());
-						element.endTagOpenOffset = endTagOpenOffset;
-						element.tag = closeTag;
-						current.addChild(element);
-						curr = element;
 					}
-					break;
-
-				case StartTagSelfClose:
-					if (curr.parent != null) {
-						curr.closed = true;
-						((DOMElement) curr).selfClosed = true;
-						curr.end = scanner.getTokenEnd();
-						lastClosed = curr;
-						curr = curr.parent;
-					}
-					break;
-
-				case EndTagClose:
-					if (curr.parent != null) {
-						curr.end = scanner.getTokenEnd();
-						lastClosed = curr;
-						if (lastClosed.isElement()) {
-							((DOMElement) curr).endTagCloseOffset = scanner.getTokenOffset();
-						}
-						if (curr.isDoctype()) {
-							curr.closed = true;
-						}
-						curr = curr.parent;
-
-					}
-					break;
-
-				case AttributeName: {
-					attr = new DOMAttr(null, scanner.getTokenOffset(),
-							scanner.getTokenEnd(), curr);
-					curr.setAttributeNode(attr);
-					curr.end = scanner.getTokenEnd();
 					break;
 				}
 
-				case DelimiterAssign: {
-					if (attr != null) {
-						// Sets the value to the '=' position in case there is no AttributeValue
-						attr.setDelimiter(scanner.getTokenOffset());
+				case StartTagSelfClose: {
+					if (curr != null && curr.parent != null) {
+						curr.closed = true;
+						((DOMElement) curr).selfClosed = true;
+						curr.end = scanner.getTokenEnd();
+						curr = curr.parent;
+					}
+					break;
+				}
+
+				case EndTagClose: {
+					if (curr != null && curr.parent != null) {
+						curr.end = scanner.getTokenEnd();
+						if (curr instanceof DOMElement) {
+							((DOMElement) curr).endTagCloseOffset = scanner.getTokenOffset();
+						}
+						curr = curr.parent;
+					}
+					break;
+				}
+
+				case AttributeName: {
+					if (curr instanceof DOMElement) {
+						attr = new DOMAttr(scanner.getTokenText(), scanner.getTokenOffset(), scanner.getTokenEnd(),
+								ownerDocument);
+						((DOMElement) curr).setAttributeNode(attr);
 					}
 					break;
 				}
 
 				case AttributeValue: {
-					if (curr.hasAttributes() && attr != null) {
-						attr.setValue(null, scanner.getTokenOffset(), scanner.getTokenEnd());
+					if (attr != null) {
+						attr.setValue(scanner.getTokenText(), scanner.getTokenOffset(), scanner.getTokenEnd());
+						attr = null;
 					}
-					attr = null;
-					curr.end = scanner.getTokenEnd();
+					break;
+				}
+
+				case DelimiterAssign: {
+					if (attr != null) {
+						attr.setDelimiter(scanner.getTokenOffset());
+					}
 					break;
 				}
 
 				case CDATATagOpen: {
-					DOMCDATASection cdataNode = xmlDocument.createCDataSection(scanner.getTokenOffset(), text.length());
+					DOMCDATASection cdataNode = ownerDocument.createCDataSection(scanner.getTokenOffset(),
+							text.length());
 					curr.addChild(cdataNode);
 					curr = cdataNode;
 					break;
@@ -295,403 +882,50 @@ public class DOMParser {
 					break;
 				}
 
-				case StartPrologOrPI: {
-					DOMProcessingInstruction prologOrPINode = xmlDocument
-							.createProcessingInstruction(scanner.getTokenOffset(), text.length());
-					curr.addChild(prologOrPINode);
-					curr = prologOrPINode;
-					break;
-				}
-
-				case PIName: {
-					DOMProcessingInstruction processingInstruction = ((DOMProcessingInstruction) curr);
-					processingInstruction.target = scanner.getTokenText();
-					processingInstruction.processingInstruction = true;
-					break;
-				}
-
-				case PrologName: {
-					DOMProcessingInstruction processingInstruction = ((DOMProcessingInstruction) curr);
-					processingInstruction.target = scanner.getTokenText();
-					processingInstruction.prolog = true;
-					break;
-				}
-
-				case PIContent: {
-					DOMProcessingInstruction processingInstruction = (DOMProcessingInstruction) curr;
-					processingInstruction.startContent = scanner.getTokenOffset();
-					processingInstruction.endContent = scanner.getTokenEnd();
-					break;
-				}
-
-				case PIEnd:
-				case PrologEnd: {
-					curr.end = scanner.getTokenEnd();
-					curr.closed = true;
-					curr = curr.parent;
-					break;
-				}
-
-				case StartCommentTag: {
-					// Incase the tag before the comment tag (curr) was not properly closed
-					// curr should be set to the root node.
-					if (xmlDocument.isDTD() || inDTDInternalSubset) {
-						while (!curr.isDoctype()) {
-							curr = curr.parent;
-						}
-					} else if ((curr.isClosed())) {
-						curr = curr.parent;
-					}
-					DOMComment comment = xmlDocument.createComment(scanner.getTokenOffset(), text.length());
-					curr.addChild(comment);
-					curr = comment;
-					try {
-						int endLine = document.positionAt(lastClosed.end).getLine();
-						int startLine = document.positionAt(curr.start).getLine();
-						if (endLine == startLine && lastClosed.end <= curr.start) {
-							comment.commentSameLineEndTag = true;
-						}
-					} catch (BadLocationException e) {
-						LOGGER.log(Level.SEVERE, "XMLParser StartCommentTag bad offset in document", e);
-					}
-					break;
-				}
-
-				case Comment: {
-					DOMComment comment = (DOMComment) curr;
-					comment.startContent = scanner.getTokenOffset();
-					comment.endContent = scanner.getTokenEnd();
-					break;
-				}
-
-				case EndCommentTag: {
-					curr.end = scanner.getTokenEnd();
-					curr.closed = true;
-					curr = curr.parent;
-					break;
-				}
-
 				case Content: {
-					boolean currIsDeclNode = curr instanceof DTDDeclNode;
-					if (currIsDeclNode) {
-						curr.end = scanner.getTokenOffset() - 1;
-						while (!curr.isDoctype()) {
-							curr = curr.getParentNode();
-						}
-					}
-					int start = scanner.getTokenOffset();
-					int end = scanner.getTokenEnd();
-					DOMText textNode = xmlDocument.createText(start, end);
-					textNode.closed = true;
-
-					if (scanner.isTokenTextBlank()) {
-						if (ignoreWhitespaceContent) {
-							if (curr.hasChildNodes()) {
-								break;
-							}
-
-							tempWhitespaceContent = textNode;
-							break;
-
-						} else if (!currIsDeclNode) {
-							textNode.setWhitespace(true);
-						} else {
+					if (curr != null) {
+						int start = scanner.getTokenOffset();
+						int end = scanner.getTokenEnd();
+						DOMText textNode = new DOMText(start, end);
+						textNode.parent = curr;
+						textNode.closed = true;
+						
+						// Match normal parsing behavior for whitespace handling
+						if (scanner.isTokenTextBlank()) {
+							// Ignore whitespace-only text nodes (both before first child and between elements)
+							// This matches the ignoreWhitespaceContent=true behavior in normal parsing
 							break;
 						}
-
+						
+						curr.addChild(textNode);
 					}
-
-					curr.addChild(textNode);
-					break;
-				}
-
-				// DTD
-
-				case DTDStartDoctypeTag: {
-					DOMDocumentType doctype = xmlDocument.createDocumentType(scanner.getTokenOffset(), text.length());
-					curr.addChild(doctype);
-					doctype.parent = curr;
-					curr = doctype;
-					break;
-				}
-
-				case DTDDoctypeName: {
-					DOMDocumentType doctype = (DOMDocumentType) curr;
-					doctype.setName(scanner.getTokenOffset(), scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDDocTypeKindPUBLIC: {
-					DOMDocumentType doctype = (DOMDocumentType) curr;
-					doctype.setKind(scanner.getTokenOffset(), scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDDocTypeKindSYSTEM: {
-					DOMDocumentType doctype = (DOMDocumentType) curr;
-					doctype.setKind(scanner.getTokenOffset(), scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDDoctypePublicId: {
-					DOMDocumentType doctype = (DOMDocumentType) curr;
-					doctype.setPublicId(scanner.getTokenOffset(), scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDDoctypeSystemId: {
-					DOMDocumentType doctype = (DOMDocumentType) curr;
-					doctype.setSystemId(scanner.getTokenOffset(), scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDStartInternalSubset: {
-					DOMDocumentType doctype = (DOMDocumentType) curr;
-					doctype.setStartInternalSubset(scanner.getTokenOffset());
-					inDTDInternalSubset = true;
-					break;
-				}
-
-				case DTDEndInternalSubset: {
-					while (!curr.isDoctype()) {
-						curr.end = scanner.getTokenOffset() - 1;
-						curr = curr.getParentNode();
-					}
-					inDTDInternalSubset = false;
-					DOMDocumentType doctype = (DOMDocumentType) curr;
-					doctype.setEndInternalSubset(scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDStartElement: {
-					// If previous 'curr' was an unclosed DTD Declaration
-					while (!curr.isDoctype()) {
-						curr.end = scanner.getTokenOffset();
-						curr = curr.getParentNode();
-					}
-
-					DTDElementDecl child = new DTDElementDecl(scanner.getTokenOffset(), text.length());
-					curr.addChild(child);
-					curr = child;
-					break;
-				}
-
-				case DTDElementDeclName: {
-					DTDElementDecl element = (DTDElementDecl) curr;
-					element.setName(scanner.getTokenOffset(), scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDElementCategory: {
-					DTDElementDecl element = (DTDElementDecl) curr;
-					element.setCategory(scanner.getTokenOffset(), scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDStartElementContent: {
-					DTDElementDecl element = (DTDElementDecl) curr;
-					element.setContent(scanner.getTokenOffset(), scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDElementContent: {
-					DTDElementDecl element = (DTDElementDecl) curr;
-					element.updateLastParameterEnd(scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDEndElementContent: {
-					DTDElementDecl element = (DTDElementDecl) curr;
-					element.updateLastParameterEnd(scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDStartAttlist: {
-					while (!curr.isDoctype()) { // If previous DTD Decl was unclosed
-						curr.end = scanner.getTokenOffset();
-						curr = curr.getParentNode();
-					}
-					DTDAttlistDecl child = new DTDAttlistDecl(scanner.getTokenOffset(), text.length());
-
-					isInitialDeclaration = true;
-					curr.addChild(child);
-					curr = child;
-					break;
-				}
-
-				case DTDAttlistElementName: {
-					DTDAttlistDecl attribute = (DTDAttlistDecl) curr;
-					attribute.setName(scanner.getTokenOffset(), scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDAttlistAttributeName: {
-					DTDAttlistDecl attribute = (DTDAttlistDecl) curr;
-					if (isInitialDeclaration == false) {
-						// All additional declarations are created as new DTDAttlistDecl's
-						DTDAttlistDecl child = new DTDAttlistDecl(attribute.getStart(), attribute.getEnd());
-						attribute.addAdditionalAttDecl(child);
-						child.parent = attribute;
-
-						attribute = child;
-						curr = child;
-					}
-					attribute.setAttributeName(scanner.getTokenOffset(), scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDAttlistAttributeType: {
-					DTDAttlistDecl attribute = (DTDAttlistDecl) curr;
-					attribute.setAttributeType(scanner.getTokenOffset(), scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDAttlistAttributeValue: {
-					DTDAttlistDecl attribute = (DTDAttlistDecl) curr;
-					attribute.setAttributeValue(scanner.getTokenOffset(), scanner.getTokenEnd());
-
-					if (attribute.parent.isDTDAttListDecl()) { // Is not the root/main ATTLIST node
-						curr = attribute.parent;
-					} else {
-						isInitialDeclaration = false;
-					}
-					break;
-				}
-
-				case DTDStartEntity: {
-					while (!curr.isDoctype()) { // If previous DTD Decl was unclosed
-						curr.end = scanner.getTokenOffset();
-						curr = curr.getParentNode();
-					}
-					DTDEntityDecl child = new DTDEntityDecl(scanner.getTokenOffset(), text.length());
-					curr.addChild(child);
-					curr = child;
-					break;
-				}
-
-				case DTDEntityPercent: {
-					DTDEntityDecl entity = (DTDEntityDecl) curr;
-					entity.setPercent(scanner.getTokenOffset(), scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDEntityName: {
-					DTDEntityDecl entity = (DTDEntityDecl) curr;
-					entity.setName(scanner.getTokenOffset(), scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDEntityValue: {
-					DTDEntityDecl entity = (DTDEntityDecl) curr;
-					entity.setValue(scanner.getTokenOffset(), scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDEntityKindPUBLIC:
-				case DTDEntityKindSYSTEM: {
-					DTDEntityDecl entity = (DTDEntityDecl) curr;
-					entity.setKind(scanner.getTokenOffset(), scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDEntityPublicId: {
-					DTDEntityDecl entity = (DTDEntityDecl) curr;
-					entity.setPublicId(scanner.getTokenOffset(), scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDEntitySystemId: {
-					DTDEntityDecl entity = (DTDEntityDecl) curr;
-					entity.setSystemId(scanner.getTokenOffset(), scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDStartNotation: {
-					while (!curr.isDoctype()) { // If previous DTD Decl was unclosed
-						curr.end = scanner.getTokenOffset();
-						curr = curr.getParentNode();
-					}
-					DTDNotationDecl child = new DTDNotationDecl(scanner.getTokenOffset(), text.length());
-					curr.addChild(child);
-					curr = child;
-					isInitialDeclaration = true;
-					break;
-				}
-
-				case DTDNotationName: {
-					DTDNotationDecl notation = (DTDNotationDecl) curr;
-					notation.setName(scanner.getTokenOffset(), scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDNotationKindPUBLIC: {
-					DTDNotationDecl notation = (DTDNotationDecl) curr;
-					notation.setKind(scanner.getTokenOffset(), scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDNotationKindSYSTEM: {
-					DTDNotationDecl notation = (DTDNotationDecl) curr;
-					notation.setKind(scanner.getTokenOffset(), scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDNotationPublicId: {
-					DTDNotationDecl notation = (DTDNotationDecl) curr;
-					notation.setPublicId(scanner.getTokenOffset(), scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDNotationSystemId: {
-					DTDNotationDecl notation = (DTDNotationDecl) curr;
-					notation.setSystemId(scanner.getTokenOffset(), scanner.getTokenEnd());
-					break;
-				}
-
-				case DTDEndTag: {
-					if ((curr.isDTDElementDecl() || curr.isDTDAttListDecl() || curr.isDTDEntityDecl()
-							|| curr.isDTDNotationDecl())) {
-						while (curr.parent != null && !curr.parent.isDoctype()) {
-							curr = curr.parent;
-						}
-						curr.end = scanner.getTokenEnd();
-						curr.closed = true;
-						curr = curr.parent;
-					}
-					break;
-				}
-
-				case DTDEndDoctypeTag: {
-					((DOMDocumentType) curr).end = scanner.getTokenEnd();
-					curr.closed = true;
-					curr = curr.parent;
-					break;
-				}
-
-				case DTDUnrecognizedParameters: {
-					DTDDeclNode node = (DTDDeclNode) curr;
-					node.setUnrecognized(scanner.getTokenOffset(), ((XMLScanner) scanner).getLastNonWhitespaceOffset());
 					break;
 				}
 
 				default:
+					// Ignore other token types (DTD, PI, etc.) for fragment parsing
+					break;
+				}
+
+				token = scanner.scan();
 			}
-			token = scanner.scan();
-		}
-		if (previousTokenWasEndTagOpen) {
-			previousTokenWasEndTagOpen = false;
-			if (token != TokenType.EndTag) {
-				// The excepted token is not an EndTag, create a fake end tag element
-				DOMElement element = xmlDocument.createElement(endTagOpenOffset, endTagOpenOffset + 2);
-				element.endTagOpenOffset = endTagOpenOffset;
-				curr.addChild(element);
+
+			// Close any unclosed nodes
+			while (curr != null && curr != fragmentRoot) {
+				curr.end = Math.min(endOffset, text.length());
+				curr = curr.parent;
 			}
+
+			if (fragmentRoot != null) {
+				fragmentRoot.end = Math.min(endOffset, text.length());
+			}
+
+			return fragmentRoot;
+
+		} catch (Exception e) {
+			LOGGER.log(Level.SEVERE, "Error parsing XML fragment at offset " + startOffset, e);
+			return null;
 		}
-		while (curr.parent != null) {
-			curr.end = text.length();
-			curr = curr.parent;
-		}
-		return xmlDocument;
 	}
 
 	private static boolean isEmptyElement(String tag) {
