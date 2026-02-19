@@ -12,18 +12,22 @@
  */
 package org.eclipse.lemminx.services;
 
+import static org.eclipse.lemminx.utils.TextEditUtils.applyEdits;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.lemminx.commons.BadLocationException;
+import org.eclipse.lemminx.commons.TextDocument;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.services.extensions.XMLExtensionsRegistry;
 import org.eclipse.lemminx.services.extensions.format.IFormatterParticipant;
 import org.eclipse.lemminx.services.format.XMLFormatterDocumentOld;
 import org.eclipse.lemminx.services.format.XMLFormatterDocument;
 import org.eclipse.lemminx.settings.SharedSettings;
+import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
 
@@ -58,11 +62,49 @@ class XMLFormatter {
 			}
 			XMLFormatterDocument formatterDocument = new XMLFormatterDocument(xmlDocument, range,
 					sharedSettings, getFormatterParticipants());
-			return formatterDocument.format();
+			List<? extends TextEdit> result =  formatterDocument.format();
+			
+			// For large files, merge all TextEdits into a single one to avoid OutOfMemory
+			// This is more memory efficient as we don't keep thousands of TextEdit objects
+			if (shouldMergeEdits(result, xmlDocument)) {
+				String formatted = applyEdits(xmlDocument.getTextDocument(), result);
+				Range editRange = range != null ? range : getFullDocumentRange(xmlDocument);
+				return List.of(new TextEdit(editRange, formatted));
+			}
+			return result;
 		} catch (BadLocationException e) {
 			LOGGER.log(Level.SEVERE, "Formatting failed due to BadLocation", e);
 		}
 		return null;
+	}
+	
+	/**
+	 * Determines if TextEdits should be merged into a single edit.
+	 * Merging is beneficial for large files to reduce memory consumption.
+	 *
+	 * @param edits the list of text edits
+	 * @param xmlDocument the XML document
+	 * @return true if edits should be merged
+	 */
+	private boolean shouldMergeEdits(List<? extends TextEdit> edits, DOMDocument xmlDocument) {
+		// Merge if there are many edits (> 1000) or if the document is large (> 100KB)
+		int editCount = edits != null ? edits.size() : 0;
+		int documentSize = xmlDocument.getTextDocument().getText().length();
+		return editCount > 1000 || documentSize > 100_000;
+	}
+	
+	/**
+	 * Returns the full document range.
+	 *
+	 * @param xmlDocument the XML document
+	 * @return the full document range
+	 * @throws BadLocationException if position calculation fails
+	 */
+	private Range getFullDocumentRange(DOMDocument xmlDocument) throws BadLocationException {
+		TextDocument textDocument = xmlDocument.getTextDocument();
+		Position start = new Position(0, 0);
+		Position end = textDocument.positionAt(textDocument.getText().length());
+		return new Range(start, end);
 	}
 
 	/**

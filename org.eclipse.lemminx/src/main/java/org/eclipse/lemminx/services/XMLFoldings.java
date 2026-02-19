@@ -65,9 +65,12 @@ class XMLFoldings {
 			CancelChecker cancelChecker) {
 		Scanner scanner = XMLScanner.createScanner(document.getText());
 		TokenType token = scanner.scan();
-		List<FoldingRange> ranges = new ArrayList<>();
+		// Pre-allocate capacity based on document size (estimate: 1 folding per 500 chars)
+		int estimatedCapacity = Math.min(document.getText().length() / 500, 1000);
+		List<FoldingRange> ranges = new ArrayList<>(estimatedCapacity);
 
-		List<TagInfo> stack = new ArrayList<>();
+		// Pre-allocate stack capacity (estimate: max nesting depth of 50)
+		List<TagInfo> stack = new ArrayList<>(50);
 		String lastTagName = null;
 		int prevStart = -1;
 
