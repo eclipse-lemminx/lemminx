@@ -30,7 +30,7 @@ public class DOMAttr extends DOMNode implements org.w3c.dom.Attr {
 
 	private String name;
 
-	private final AttrName nodeAttrName;
+	private AttrName nodeAttrName;
 
 	private int delimiter;
 
@@ -254,6 +254,27 @@ public class DOMAttr extends DOMNode implements org.w3c.dom.Attr {
 		this.originalValue = value;
 		this.quotelessValue = StringUtils.convertToQuotelessValue(value);
 		this.nodeAttrValue = start != -1 ? new AttrValue(start, end) : null;
+	}
+
+	/**
+	 * Update nodeAttrName with adjusted offsets.
+	 * Used during incremental parsing when attribute offsets change.
+	 *
+	 * @param start new start offset
+	 * @param end new end offset
+	 */
+	void updateAttrNameOffsets(int start, int end) {
+		this.nodeAttrName = start != -1 ? new AttrName(start, end) : null;
+	}
+
+	/**
+	 * Clear cached attribute name and values to force recalculation from document text.
+	 * Used during incremental parsing when attribute offsets change.
+	 */
+	public void clearCachedValue() {
+		this.name = null;
+		this.originalValue = null;
+		this.quotelessValue = null;
 	}
 
 	public DOMRange getNodeAttrValue() {

@@ -30,16 +30,26 @@ import org.eclipse.lsp4j.jsonrpc.CompletableFutures.FutureCancelChecker;
  */
 public class ModelTextDocuments<T> extends TextDocuments<ModelTextDocument<T>> {
 
+	final static CancelChecker NO_CANCELLABLE = () -> {
+	};
+
 	private final BiFunction<TextDocument, CancelChecker, T> parse;
 
-	public ModelTextDocuments(BiFunction<TextDocument, CancelChecker, T> parse) {
+	private final ModelUpdater<T> modelUpdater;
+
+	private boolean incrementalModel;
+
+	public ModelTextDocuments(BiFunction<TextDocument, CancelChecker, T> parse,
+			ModelUpdater<T> updateModel) {
 		this.parse = parse;
+		this.modelUpdater = updateModel;
 	}
 
 	@Override
 	public ModelTextDocument<T> createDocument(TextDocumentItem document) {
-		ModelTextDocument<T> doc = new ModelTextDocument<T>(document, parse);
+		ModelTextDocument<T> doc = new ModelTextDocument<T>(document, parse, modelUpdater);
 		doc.setIncremental(isIncremental());
+		doc.setIncrementalModel(isIncrementalModel());
 		return doc;
 	}
 
@@ -115,7 +125,7 @@ public class ModelTextDocuments<T> extends TextDocuments<ModelTextDocument<T>> {
 				return null;
 			}
 			// Apply the function code by using the parsed model.
-			return code.apply(model, cancelChecker);
+			return code.apply(model, isIncrementalModel() ? NO_CANCELLABLE : cancelChecker);
 		});
 	}
 
@@ -149,5 +159,13 @@ public class ModelTextDocuments<T> extends TextDocuments<ModelTextDocument<T>> {
 		CompletableFuture<R> result = start.thenComposeAsync(code);
 		start.complete(new FutureCancelChecker(result));
 		return result;
+	}
+
+	public boolean isIncrementalModel() {
+		return incrementalModel;
+	}
+
+	public void setIncrementalModel(boolean incrementalModel) {
+		this.incrementalModel = incrementalModel;
 	}
 }

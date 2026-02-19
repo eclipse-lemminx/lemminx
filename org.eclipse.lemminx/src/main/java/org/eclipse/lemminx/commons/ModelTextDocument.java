@@ -11,10 +11,12 @@
 *******************************************************************************/
 package org.eclipse.lemminx.commons;
 
+import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.function.BiFunction;
 import java.util.logging.Logger;
 
+import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.eclipse.lsp4j.TextDocumentItem;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
@@ -33,14 +35,21 @@ public class ModelTextDocument<T> extends TextDocument {
 
 	private T model;
 
-	public ModelTextDocument(TextDocumentItem document, BiFunction<TextDocument, CancelChecker, T> parse) {
+	private final ModelUpdater<T> modelUpdater;
+
+	private boolean incrementalModel;
+
+	public ModelTextDocument(TextDocumentItem document, BiFunction<TextDocument, CancelChecker, T> parse,
+			ModelUpdater<T> updateModel) {
 		super(document);
 		this.parse = parse;
+		this.modelUpdater = updateModel;
 	}
 
 	public ModelTextDocument(String text, String uri, BiFunction<TextDocument, CancelChecker, T> parse) {
 		super(text, uri);
 		this.parse = parse;
+		this.modelUpdater = null;
 	}
 
 	/**
@@ -83,7 +92,8 @@ public class ModelTextDocument<T> extends TextDocument {
 			LOGGER.fine("Start parsing of model with version '" + version);
 			// Stop of parse process can be done when completable future is canceled or when
 			// version of document changes
-			CancelChecker cancelChecker = new TextDocumentVersionChecker(this, version);
+			CancelChecker cancelChecker = isIncrementalModel() ? ModelTextDocuments.NO_CANCELLABLE
+					: new TextDocumentVersionChecker(this, version);
 			// parse the model
 			model = parse.apply(this, cancelChecker);
 		} catch (CancellationException e) {
@@ -101,14 +111,32 @@ public class ModelTextDocument<T> extends TextDocument {
 	public void setText(String text) {
 		super.setText(text);
 		// text changed, cancel the completable future which load the model
-		cancelModel();
+		if (!isIncrementalModel()) {
+			cancelModel();
+		}
 	}
 
 	@Override
 	public void setVersion(int version) {
 		super.setVersion(version);
 		// version changed, mark the model as dirty
-		cancelModel();
+		if (!isIncrementalModel()) {
+			cancelModel();
+		}
+	}
+
+	@Override
+	public List<TextDocumentChange> update(List<TextDocumentContentChangeEvent> changes) {
+		String oldText = super.getText();
+		List<TextDocumentChange> result = super.update(changes);
+		if (isIncrementalModel() && model != null && !result.isEmpty()) {
+			updateModel(model, oldText, result);
+		}
+		return result;
+	}
+
+	private void updateModel(T model, String oldText, List<TextDocumentChange> changes) {
+		modelUpdater.updateModel(model, changes, oldText);
 	}
 
 	/**
@@ -116,6 +144,14 @@ public class ModelTextDocument<T> extends TextDocument {
 	 */
 	private void cancelModel() {
 		model = null;
+	}
+
+	public boolean isIncrementalModel() {
+		return incrementalModel;
+	}
+
+	public void setIncrementalModel(boolean incrementalModel) {
+		this.incrementalModel = incrementalModel;
 	}
 
 }

@@ -12,6 +12,8 @@
  */
 package org.eclipse.lemminx.commons;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
@@ -156,17 +158,20 @@ public class TextDocument extends TextDocumentItem {
 	/**
 	 * Update text of the document by using the changes and according the
 	 * incremental support.
-	 * 
+	 *
 	 * @param changes the text document changes.
+	 * @return list of changes with pre-calculated offsets (calculated before text update),
+	 *         or empty list if no changes or not incremental
 	 */
-	public void update(List<TextDocumentContentChangeEvent> changes) {
+	public List<TextDocumentChange> update(List<TextDocumentContentChangeEvent> changes) {
 		if (changes.size() < 1) {
 			// no changes, ignore it.
-			return;
+			return Collections.emptyList();
 		}
 		if (isIncremental()) {
 			try {
 				long start = System.currentTimeMillis();
+				List<TextDocumentChange> result = new ArrayList<>(changes.size());
 				synchronized (lock) {
 					// Initialize buffer and line tracker from the current text document
 					StringBuilder buffer = new StringBuilder(getText());
@@ -188,6 +193,11 @@ public class TextDocument extends TextDocumentItem {
 						}
 						String text = changeEvent.getText();
 						int startOffset = offsetAt(range.getStart());
+						int newLength = text != null ? text.length() : 0;
+						
+						// Store the change with pre-calculated offsets (before text update)
+						result.add(new TextDocumentChange(changeEvent, startOffset, length, newLength));
+						
 						buffer.replace(startOffset, startOffset + length, text);
 						lineTracker.replace(startOffset, length, text);
 					}
@@ -195,8 +205,11 @@ public class TextDocument extends TextDocumentItem {
 					setText(buffer.toString());
 				}
 				LOGGER.fine("Text document content updated in " + (System.currentTimeMillis() - start) + "ms");
+				return result;
 			} catch (BadLocationException e) {
+				e.printStackTrace();
 				// Should never occur.
+				return Collections.emptyList();
 			}
 		} else {
 			// like vscode does, get the last changes
@@ -207,6 +220,7 @@ public class TextDocument extends TextDocumentItem {
 				setText(last.getText());
 				lineTracker.set(last.getText());
 			}
+			return Collections.emptyList();
 		}
 	}
 }
