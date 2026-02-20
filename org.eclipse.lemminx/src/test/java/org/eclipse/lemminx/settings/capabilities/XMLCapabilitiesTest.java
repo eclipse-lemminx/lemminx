@@ -67,7 +67,7 @@ public class XMLCapabilitiesTest extends AbstractCacheBasedTest {
 	@BeforeEach
 	public void startup() {
 
-		textDocumentService = new XMLTextDocumentService(null);
+		textDocumentService = new XMLTextDocumentService(null, null);
 		textDocumentService.getSharedSettings().getFormattingSettings().setEnabled(true);
 
 		textDocument = new TextDocumentClientCapabilities();

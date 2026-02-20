@@ -26,10 +26,6 @@ import org.w3c.dom.DOMException;
  */
 public abstract class DOMCharacterData extends DOMNode implements org.w3c.dom.CharacterData {
 
-	private String data;
-
-	private String normalizedData;
-
 	private boolean isWhitespace;
 
 	private String delimiter;
@@ -67,6 +63,7 @@ public abstract class DOMCharacterData extends DOMNode implements org.w3c.dom.Ch
 	 */
 	public boolean endsWithNewLine() {
 		if (hasData()) {
+			String data = getData();
 			for (int i = data.length() - 1; i >= 0; i--) {
 				char c = data.charAt(i);
 				if (!Character.isWhitespace(c)) {
@@ -91,6 +88,7 @@ public abstract class DOMCharacterData extends DOMNode implements org.w3c.dom.Ch
 	 */
 	public boolean startsWithNewLine() {
 		if (hasData()) {
+			String data = getData();
 			for (int i = 0; i < data.length(); i++) {
 				char c = data.charAt(i);
 				if (!Character.isWhitespace(c)) {
@@ -106,10 +104,8 @@ public abstract class DOMCharacterData extends DOMNode implements org.w3c.dom.Ch
 	}
 
 	public String getNormalizedData() {
-		if (normalizedData == null) {
-			normalizedData = StringUtils.normalizeSpace(getData());
-		}
-		return normalizedData;
+		// No caching - compute on demand to save memory
+		return StringUtils.normalizeSpace(getData());
 	}
 
 	public boolean hasData() {
@@ -134,15 +130,14 @@ public abstract class DOMCharacterData extends DOMNode implements org.w3c.dom.Ch
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see org.w3c.dom.CharacterData#getData()
 	 */
 	@Override
 	public String getData() {
-		if (data == null) {
-			data = getOwnerDocument().getText().substring(getStartContent(), getEndContent());
-		}
-		return data;
+		// No caching - extract directly from document to save memory
+		// The document text is already in memory, so this is just a substring operation
+		return getOwnerDocument().getText().substring(getStartContent(), getEndContent());
 	}
 
 	/*

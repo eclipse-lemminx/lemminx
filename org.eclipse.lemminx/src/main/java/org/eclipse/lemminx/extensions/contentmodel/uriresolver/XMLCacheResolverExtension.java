@@ -20,6 +20,7 @@ import java.nio.file.Path;
 import org.apache.xerces.xni.XMLResourceIdentifier;
 import org.apache.xerces.xni.XNIException;
 import org.apache.xerces.xni.parser.XMLInputSource;
+import org.eclipse.lemminx.XMLLanguageServer;
 import org.eclipse.lemminx.uriresolver.CacheResourceDownloadedException;
 import org.eclipse.lemminx.uriresolver.CacheResourcesManager;
 import org.eclipse.lemminx.uriresolver.URIResolverExtension;
@@ -60,7 +61,7 @@ public class XMLCacheResolverExtension implements URIResolverExtension {
 	private final CacheResourcesManager cacheResourcesManager;
 
 	public XMLCacheResolverExtension() {
-		this.cacheResourcesManager = new CacheResourcesManager();
+		this.cacheResourcesManager = new CacheResourcesManager(XMLLanguageServer.getSharedExecutor());
 	}
 
 	@Override

@@ -12,6 +12,7 @@
 package org.eclipse.lemminx.commons;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
@@ -31,9 +32,15 @@ import org.eclipse.lsp4j.jsonrpc.CompletableFutures.FutureCancelChecker;
 public class ModelTextDocuments<T> extends TextDocuments<ModelTextDocument<T>> {
 
 	private final BiFunction<TextDocument, CancelChecker, T> parse;
+	private final ExecutorService executorService;
 
 	public ModelTextDocuments(BiFunction<TextDocument, CancelChecker, T> parse) {
+		this(parse, null);
+	}
+
+	public ModelTextDocuments(BiFunction<TextDocument, CancelChecker, T> parse, ExecutorService executorService) {
 		this.parse = parse;
+		this.executorService = executorService;
 	}
 
 	@Override
@@ -108,6 +115,17 @@ public class ModelTextDocuments<T> extends TextDocuments<ModelTextDocument<T>> {
 	 */
 	public <R> CompletableFuture<R> computeModelAsync(TextDocumentIdentifier documentIdentifier,
 			BiFunction<T, CancelChecker, R> code) {
+		if (executorService != null) {
+			return computeAsyncWithExecutor(cancelChecker -> {
+				// Get or parse the model.
+				T model = getModel(documentIdentifier);
+				if (model == null) {
+					return null;
+				}
+				// Execute the code with the model
+				return code.apply(model, cancelChecker);
+			});
+		}
 		return CompletableFutures.computeAsync(cancelChecker -> {
 			// Get or parse the model.
 			T model = getModel(documentIdentifier);
@@ -132,6 +150,17 @@ public class ModelTextDocuments<T> extends TextDocuments<ModelTextDocument<T>> {
 	 */
 	public <R> CompletableFuture<R> computeModelAsyncCompose(TextDocumentIdentifier documentIdentifier,
 			BiFunction<T, CancelChecker, CompletableFuture<R>> code) {
+		if (executorService != null) {
+			return computeAsyncComposeWithExecutor(cancelChecker -> {
+				// Get or parse the model.
+				T model = getModel(documentIdentifier);
+				if (model == null) {
+					return CompletableFuture.completedFuture(null);
+				}
+				// Execute the code with the model
+				return code.apply(model, cancelChecker);
+			});
+		}
 		return computeAsyncCompose(cancelChecker -> {
 			// Get or parse the model.
 			T model = getModel(documentIdentifier);
@@ -142,6 +171,20 @@ public class ModelTextDocuments<T> extends TextDocuments<ModelTextDocument<T>> {
 			// Apply the function code by using the parsed model.{
 			return code.apply(model, cancelChecker);
 		});
+	}
+
+	private <R> CompletableFuture<R> computeAsyncWithExecutor(Function<CancelChecker, R> code) {
+		CompletableFuture<CancelChecker> start = new CompletableFuture<>();
+		CompletableFuture<R> result = start.thenApplyAsync(code, executorService);
+		start.complete(new FutureCancelChecker(result));
+		return result;
+	}
+
+	private <R> CompletableFuture<R> computeAsyncComposeWithExecutor(Function<CancelChecker, CompletableFuture<R>> code) {
+		CompletableFuture<CancelChecker> start = new CompletableFuture<>();
+		CompletableFuture<R> result = start.thenComposeAsync(code, executorService);
+		start.complete(new FutureCancelChecker(result));
+		return result;
 	}
 
 	private static <R> CompletableFuture<R> computeAsyncCompose(Function<CancelChecker, CompletableFuture<R>> code) {

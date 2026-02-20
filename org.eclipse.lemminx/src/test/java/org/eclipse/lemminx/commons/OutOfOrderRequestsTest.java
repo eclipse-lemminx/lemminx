@@ -48,7 +48,7 @@ public class OutOfOrderRequestsTest {
 
 	@BeforeEach
 	public void setupLS() {
-		ls = new XMLTextDocumentService(new XMLLanguageServer());
+		ls = new XMLTextDocumentService(new XMLLanguageServer(), null);
 	}
 
 	@Test

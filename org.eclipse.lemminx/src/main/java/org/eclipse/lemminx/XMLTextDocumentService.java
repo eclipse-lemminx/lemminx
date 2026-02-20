@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiFunction;
 import java.util.function.Predicate;
@@ -124,6 +125,7 @@ public class XMLTextDocumentService implements TextDocumentService {
 	private final XMLLanguageServer xmlLanguageServer;
 	private final ModelTextDocuments<DOMDocument> documents;
 	private final ModelValidatorDelayer<DOMDocument> xmlValidatorDelayer;
+	private final ExecutorService executorService;
 
 	private SharedSettings sharedSettings;
 	private LimitExceededWarner limitExceededWarner;
@@ -194,12 +196,13 @@ public class XMLTextDocumentService implements TextDocumentService {
 
 	private Boolean clientConfigurationSupport;
 
-	public XMLTextDocumentService(XMLLanguageServer xmlLanguageServer) {
+	public XMLTextDocumentService(XMLLanguageServer xmlLanguageServer, ExecutorService executorService) {
 		this.xmlLanguageServer = xmlLanguageServer;
+		this.executorService = executorService;
 		DOMParser parser = DOMParser.getInstance();
 		this.documents = new ModelTextDocuments<DOMDocument>((document, cancelChecker) -> {
 			return parser.parse(document, getXMLLanguageService().getResolverExtensionManager(), true, cancelChecker);
-		});
+		}, executorService);
 		this.sharedSettings = new SharedSettings();
 		this.limitExceededWarner = null;
 		this.xmlValidatorDelayer = new ModelValidatorDelayer<DOMDocument>((document) -> {
@@ -690,7 +693,7 @@ public class XMLTextDocumentService implements TextDocumentService {
 		if (withDelay) {
 			xmlValidatorDelayer.validateWithDelay((ModelTextDocument<DOMDocument>) document);
 		} else {
-			CompletableFuture.runAsync(() -> {
+			Runnable validationTask = () -> {
 				DOMDocument xmlDocument = ((ModelTextDocument<DOMDocument>) document).getModel();
 				validate(xmlDocument, Collections.emptyMap());
 				getXMLLanguageService().getDocumentLifecycleParticipants().forEach(participant -> {
@@ -701,7 +704,12 @@ public class XMLTextDocumentService implements TextDocumentService {
 								+ participant.getClass().getName() + "'.", e);
 					}
 				});
-			});
+			};
+			if (executorService != null) {
+				CompletableFuture.runAsync(validationTask, executorService);
+			} else {
+				CompletableFuture.runAsync(validationTask);
+			}
 		}
 	}
 

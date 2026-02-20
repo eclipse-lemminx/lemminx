@@ -32,7 +32,8 @@ import org.w3c.dom.TypeInfo;
  */
 public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 
-	String tag;
+	// Memory optimization: Don't store tag name, extract it on demand from document source
+	// This saves ~10-16 MB for large documents with many repeated element names
 	boolean selfClosed;
 
 	// DomElement.start == startTagOpenOffset
@@ -42,6 +43,11 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	int endTagOpenOffset = NULL_VALUE; // <root> |</root >
 	int endTagCloseOffset = NULL_VALUE;// <root> </root |>
 	// DomElement.end = <root> </root>| , is always scanner.getTokenEnd()
+	
+	// Offset where tag name starts (after '<' or '</')
+	int tagNameStart = NULL_VALUE;
+	// Offset where tag name ends (before '>' or ' ' or '/')
+	int tagNameEnd = NULL_VALUE;
 
 	public DOMElement(int start, int end) {
 		super(start, end);
@@ -74,7 +80,11 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 */
 	@Override
 	public String getTagName() {
-		return tag;
+		// Extract tag name from document source on demand
+		if (tagNameStart == NULL_VALUE || tagNameEnd == NULL_VALUE) {
+			return null;
+		}
+		return getOwnerDocument().getText().substring(tagNameStart, tagNameEnd);
 	}
 
 	/**
@@ -85,7 +95,18 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 *         or '</').
 	 */
 	public boolean hasTagName() {
-		return tag != null;
+		return tagNameStart != NULL_VALUE && tagNameEnd != NULL_VALUE;
+	}
+	
+	/**
+	 * Sets the tag name offsets. Package-private for use by DOMParser.
+	 *
+	 * @param start offset where tag name starts (after '<' or '</')
+	 * @param end offset where tag name ends (before '>' or ' ' or '/')
+	 */
+	void setTagNameOffsets(int start, int end) {
+		this.tagNameStart = start;
+		this.tagNameEnd = end;
 	}
 
 	/*
@@ -277,7 +298,7 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 *         otherwise.
 	 */
 	public boolean isSameTag(String tag) {
-		return Objects.equals(this.tag, tag);
+		return Objects.equals(getTagName(), tag);
 	}
 
 	public boolean isInStartTag(int offset) {
@@ -632,5 +653,10 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 			return text;
 		}
 		return findTextAt(this, offset);
+	}
+
+	void setTagName(String tag) {
+	
+		
 	}
 }

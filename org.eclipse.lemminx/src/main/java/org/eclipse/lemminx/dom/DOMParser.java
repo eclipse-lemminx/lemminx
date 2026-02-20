@@ -80,7 +80,7 @@ public class DOMParser {
 
 			// This DOMDocumentType object is hidden, and just represents the DTD file
 			// nothing should affect it's closed status
-			curr.closed = true;
+			curr.setClosed(true);
 		}
 		DOMNode lastClosed = curr;
 		DOMAttr attr = null;
@@ -112,7 +112,7 @@ public class DOMParser {
 					}
 					if (curr != xmlDocument) {
 						linkToEmptyStartTag = true;
-						curr.closed = true;
+						curr.setClosed(true);
 						if (curr.isElement()) {
 							((DOMElement) curr).endTagOpenOffset = endTagOpenOffset;
 						} else if (curr.isProcessingInstruction() || curr.isProlog()) {
@@ -153,7 +153,8 @@ public class DOMParser {
 
 				case StartTag: {
 					DOMElement element = (DOMElement) curr;
-					element.tag = scanner.getTokenText();
+					// Memory optimization: Store offsets instead of String
+					element.setTagNameOffsets(scanner.getTokenOffset(), scanner.getTokenEnd());
 					curr.end = scanner.getTokenEnd();
 					break;
 				}
@@ -166,7 +167,7 @@ public class DOMParser {
 
 						// never enters isEmptyElement() is always false
 						if (element.hasTagName() && isEmptyElement(element.getTagName()) && curr.parent != null) {
-							curr.closed = true;
+							curr.setClosed(true);
 							curr = curr.parent;
 						}
 					} else if (curr.isProcessingInstruction() || curr.isProlog()) {
@@ -174,7 +175,7 @@ public class DOMParser {
 						curr.end = scanner.getTokenEnd(); // might be later set to end tag position
 						element.startTagClose = true;
 						if (element.getTarget() != null && isEmptyElement(element.getTarget()) && curr.parent != null) {
-							curr.closed = true;
+							curr.setClosed(true);
 							curr = curr.parent;
 						}
 					}
@@ -204,7 +205,7 @@ public class DOMParser {
 						curr = curr.parent;
 					}
 					if (curr != xmlDocument) {
-						curr.closed = true;
+						curr.setClosed(true);
 						if (curr.isElement()) {
 							((DOMElement) curr).endTagOpenOffset = endTagOpenOffset;
 						} else if (curr.isProcessingInstruction() || curr.isProlog()) {
@@ -217,7 +218,12 @@ public class DOMParser {
 						DOMElement element = xmlDocument.createElement(scanner.getTokenOffset() - 2,
 								scanner.getTokenEnd());
 						element.endTagOpenOffset = endTagOpenOffset;
-						element.tag = closeTag;
+						// Memory optimization: For orphan end tags, we need to store the tag name
+						// Since closeTag is already extracted, we'll need to handle this differently
+						// For now, we need to find where closeTag comes from and use offsets
+						int tagStart = endTagOpenOffset + 2; // After "</"
+						int tagEnd = tagStart + (closeTag != null ? closeTag.length() : 0);
+						element.setTagNameOffsets(tagStart, tagEnd);
 						current.addChild(element);
 						curr = element;
 					}
@@ -225,7 +231,7 @@ public class DOMParser {
 
 				case StartTagSelfClose:
 					if (curr.parent != null) {
-						curr.closed = true;
+						curr.setClosed(true);
 						((DOMElement) curr).selfClosed = true;
 						curr.end = scanner.getTokenEnd();
 						lastClosed = curr;
@@ -241,7 +247,7 @@ public class DOMParser {
 							((DOMElement) curr).endTagCloseOffset = scanner.getTokenOffset();
 						}
 						if (curr.isDoctype()) {
-							curr.closed = true;
+							curr.setClosed(true);
 						}
 						curr = curr.parent;
 
@@ -290,7 +296,7 @@ public class DOMParser {
 
 				case CDATATagClose: {
 					curr.end = scanner.getTokenEnd();
-					curr.closed = true;
+					curr.setClosed(true);
 					curr = curr.parent;
 					break;
 				}
@@ -327,7 +333,7 @@ public class DOMParser {
 				case PIEnd:
 				case PrologEnd: {
 					curr.end = scanner.getTokenEnd();
-					curr.closed = true;
+					curr.setClosed(true);
 					curr = curr.parent;
 					break;
 				}
@@ -366,7 +372,7 @@ public class DOMParser {
 
 				case EndCommentTag: {
 					curr.end = scanner.getTokenEnd();
-					curr.closed = true;
+					curr.setClosed(true);
 					curr = curr.parent;
 					break;
 				}
@@ -382,7 +388,7 @@ public class DOMParser {
 					int start = scanner.getTokenOffset();
 					int end = scanner.getTokenEnd();
 					DOMText textNode = xmlDocument.createText(start, end);
-					textNode.closed = true;
+					textNode.setClosed(true);
 
 					if (scanner.isTokenTextBlank()) {
 						if (ignoreWhitespaceContent) {
@@ -655,7 +661,7 @@ public class DOMParser {
 							curr = curr.parent;
 						}
 						curr.end = scanner.getTokenEnd();
-						curr.closed = true;
+						curr.setClosed(true);
 						curr = curr.parent;
 					}
 					break;
@@ -663,7 +669,7 @@ public class DOMParser {
 
 				case DTDEndDoctypeTag: {
 					((DOMDocumentType) curr).end = scanner.getTokenEnd();
-					curr.closed = true;
+					curr.setClosed(true);
 					curr = curr.parent;
 					break;
 				}
