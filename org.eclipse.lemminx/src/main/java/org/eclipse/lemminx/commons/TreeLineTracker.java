@@ -91,6 +91,12 @@ public class TreeLineTracker implements ILineTracker {
 	 */
 	private static final String NO_DELIM = ""; //$NON-NLS-1$
 
+	// Delimiter type constants for memory optimization
+	private static final byte DELIM_NONE = 0; // "" - no delimiter
+	private static final byte DELIM_LF = 1; // "\n" - Unix/Linux
+	private static final byte DELIM_CR = 2; // "\r" - old Mac
+	private static final byte DELIM_CRLF = 3; // "\r\n" - Windows
+
 	/**
 	 * A node represents one line. Its character and line offsets are 0-based and
 	 * relative to the subtree covered by the node. All nodes under the left subtree
@@ -100,7 +106,7 @@ public class TreeLineTracker implements ILineTracker {
 	private static final class Node {
 		Node(int length, String delimiter) {
 			this.length = length;
-			this.delimiter = delimiter;
+			this.delimiterType = stringToDelimiterType(delimiter);
 		}
 
 		/**
@@ -115,8 +121,11 @@ public class TreeLineTracker implements ILineTracker {
 		int offset;
 		/** The number of characters in this line. */
 		int length;
-		/** The line delimiter of this line, needed to answer the delimiter query. */
-		String delimiter;
+		/**
+		 * The line delimiter type of this line (0=none, 1=\n, 2=\r, 3=\r\n). Memory
+		 * optimized.
+		 */
+		byte delimiterType;
 		/** The parent node, <code>null</code> if this is the root node. */
 		Node parent;
 		/** The left subtree, possibly <code>null</code>. */
@@ -125,6 +134,24 @@ public class TreeLineTracker implements ILineTracker {
 		Node right;
 		/** The balance factor. */
 		byte balance;
+
+		/**
+		 * Returns the delimiter string for this node.
+		 * 
+		 * @return the delimiter string
+		 */
+		String getDelimiter() {
+			return delimiterTypeToString(delimiterType);
+		}
+
+		/**
+		 * Sets the delimiter for this node.
+		 * 
+		 * @param delimiter the delimiter string
+		 */
+		void setDelimiter(String delimiter) {
+			this.delimiterType = stringToDelimiterType(delimiter);
+		}
 
 		@Override
 		public final String toString() {
@@ -148,7 +175,8 @@ public class TreeLineTracker implements ILineTracker {
 			default:
 				bal = Byte.toString(balance);
 			}
-			return "[" + offset + "+" + pureLength() + "+" + delimiter.length() + "|" + line + "|" + bal + "]"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
+			String delim = getDelimiter();
+			return "[" + offset + "+" + pureLength() + "+" + delim.length() + "|" + line + "|" + bal + "]"; //$NON-NLS-1$ //$NON-NLS-2$ //$NON-NLS-3$ //$NON-NLS-4$ //$NON-NLS-5$ //$NON-NLS-6$
 		}
 
 		/**
@@ -157,7 +185,49 @@ public class TreeLineTracker implements ILineTracker {
 		 * @return the pure line length
 		 */
 		int pureLength() {
-			return length - delimiter.length();
+			return length - getDelimiter().length();
+		}
+	}
+
+	/**
+	 * Converts a delimiter string to a delimiter type byte.
+	 * 
+	 * @param delimiter the delimiter string
+	 * @return the delimiter type
+	 */
+	private static byte stringToDelimiterType(String delimiter) {
+		if (delimiter == null || delimiter.isEmpty() || delimiter == NO_DELIM) {
+			return DELIM_NONE;
+		}
+		switch (delimiter) {
+		case "\n":
+			return DELIM_LF;
+		case "\r":
+			return DELIM_CR;
+		case "\r\n":
+			return DELIM_CRLF;
+		default:
+			return DELIM_NONE;
+		}
+	}
+
+	/**
+	 * Converts a delimiter type byte to a delimiter string.
+	 * 
+	 * @param delimiterType the delimiter type
+	 * @return the delimiter string
+	 */
+	private static String delimiterTypeToString(byte delimiterType) {
+		switch (delimiterType) {
+		case DELIM_LF:
+			return DELIMITERS[1]; // "\n"
+		case DELIM_CR:
+			return DELIMITERS[0]; // "\r"
+		case DELIM_CRLF:
+			return DELIMITERS[2]; // "\r\n"
+		case DELIM_NONE:
+		default:
+			return NO_DELIM;
 		}
 	}
 
@@ -203,7 +273,7 @@ public class TreeLineTracker implements ILineTracker {
 			node = insertAfter(node, length, delim);
 		}
 
-		if (node.delimiter != NO_DELIM) {
+		if (!NO_DELIM.equals(node.getDelimiter())) {
 			insertAfter(node, 0, NO_DELIM);
 		}
 
@@ -693,13 +763,13 @@ public class TreeLineTracker implements ILineTracker {
 			// b) more lines to add between two chunks of the first node
 			// remember what we split off the first line
 			int remainder = firstLineDelta - length;
-			String remDelim = node.delimiter;
+			String remDelim = node.getDelimiter();
 
 			// join the first line with the first added
 			int consumed = info.delimiterIndex + info.delimiterLength;
 			int delta = consumed - firstLineDelta;
 			updateLength(node, delta);
-			node.delimiter = info.delimiter;
+			node.setDelimiter(info.delimiter);
 
 			// Inline addlines start
 			info = nextDelimiterInfo(text, consumed);
@@ -755,7 +825,7 @@ public class TreeLineTracker implements ILineTracker {
 			// join the first line with the first added
 			int consumed = info.delimiterIndex + info.delimiterLength;
 			updateLength(node, consumed - firstLineDelta);
-			node.delimiter = info.delimiter;
+			node.setDelimiter(info.delimiter);
 			length -= firstLineDelta;
 
 			// Inline addLines start
@@ -802,7 +872,7 @@ public class TreeLineTracker implements ILineTracker {
 
 		// check deletion
 		final int lineDelta;
-		boolean delete = node.length == 0 && node.delimiter != NO_DELIM;
+		boolean delete = node.length == 0 && !NO_DELIM.equals(node.getDelimiter());
 		if (delete) {
 			lineDelta = -1;
 		} else {
@@ -1147,7 +1217,8 @@ public class TreeLineTracker implements ILineTracker {
 	@Override
 	public final String getLineDelimiter(int line) throws BadLocationException {
 		Node node = nodeByLine(line);
-		return node.delimiter == NO_DELIM ? null : node.delimiter;
+		String delimiter = node.getDelimiter();
+		return NO_DELIM.equals(delimiter) ? null : delimiter;
 	}
 
 	@Override
