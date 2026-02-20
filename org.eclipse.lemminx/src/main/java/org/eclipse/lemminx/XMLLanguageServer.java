@@ -18,10 +18,13 @@ import java.util.Collection;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
@@ -86,6 +89,8 @@ public class XMLLanguageServer implements ProcessLanguageServer, XMLLanguageServ
 
 	private static final Logger LOGGER = Logger.getLogger(XMLLanguageServer.class.getName());
 
+	private static ExecutorService SHARED_EXECUTOR;
+	
 	private final XMLLanguageService xmlLanguageService;
 	private final XMLTextDocumentService xmlTextDocumentService;
 	private final XMLWorkspaceService xmlWorkspaceService;
@@ -96,7 +101,23 @@ public class XMLLanguageServer implements ProcessLanguageServer, XMLLanguageServ
 	private TelemetryManager telemetryManager;
 
 	public XMLLanguageServer() {
-		xmlTextDocumentService = new XMLTextDocumentService(this);
+		// Create a shared thread pool with limited parallelism (4 threads)
+		// to avoid excessive ForkJoinPool usage (was 20 threads)
+		synchronized (XMLLanguageServer.class) {
+			if (SHARED_EXECUTOR == null) {
+				SHARED_EXECUTOR = Executors.newFixedThreadPool(4, new ThreadFactory() {
+					private final AtomicInteger counter = new AtomicInteger(0);
+					@Override
+					public Thread newThread(Runnable r) {
+						Thread thread = new Thread(r, "lemminx-worker-" + counter.incrementAndGet());
+						thread.setDaemon(true);
+						return thread;
+					}
+				});
+			}
+		}
+
+		xmlTextDocumentService = new XMLTextDocumentService(this, SHARED_EXECUTOR);
 		xmlWorkspaceService = new XMLWorkspaceService(this);
 
 		xmlLanguageService = new XMLLanguageService();
@@ -107,6 +128,16 @@ public class XMLLanguageServer implements ProcessLanguageServer, XMLLanguageServ
 		xmlLanguageService.setProgressSupport(this);
 
 		delayer = Executors.newScheduledThreadPool(1);
+	}
+
+	/**
+	 * Returns the shared executor service for async operations.
+	 * This executor has limited parallelism (4 threads) to reduce memory pressure.
+	 *
+	 * @return the shared executor service
+	 */
+	public static ExecutorService getSharedExecutor() {
+		return SHARED_EXECUTOR;
 	}
 
 	@Override

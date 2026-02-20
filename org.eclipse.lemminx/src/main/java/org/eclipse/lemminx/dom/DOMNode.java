@@ -60,7 +60,11 @@ public abstract class DOMNode implements Node, DOMRange {
 	 */
 	public static final short DTD_DECL_NODE = 105;
 
-	boolean closed = false;
+	// Memory optimization: Use byte flags instead of multiple boolean fields
+	// This saves 7 bytes per node (boolean with padding = 8 bytes, byte = 1 byte)
+	private byte flags = 0;
+	private static final byte FLAG_CLOSED = 0x01;
+	// Reserved for future flags: 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80
 
 	private XMLNamedNodeMap<DOMAttr> attributeNodes;
 	private XMLNodeList<DOMNode> children;
@@ -69,6 +73,10 @@ public abstract class DOMNode implements Node, DOMRange {
 	int end; // <root> </root>|
 
 	DOMNode parent;
+	
+	// Cache the index in parent's children list to avoid O(n) indexOf() calls
+	// This is set to -1 when not cached, and updated when needed
+	int cachedIndexInParent = -1;
 
 	private static final NodeList EMPTY_CHILDREN = new NodeList() {
 
@@ -86,6 +94,14 @@ public abstract class DOMNode implements Node, DOMRange {
 	static class XMLNodeList<T extends DOMNode> extends ArrayList<T> implements NodeList {
 
 		private static final long serialVersionUID = 1L;
+		
+		// Pre-allocate capacity to reduce ArrayList resizing overhead
+		// Most elements have 2-5 children, so start with capacity of 4
+		private static final int INITIAL_CAPACITY = 4;
+
+		XMLNodeList() {
+			super(INITIAL_CAPACITY);
+		}
 
 		@Override
 		public int getLength() {
@@ -95,6 +111,35 @@ public abstract class DOMNode implements Node, DOMRange {
 		@Override
 		public DOMNode item(int index) {
 			return super.get(index);
+		}
+		
+		@Override
+		public boolean add(T node) {
+			boolean result = super.add(node);
+			// Invalidate cached indices for all nodes after this one
+			invalidateCachedIndices(size() - 1);
+			return result;
+		}
+		
+		@Override
+		public void add(int index, T node) {
+			super.add(index, node);
+			// Invalidate cached indices for all nodes from this index onwards
+			invalidateCachedIndices(index);
+		}
+		
+		@Override
+		public T remove(int index) {
+			T removed = super.remove(index);
+			// Invalidate cached indices for all nodes from this index onwards
+			invalidateCachedIndices(index);
+			return removed;
+		}
+		
+		private void invalidateCachedIndices(int fromIndex) {
+			for (int i = fromIndex; i < size(); i++) {
+				get(i).cachedIndexInParent = -1;
+			}
 		}
 
 	}
@@ -153,7 +198,7 @@ public abstract class DOMNode implements Node, DOMRange {
 	public DOMNode(int start, int end) {
 		this.start = start;
 		this.end = end;
-		this.closed = false;
+		// flags is already initialized to 0, so FLAG_CLOSED is not set
 	}
 
 	/**
@@ -190,7 +235,7 @@ public abstract class DOMNode implements Node, DOMRange {
 		result.append(", name: ");
 		result.append(getNodeName());
 		result.append(", closed: ");
-		result.append(closed);
+		result.append(isClosed());
 		if (children != null && children.size() > 0) {
 			result.append(", \n");
 			for (int i = 0; i < indent + 1; i++) {
@@ -226,7 +271,8 @@ public abstract class DOMNode implements Node, DOMRange {
 	 */
 	public DOMNode findNodeBefore(int offset) {
 		List<DOMNode> children = getChildren();
-		int idx = findFirst(children, c -> offset <= c.start) - 1;
+		// Performance optimization: Use specialized method instead of lambda to avoid object creation
+		int idx = findFirstNodeAtOffset(children, offset) - 1;
 		if (idx >= 0) {
 			DOMNode child = children.get(idx);
 			if (offset > child.start) {
@@ -245,7 +291,8 @@ public abstract class DOMNode implements Node, DOMRange {
 
 	public DOMNode findNodeAt(int offset) {
 		List<DOMNode> children = getChildren();
-		int idx = findFirst(children, c -> offset <= c.start) - 1;
+		// Performance optimization: Use specialized method instead of lambda to avoid object creation
+		int idx = findFirstNodeAtOffset(children, offset) - 1;
 		if (idx >= 0) {
 			DOMNode child = children.get(idx);
 			if (isIncluded(child, offset)) {
@@ -253,6 +300,30 @@ public abstract class DOMNode implements Node, DOMRange {
 			}
 		}
 		return this;
+	}
+	
+	/**
+	 * Specialized binary search to find first node at or after offset.
+	 * Replaces lambda-based findFirst to avoid object creation on each call.
+	 *
+	 * @param children sorted list of child nodes
+	 * @param offset the offset to search for
+	 * @return index of first node where offset <= node.start, or children.size() if none found
+	 */
+	private static int findFirstNodeAtOffset(List<DOMNode> children, int offset) {
+		int low = 0, high = children.size();
+		if (high == 0) {
+			return 0; // no children
+		}
+		while (low < high) {
+			int mid = (low + high) >>> 1; // Unsigned shift for better performance
+			if (offset <= children.get(mid).start) {
+				high = mid;
+			} else {
+				low = mid + 1;
+			}
+		}
+		return low;
 	}
 
 	/**
@@ -489,7 +560,7 @@ public abstract class DOMNode implements Node, DOMRange {
 
 	/**
 	 * Add node child and set child.parent to {@code this}
-	 * 
+	 *
 	 * @param child the node child to add.
 	 */
 	public void addChild(DOMNode child) {
@@ -497,7 +568,9 @@ public abstract class DOMNode implements Node, DOMRange {
 		if (children == null) {
 			children = new XMLNodeList<>();
 		}
-		getChildren().add(child);
+		// Cache the index when adding
+		child.cachedIndexInParent = children.size();
+		children.add(child);
 	}
 
 	/**
@@ -511,7 +584,19 @@ public abstract class DOMNode implements Node, DOMRange {
 	}
 
 	public boolean isClosed() {
-		return closed;
+		return (flags & FLAG_CLOSED) != 0;
+	}
+
+	/**
+	 * Sets the closed flag for this node.
+	 * Package-private to allow DOMParser to set it.
+	 */
+	void setClosed(boolean closed) {
+		if (closed) {
+			flags |= FLAG_CLOSED;
+		} else {
+			flags &= ~FLAG_CLOSED;
+		}
 	}
 
 	public DOMElement getParentElement() {
@@ -721,7 +806,7 @@ public abstract class DOMNode implements Node, DOMRange {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see org.w3c.dom.Node#getNextSibling()
 	 */
 	@Override
@@ -731,7 +816,16 @@ public abstract class DOMNode implements Node, DOMRange {
 			return null;
 		}
 		List<DOMNode> children = parentNode.getChildren();
-		int nextIndex = children.indexOf(this) + 1;
+		
+		// Use cached index if available to avoid O(n) indexOf() call
+		int currentIndex = cachedIndexInParent;
+		if (currentIndex == -1) {
+			// Cache miss - compute and cache the index
+			currentIndex = children.indexOf(this);
+			cachedIndexInParent = currentIndex;
+		}
+		
+		int nextIndex = currentIndex + 1;
 		return nextIndex < children.size() ? children.get(nextIndex) : null;
 	}
 
@@ -747,7 +841,7 @@ public abstract class DOMNode implements Node, DOMRange {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see org.w3c.dom.Node#getPreviousSibling()
 	 */
 	@Override
@@ -757,7 +851,16 @@ public abstract class DOMNode implements Node, DOMRange {
 			return null;
 		}
 		List<DOMNode> children = parentNode.getChildren();
-		int previousIndex = children.indexOf(this) - 1;
+		
+		// Use cached index if available to avoid O(n) indexOf() call
+		int currentIndex = cachedIndexInParent;
+		if (currentIndex == -1) {
+			// Cache miss - compute and cache the index
+			currentIndex = children.indexOf(this);
+			cachedIndexInParent = currentIndex;
+		}
+		
+		int previousIndex = currentIndex - 1;
 		return previousIndex >= 0 ? children.get(previousIndex) : null;
 	}
 

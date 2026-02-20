@@ -28,7 +28,7 @@ import java.util.function.Consumer;
  */
 public class ModelValidatorDelayer<T> {
 
-	private static final long DEFAULT_VALIDATION_DELAY_MS = 500;
+	private static final long DEFAULT_VALIDATION_DELAY_MS = 100;
 
 	private final ScheduledExecutorService executorService;
 

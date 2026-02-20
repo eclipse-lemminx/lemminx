@@ -15,7 +15,9 @@ package org.eclipse.lemminx.services;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
@@ -136,7 +138,9 @@ class XMLSymbolsProvider {
 			boolean collectAttributes = hasFilterForAttr && node.hasAttributes();
 			if (collectAttributes) {
 				// Collect attributes from the DOM element
-				List<DOMNode> attrToIgnore = getFilteredNodeAttributes(node, filter, hasFilterForAttr);
+				List<DOMNode> attrToIgnoreList = getFilteredNodeAttributes(node, filter, hasFilterForAttr);
+				// Convert to HashSet for O(1) lookup instead of O(n) with List.contains()
+				Set<DOMNode> attrToIgnore = attrToIgnoreList.isEmpty() ? Collections.emptySet() : new HashSet<>(attrToIgnoreList);
 				for (DOMAttr attr : node.getAttributeNodes()) {
 					findSymbolInformations(attr, containerName, symbols, attrToIgnore.contains(attr), filter, hasFilterForAttr,
 							cancelChecker);
@@ -172,7 +176,7 @@ class XMLSymbolsProvider {
 			// Process default symbol providers
 			boolean isDTD = xmlDocument.isDTD();
 			boolean hasFilterForAttr = filter.hasFilterFor(MatcherType.ATTRIBUTE);
-			List<DOMNode> nodesToIgnore = new ArrayList<>();
+			Set<DOMNode> nodesToIgnore = new HashSet<>();
 			xmlDocument.getRoots().forEach(node -> {
 				try {
 					if ((node.isDoctype() && isDTD)) {
@@ -190,7 +194,7 @@ class XMLSymbolsProvider {
 		return symbols;
 	}
 
-	private void findDocumentSymbols(DOMNode node, DocumentSymbolsResult symbols, List<DOMNode> nodesToIgnore,
+	private void findDocumentSymbols(DOMNode node, DocumentSymbolsResult symbols, Set<DOMNode> nodesToIgnore,
 			XMLSymbolFilter filter, boolean hasFilterForAttr, CancelChecker cancelChecker) throws BadLocationException {
 		if (!isNodeSymbol(node, filter)) {
 			return;
@@ -223,7 +227,9 @@ class XMLSymbolsProvider {
 			if (node.isElement()) {
 				if (collectAttributes) {
 					// Collect attributes from the DOM element
-					List<DOMNode> attrToIgnore = getFilteredNodeAttributes(node, filter, hasFilterForAttr);
+					List<DOMNode> attrToIgnoreList = getFilteredNodeAttributes(node, filter, hasFilterForAttr);
+					// Convert to HashSet for O(1) lookup instead of O(n) with List.contains()
+					Set<DOMNode> attrToIgnore = attrToIgnoreList.isEmpty() ? Collections.emptySet() : new HashSet<>(attrToIgnoreList);
 					for (DOMAttr attr : node.getAttributeNodes()) {
 						findDocumentSymbols(attr, childrenSymbols, attrToIgnore, filter, hasFilterForAttr, cancelChecker);
 					}

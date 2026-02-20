@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -75,6 +76,7 @@ public class CacheResourcesManager {
 	}
 
 	private final Map<String, CompletableFuture<Path>> resourcesLoading;
+	private final ExecutorService executorService;
 	private boolean useCache;
 
 	private boolean downloadExternalResources;
@@ -141,15 +143,24 @@ public class CacheResourcesManager {
 	}
 
 	public CacheResourcesManager() {
-		this(CacheBuilder.newBuilder().maximumSize(100).expireAfterWrite(30, TimeUnit.SECONDS).build());
+		this(CacheBuilder.newBuilder().maximumSize(100).expireAfterWrite(30, TimeUnit.SECONDS).build(), null);
+	}
+
+	public CacheResourcesManager(ExecutorService executorService) {
+		this(CacheBuilder.newBuilder().maximumSize(100).expireAfterWrite(30, TimeUnit.SECONDS).build(), executorService);
 	}
 
 	CacheResourcesManager(Cache<String, CacheResourceDownloadedException> cache) {
+		this(cache, null);
+	}
+
+	CacheResourcesManager(Cache<String, CacheResourceDownloadedException> cache, ExecutorService executorService) {
 		resourcesLoading = new HashMap<>();
 		protocolsForCache = new HashSet<>();
 		unavailableURICache = cache;
 		forceDownloadExternalResources = CacheBuilder.newBuilder().maximumSize(100)
 				.expireAfterWrite(30, TimeUnit.SECONDS).build();
+		this.executorService = executorService;
 		addDefaultProtocolsForCache();
 		setDownloadExternalResources(true);
 	}
@@ -198,79 +209,88 @@ public class CacheResourcesManager {
 	}
 
 	private CompletableFuture<Path> downloadResource(final String resourceURI, Path resourceCachePath) {
+		if (executorService != null) {
+			return CompletableFuture.supplyAsync(() -> {
+				return doDownloadResource(resourceURI, resourceCachePath);
+			}, executorService);
+		}
 		return CompletableFuture.supplyAsync(() -> {
-			long start = System.currentTimeMillis();
-			URLConnection conn = null;
-			try {
-				String actualURI = resourceURI;
-				URL url = new URL(actualURI);
-				String originalProtocol = url.getProtocol();
-				if (!protocolsForCache.contains(formatProtocol(originalProtocol))) {
-					throw new InvalidURIException(resourceURI, InvalidURIException.InvalidURIError.UNSUPPORTED_PROTOCOL,
-							originalProtocol);
+			return doDownloadResource(resourceURI, resourceCachePath);
+		});
+	}
+
+	private Path doDownloadResource(final String resourceURI, Path resourceCachePath) {
+		long start = System.currentTimeMillis();
+		URLConnection conn = null;
+		try {
+			String actualURI = resourceURI;
+			URL url = new URL(actualURI);
+			String originalProtocol = url.getProtocol();
+			if (!protocolsForCache.contains(formatProtocol(originalProtocol))) {
+				throw new InvalidURIException(resourceURI, InvalidURIException.InvalidURIError.UNSUPPORTED_PROTOCOL,
+						originalProtocol);
+			}
+			boolean isOriginalRequestSecure = isSecure(originalProtocol);
+			LOGGER.info("Downloading " + resourceURI + " to " + resourceCachePath + "...");
+			conn = url.openConnection();
+			conn.setRequestProperty(USER_AGENT_KEY, USER_AGENT_VALUE);
+			/* XXX: This should really be implemented using HttpClient or similar */
+			int allowedRedirects = 5;
+			while (conn.getHeaderField("Location") != null && allowedRedirects > 0) //$NON-NLS-1$
+			{
+				allowedRedirects--;
+				url = new URL(actualURI = conn.getHeaderField("Location")); //$NON-NLS-1$
+				String protocol = url.getProtocol();
+				if (!protocolsForCache.contains(formatProtocol(protocol))) {
+					throw new InvalidURIException(url.toString(),
+							InvalidURIException.InvalidURIError.UNSUPPORTED_PROTOCOL, protocol);
 				}
-				boolean isOriginalRequestSecure = isSecure(originalProtocol);
-				LOGGER.info("Downloading " + resourceURI + " to " + resourceCachePath + "...");
+				if (isOriginalRequestSecure && !isSecure(protocol)) {
+					throw new InvalidURIException(resourceURI,
+							InvalidURIException.InvalidURIError.INSECURE_REDIRECTION, url.toString());
+				}
 				conn = url.openConnection();
 				conn.setRequestProperty(USER_AGENT_KEY, USER_AGENT_VALUE);
-				/* XXX: This should really be implemented using HttpClient or similar */
-				int allowedRedirects = 5;
-				while (conn.getHeaderField("Location") != null && allowedRedirects > 0) //$NON-NLS-1$
-				{
-					allowedRedirects--;
-					url = new URL(actualURI = conn.getHeaderField("Location")); //$NON-NLS-1$
-					String protocol = url.getProtocol();
-					if (!protocolsForCache.contains(formatProtocol(protocol))) {
-						throw new InvalidURIException(url.toString(),
-								InvalidURIException.InvalidURIError.UNSUPPORTED_PROTOCOL, protocol);
-					}
-					if (isOriginalRequestSecure && !isSecure(protocol)) {
-						throw new InvalidURIException(resourceURI,
-								InvalidURIException.InvalidURIError.INSECURE_REDIRECTION, url.toString());
-					}
-					conn = url.openConnection();
-					conn.setRequestProperty(USER_AGENT_KEY, USER_AGENT_VALUE);
-				}
-
-				// Download resource in a temporary file
-				Path path = Files.createTempFile(TEMP_DOWNLOAD_DIR, resourceCachePath.getFileName().toString(), ".lemminx");
-				try (ReadableByteChannel rbc = Channels.newChannel(conn.getInputStream());
-						FileOutputStream fos = new FileOutputStream(path.toFile())) {
-					fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
-				}
-
-				// Move the temporary file in the lemminx cache folder.
-				Path dir = resourceCachePath.getParent();
-				if (!Files.exists(dir)) {
-					Files.createDirectories(dir);
-				}
-				Files.move(path, resourceCachePath);
-				long elapsed = System.currentTimeMillis() - start;
-				LOGGER.info("Downloaded " + resourceURI + " to " + resourceCachePath + " in " + elapsed + "ms");
-			} catch (Exception e) {
-				// Do nothing
-				Throwable rootCause = getRootCause(e);
-				String error = "[" + rootCause.getClass().getTypeName() + "] " + rootCause.getMessage();
-				LOGGER.log(Level.SEVERE,
-						"Error while downloading " + resourceURI + " to " + resourceCachePath + " : " + error);
-				String httpResponseCode = getHttpResponseCode(conn);
-				if (httpResponseCode != null) {
-					error = error + " with code: " + httpResponseCode;
-				}
-				CacheResourceDownloadedException cacheException = new CacheResourceDownloadedException(resourceURI,
-						resourceCachePath, error, e);
-				unavailableURICache.put(resourceURI, cacheException);
-				throw cacheException;
-			} finally {
-				synchronized (resourcesLoading) {
-					resourcesLoading.remove(resourceURI);
-				}
-				if (conn != null && conn instanceof HttpURLConnection) {
-					((HttpURLConnection) conn).disconnect();
-				}
 			}
-			return resourceCachePath;
-		});
+
+			// Download resource in a temporary file
+			Path path = Files.createTempFile(TEMP_DOWNLOAD_DIR, resourceCachePath.getFileName().toString(), ".lemminx");
+			try (ReadableByteChannel rbc = Channels.newChannel(conn.getInputStream());
+					FileOutputStream fos = new FileOutputStream(path.toFile())) {
+				fos.getChannel().transferFrom(rbc, 0, Long.MAX_VALUE);
+			}
+
+			// Move the temporary file in the lemminx cache folder.
+			Path dir = resourceCachePath.getParent();
+			if (!Files.exists(dir)) {
+				Files.createDirectories(dir);
+			}
+			Files.move(path, resourceCachePath);
+			long elapsed = System.currentTimeMillis() - start;
+			LOGGER.info("Downloaded " + resourceURI + " to " + resourceCachePath + " in " + elapsed + "ms");
+		} catch (Exception e) {
+			// Do nothing
+			Throwable rootCause = getRootCause(e);
+			String error = "[" + rootCause.getClass().getTypeName() + "] " + rootCause.getMessage();
+			LOGGER.log(Level.SEVERE,
+					"Error while downloading " + resourceURI + " to " + resourceCachePath + " : " + error);
+			String httpResponseCode = getHttpResponseCode(conn);
+			if (httpResponseCode != null) {
+				error = error + " with code: " + httpResponseCode;
+			}
+			CacheResourceDownloadedException cacheException = new CacheResourceDownloadedException(resourceURI,
+					resourceCachePath, error, e);
+			unavailableURICache.put(resourceURI, cacheException);
+			throw cacheException;
+		} finally {
+			synchronized (resourcesLoading) {
+				resourcesLoading.remove(resourceURI);
+			}
+			if (conn != null && conn instanceof HttpURLConnection) {
+				((HttpURLConnection) conn).disconnect();
+			}
+		}
+		return resourceCachePath;
 	}
 
 	/**
