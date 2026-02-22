@@ -53,9 +53,9 @@ class XMLFoldings {
 
 		public final int startLine;
 
-		public final String tagName;
+		public final CharSequence tagName;
 
-		public TagInfo(int startLine, String tagName) {
+		public TagInfo(int startLine, CharSequence tagName) {
 			this.startLine = startLine;
 			this.tagName = tagName;
 		}
@@ -63,15 +63,15 @@ class XMLFoldings {
 
 	public List<FoldingRange> getFoldingRanges(TextDocument document, XMLFoldingSettings context,
 			CancelChecker cancelChecker) {
-		Scanner scanner = XMLScanner.createScanner(document.getText());
+		Scanner scanner = XMLScanner.createScanner(document.getTextSequence());
 		TokenType token = scanner.scan();
 		// Pre-allocate capacity based on document size (estimate: 1 folding per 500 chars)
-		int estimatedCapacity = Math.min(document.getText().length() / 500, 1000);
+		int estimatedCapacity = Math.min(document.getTextLength() / 500, 1000);
 		List<FoldingRange> ranges = new ArrayList<>(estimatedCapacity);
 
 		// Pre-allocate stack capacity (estimate: max nesting depth of 50)
 		List<TagInfo> stack = new ArrayList<>(50);
-		String lastTagName = null;
+		CharSequence lastTagName = null;
 		int prevStart = -1;
 
 		try {
@@ -80,7 +80,7 @@ class XMLFoldings {
 				switch (token) {
 				case DTDStartDoctypeTag:
 				case StartTag: {
-					String tagName = scanner.getTokenText();
+					CharSequence tagName = scanner.getTokenText();
 					int startLine = document.positionAt(scanner.getTokenOffset()).getLine();
 					stack.add(new TagInfo(startLine, tagName));
 					lastTagName = tagName;
@@ -124,14 +124,14 @@ class XMLFoldings {
 				}
 				case Comment: {
 					int startLine = document.positionAt(scanner.getTokenOffset()).getLine();
-					String text = scanner.getTokenText();
+					CharSequence text = scanner.getTokenText();
 					Matcher m = REGION_PATTERN.matcher(text);
 					if (m.find()) {
 						if ("#region".equals(m.group().trim())) { // start pattern match
 							stack.add(new TagInfo(startLine, "")); // empty tagName marks region
 						} else {
 							int i = stack.size() - 1;
-							while (i >= 0 && stack.get(i).tagName != null && !stack.get(i).tagName.isEmpty()) {
+							while (i >= 0 && stack.get(i).tagName != null && stack.get(i).tagName.length() != 0) {
 								i--;
 							}
 							if (i >= 0) {

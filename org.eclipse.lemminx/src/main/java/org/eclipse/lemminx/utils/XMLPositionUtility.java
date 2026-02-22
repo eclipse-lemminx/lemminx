@@ -111,7 +111,7 @@ public class XMLPositionUtility {
 	/**
 	 * Returns the attribute value range and null otherwise.
 	 *
-	 * @param attr        the attribute.
+	 * @param attr         the attribute.
 	 * @param withoutQuote true if range must remove the quote and false otherwise.
 	 * @return the attribute value range and null otherwise.
 	 */
@@ -294,7 +294,7 @@ public class XMLPositionUtility {
 		// -> <a b="" b="" |>
 		// -> <a b="" b=""|>
 		// Remove spaces
-		String text = document.getText();
+		CharSequence text = document.getTextSequence();
 		char c = text.charAt(offset);
 		if (c == '>') {
 			offset--;
@@ -602,7 +602,7 @@ public class XMLPositionUtility {
 	 */
 	public static EntityReferenceRange selectEntityReference(int offset, DOMDocument document,
 			boolean endsWithSemicolon) {
-		String text = document.getText();
+		CharSequence text = document.getTextSequence();
 		// Search '&' or '%' character on the left of the offset
 		int entityReferenceStart = getEntityReferenceStartOffset(text, offset);
 		if (entityReferenceStart == -1) {
@@ -616,7 +616,8 @@ public class XMLPositionUtility {
 			}
 			entityReferenceEnd = offset;
 		}
-		String name = endsWithSemicolon ? document.getText().substring(entityReferenceStart + 1, entityReferenceEnd - 1)
+		String name = endsWithSemicolon
+				? document.getTextSequence().subSequence(entityReferenceStart + 1, entityReferenceEnd - 1).toString()
 				: null;
 		return new EntityReferenceRange(name, createRange(entityReferenceStart, entityReferenceEnd, document));
 	}
@@ -630,7 +631,7 @@ public class XMLPositionUtility {
 	 * @return the start offset of the entity reference (ex : &am|p;) from the left
 	 *         of the given offset and -1 if no entity reference.
 	 */
-	public static int getEntityReferenceStartOffset(String text, int offset) {
+	public static int getEntityReferenceStartOffset(CharSequence text, int offset) {
 		// adjust offset to get the left character of the offset
 		offset--;
 		if (offset < 0) {
@@ -667,7 +668,7 @@ public class XMLPositionUtility {
 	 * @return the end offset of the entity reference (ex : &am|p;) from the right
 	 *         of the given offset and -1 if no entity reference.
 	 */
-	public static int getEntityReferenceEndOffset(String text, int offset) {
+	public static int getEntityReferenceEndOffset(CharSequence text, int offset) {
 		int endEntityOffset = StringUtils.findEndWord(text, offset, ENTITY_NAME_PREDICATE);
 		if (endEntityOffset == -1) {
 			return -1;
@@ -688,7 +689,7 @@ public class XMLPositionUtility {
 					DOMCharacterData data = (DOMCharacterData) node;
 					int start = data.getStartContent();
 					Integer end = null;
-					String text = document.getText();
+					CharSequence text = document.getTextSequence();
 					for (int i = start; i < data.getEndContent(); i++) {
 						char c = text.charAt(i);
 						if (end == null) {
@@ -923,7 +924,7 @@ public class XMLPositionUtility {
 		}
 		return null;
 	}
-	
+
 	public static Range selectParameterNameFromGivenName(String parameterName, DTDDeclNode declNode) {
 		List<DTDDeclParameter> parameters = declNode.getParameters();
 		for (DTDDeclParameter parameter : parameters) {
@@ -1109,7 +1110,7 @@ public class XMLPositionUtility {
 
 	public static Range getTagNameRange(TokenType tokenType, int startOffset, DOMDocument xmlDocument) {
 
-		Scanner scanner = XMLScanner.createScanner(xmlDocument.getText(), startOffset);
+		Scanner scanner = XMLScanner.createScanner(xmlDocument.getTextSequence(), startOffset);
 
 		TokenType token = scanner.scan();
 		while (token != TokenType.EOS && token != tokenType) {

@@ -98,7 +98,7 @@ public class CloseTagCodeAction implements ICodeActionParticipant {
 	private void doCodeActionsForStartTagUnclosed(DOMElement element, DOMDocument document, Range diagnosticRange,
 			Diagnostic diagnostic, List<CodeAction> codeActions) throws BadLocationException {
 		// Here start tag element is not closed with '>'.
-		String text = document.getText();
+		CharSequence text = document.getTextSequence();
 		int closeAngleBracketOffset = element.getUnclosedStartTagCloseOffset();
 		final Position closeAngleBracketPosition = document.positionAt(closeAngleBracketOffset);
 		if (!element.hasEndTag()) {
@@ -150,7 +150,7 @@ public class CloseTagCodeAction implements ICodeActionParticipant {
 	private void doCodeActionsForStartTagClosed(DOMElement element, DOMDocument document, Range diagnosticRange,
 			Diagnostic diagnostic, List<CodeAction> codeActions) throws BadLocationException {
 		// Here start tag element is closed with '>'.
-		String text = document.getText();
+		CharSequence text = document.getTextSequence();
 		if (!element.hasEndTag()) {
 			// The element has no an end tag
 			// ex : <foo attr="" >
@@ -261,10 +261,10 @@ public class CloseTagCodeAction implements ICodeActionParticipant {
 	 */
 	private static CodeAction removeTagCodeAction(DOMElement element, DOMDocument document, Diagnostic diagnostic)
 			throws BadLocationException {
-		String text = document.getText();
+		CharSequence text = document.getTextSequence();
 		Position startPosition = document.positionAt(element.getStart());
 		Position endPosition = document.positionAt(element.getEnd());
-		String contentToRemove = text.substring(element.getStart(), element.getEnd());
+		String contentToRemove = text.subSequence(element.getStart(), element.getEnd()).toString();
 		CodeAction removeAction = CodeActionFactory.remove("Remove '" + contentToRemove + "'",
 				new Range(startPosition, endPosition), document.getTextDocument(), diagnostic);
 		return removeAction;
@@ -316,7 +316,7 @@ public class CloseTagCodeAction implements ICodeActionParticipant {
 		return false;
 	}
 
-	private static boolean isCharAt(String text, int offset, char ch) {
+	private static boolean isCharAt(CharSequence text, int offset, char ch) {
 		if (text.length() <= offset) {
 			return false;
 		}

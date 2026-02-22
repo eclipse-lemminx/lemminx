@@ -14,6 +14,7 @@ package org.eclipse.lemminx.extensions.contentmodel.commands;
 import static org.eclipse.lemminx.XMLAssert.c;
 import static org.eclipse.lemminx.XMLAssert.d;
 import static org.eclipse.lemminx.XMLAssert.pd;
+import static org.eclipse.lemminx.commons.text.CharSequenceUtils.indexOf;
 
 import java.nio.file.Path;
 import java.util.Collections;
@@ -372,7 +373,7 @@ public class XMLValidationCommandTest extends BaseFileTempTest {
 	private static CompletionList completion(MockXMLLanguageServer languageServer, TextDocumentIdentifier xmlIdentifier)
 			throws BadLocationException, InterruptedException, ExecutionException {
 		DOMDocument document = languageServer.getDocument(xmlIdentifier.getUri());
-		int offset = document.getText().indexOf("<tags />");
+		int offset = indexOf(document.getTextSequence(), "<tags />");
 		Position position = document.positionAt(offset);
 		CompletionParams completionParams = new CompletionParams();
 		completionParams.setTextDocument(xmlIdentifier);

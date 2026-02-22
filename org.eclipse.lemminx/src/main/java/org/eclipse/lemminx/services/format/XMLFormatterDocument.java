@@ -145,7 +145,7 @@ public class XMLFormatterDocument {
 	public List<? extends TextEdit> format(DOMDocument document, int start, int end) {
 		// Pre-allocate list capacity based on document size to reduce reallocations
 		// Estimate: 1 edit per 100 characters for typical XML formatting
-		int estimatedCapacity = Math.min(textDocument.getText().length() / 100, 10000);
+		int estimatedCapacity = Math.min(textDocument.getTextLength() / 100, 10000);
 		List<TextEdit> edits = new ArrayList<>(estimatedCapacity);
 
 		// get initial document region
@@ -179,7 +179,7 @@ public class XMLFormatterDocument {
 		}
 
 		boolean insertFinalNewline = isInsertFinalNewline();
-		String xml = textDocument.getText();
+		CharSequence xml = textDocument.getTextSequence();
 		int endDocument = xml.length() - 1;
 		if (isTrimFinalNewlines() && (end == -1 || endDocument < end)) {
 			trimFinalNewlines(insertFinalNewline, edits);
@@ -417,7 +417,7 @@ public class XMLFormatterDocument {
 	}
 
 	public int adjustOffsetWithLeftWhitespaces(int leftLimit, int to) {
-		return TextEditUtils.adjustOffsetWithLeftWhitespaces(leftLimit, to, textDocument.getText());
+		return TextEditUtils.adjustOffsetWithLeftWhitespaces(leftLimit, to, textDocument.getTextSequence());
 	}
 
 	public int replaceLeftSpacesWithIndentation(int indentLevel, int leftLimit, int to, boolean addLineSeparator,
@@ -457,7 +457,7 @@ public class XMLFormatterDocument {
 			int indentLevel, List<TextEdit> edits) {
 		int preservedNewLines = getFormattingSettings().getPreservedNewlines();
 		int currentNewLineCount = XMLFormatterDocument.getExistingNewLineCount(
-				textDocument.getText(), spaceEnd, lineDelimiter);
+				textDocument.getTextSequence(), spaceEnd, lineDelimiter);
 		if (currentNewLineCount > preservedNewLines) {
 			replaceLeftSpacesWithIndentationWithMultiNewLines(indentLevel, spaceStart,
 					spaceEnd, preservedNewLines + 1, edits);
@@ -469,7 +469,7 @@ public class XMLFormatterDocument {
 	}
 
 	boolean hasLineBreak(int from, int to) {
-		String text = textDocument.getText();
+		CharSequence text = textDocument.getTextSequence();
 		for (int i = from; i < to; i++) {
 			char c = text.charAt(i);
 			if (isLineSeparator(c)) {
@@ -480,7 +480,7 @@ public class XMLFormatterDocument {
 	}
 
 	public int getNormalizedLength(int from, int to) {
-		String text = textDocument.getText();
+		CharSequence text = textDocument.getTextSequence();
 		int contentOffset = 0;
 		for (int i = from; i < to; i++) {
 			if (Character.isWhitespace(text.charAt(i)) && !Character.isWhitespace(text.charAt(i + 1))) {
@@ -495,7 +495,7 @@ public class XMLFormatterDocument {
 
 	public int getOffsetWithPreserveLineBreaks(int from, int to, int tabSize, boolean isInsertSpaces) {
 		int initialTo = to;
-		String text = textDocument.getText();
+		CharSequence text = textDocument.getTextSequence();
 		for (int i = to; i > from; i--) {
 			if (text.charAt(i) == '\t') {
 				to -= tabSize;
@@ -530,7 +530,7 @@ public class XMLFormatterDocument {
 	// ------- Utilities method
 
 	int updateLineWidthWithLastLine(DOMNode child, int availableLineWidth) {
-		String text = textDocument.getText();
+		CharSequence text = textDocument.getTextSequence();
 		int lineWidth = availableLineWidth;
 		int end = child.getEnd();
 		// Check if next char after the end of the DOM node is a new line feed.
@@ -557,7 +557,7 @@ public class XMLFormatterDocument {
 	}
 
 	public int getLineBreakOffset(int startAttr, int start) {
-		String text = textDocument.getText();
+		CharSequence text = textDocument.getTextSequence();
 		for (int i = startAttr; i < start; i++) {
 			char c = text.charAt(i);
 			if (isLineSeparator(c)) {
@@ -736,7 +736,7 @@ public class XMLFormatterDocument {
 	}
 
 	private void trimFinalNewlines(boolean insertFinalNewline, List<TextEdit> edits) {
-		String xml = textDocument.getText();
+		CharSequence xml = textDocument.getTextSequence();
 		int end = xml.length() - 1;
 		int i = end;
 		while (i >= 0 && isLineSeparator(xml.charAt(i))) {
@@ -774,11 +774,11 @@ public class XMLFormatterDocument {
 	 * @return the number of new lines in the whitespaces to the left of the given
 	 *         offset.
 	 */
-	public static int getExistingNewLineCount(String text, int offset, String delimiter) {
+	public static int getExistingNewLineCount(CharSequence text, int offset, String delimiter) {
 		boolean delimiterHasTwoCharacters = delimiter.length() == 2;
 		int newLineCounter = 0;
 		for (int i = offset; i > 1; i--) {
-			String c;
+			CharSequence c;
 			if (!Character.isWhitespace(text.charAt(i - 1))) {
 				if (!delimiterHasTwoCharacters) {
 					c = String.valueOf(text.charAt(i));
@@ -789,8 +789,8 @@ public class XMLFormatterDocument {
 				return newLineCounter;
 			}
 			if (delimiterHasTwoCharacters) {
-				c = text.substring(i - 2, i);
-				if (delimiter.equals(c)) {
+				c = text.subSequence(i - 2, i);
+				if (c.equals(delimiter)) {
 					newLineCounter++;
 					i--; // skip the second char of the delimiter
 				}
@@ -848,8 +848,8 @@ public class XMLFormatterDocument {
 		return lineDelimiter;
 	}
 
-	String getText() {
-		return textDocument.getText();
+	CharSequence getText() {
+		return textDocument.getTextSequence();
 	}
 
 	public int getLineAtOffset(int offset) {

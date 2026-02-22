@@ -53,7 +53,7 @@ public class TextEditUtils {
 	 *         given range (from, to) of the given text document and null otherwise.
 	 */
 	public static TextEdit createTextEditIfNeeded(int from, int to, String expectedContent, TextDocument textDocument) {
-		String text = textDocument.getText();
+		CharSequence text = textDocument.getTextSequence();
 
 		// Check if content from the range [from, to] is the same than expected content
 		if (isMatchExpectedContent(from, to, expectedContent, text)) {
@@ -85,7 +85,7 @@ public class TextEditUtils {
 	 * @return true if the given content from the range [from, to] of the given text
 	 *         is the same than expected content and false otherwise.
 	 */
-	private static boolean isMatchExpectedContent(int from, int to, String expectedContent, String text) {
+	private static boolean isMatchExpectedContent(int from, int to, String expectedContent, CharSequence text) {
 		if (expectedContent.length() == to - from) {
 			int j = 0;
 			for (int i = from; i < to; i++) {
@@ -102,7 +102,7 @@ public class TextEditUtils {
 	}
 
 	public static String applyEdits(TextDocument document, List<? extends TextEdit> edits) throws BadLocationException {
-		String text = document.getText();
+		CharSequence text = document.getTextSequence();
 		Collections.sort(edits /* .map(getWellformedEdit) */, (a, b) -> {
 			int diff = a.getRange().getStart().getLine() - b.getRange().getStart().getLine();
 			if (diff == 0) {
@@ -110,12 +110,12 @@ public class TextEditUtils {
 			}
 			return diff;
 		});
-		
+
 		// Use StringBuilder for better memory efficiency, especially for large files
 		// Pre-allocate capacity based on original text size to minimize reallocations
 		StringBuilder result = new StringBuilder(text.length());
 		int lastModifiedOffset = 0;
-		
+
 		for (TextEdit e : edits) {
 			int startOffset = document.offsetAt(e.getRange().getStart());
 			if (startOffset < lastModifiedOffset) {
@@ -144,7 +144,7 @@ public class TextEditUtils {
 	 * @return the offset of the first whitespace that's found in the given range
 	 *         [leftLimit,to] from the left of the to, and leftLimit otherwise.
 	 */
-	public static int adjustOffsetWithLeftWhitespaces(int leftLimit, int to, String text) {
+	public static int adjustOffsetWithLeftWhitespaces(int leftLimit, int to, CharSequence text) {
 		if (to == 0) {
 			return -1;
 		}
@@ -159,9 +159,10 @@ public class TextEditUtils {
 	}
 
 	/**
-	 * Creates a TextDocumentEdit object for the specified document and list of text edits
+	 * Creates a TextDocumentEdit object for the specified document and list of text
+	 * edits
 	 * 
-	 * @param document Document to be changed
+	 * @param document  Document to be changed
 	 * @param textEdits a list of text edit changes
 	 * @return A Text Dpcument Edit object
 	 */
@@ -170,7 +171,7 @@ public class TextEditUtils {
 				document.getDocumentURI(), document.getTextDocument().getVersion());
 		return new TextDocumentEdit(projectVersionedTextDocumentIdentifier, textEdits);
 	}
-	
+
 	public static WorkspaceEdit createWorkspaceEdit(List<Either<TextDocumentEdit, ResourceOperation>> documentChanges) {
 		return new WorkspaceEdit(documentChanges);
 	}

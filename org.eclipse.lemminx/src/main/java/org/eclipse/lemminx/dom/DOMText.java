@@ -62,7 +62,7 @@ public class DOMText extends DOMCharacterData implements org.w3c.dom.Text {
 	 */
 	@Override
 	public boolean isElementContentWhitespace() {
-		String text = getOwnerDocument().getOwnerDocument().getText();
+		CharSequence text = getOwnerDocument().getOwnerDocument().getTextSequence();
 		return StringUtils.isWhitespace(text, getStart(), getEnd());
 	}
 

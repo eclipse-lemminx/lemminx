@@ -47,7 +47,7 @@ public class DOMDocumentType extends DTDDeclNode implements org.w3c.dom.Document
 	@Override
 	public String getTextContent() {
 		if (content == null) {
-			content = getOwnerDocument().getText().substring(getStart(), getEnd());
+			content = getOwnerDocument().getTextSequence().subSequence(getStart(), getEnd()).toString();
 		}
 		return content;
 	}

@@ -101,7 +101,7 @@ public class DTDElementDecl extends DTDDeclNode {
 			return null;
 		}
 		// We are after the <!ELEMENT name, search the parameter
-		String text = getOwnerDocument().getText();
+		CharSequence text = getOwnerDocument().getTextSequence();
 		// Find the start word offset from the left of the offset (ex : (head|ing) will
 		// return offset of 'h'
 		int paramStart = findStartWord(text, offset, isValidChar);
@@ -134,7 +134,7 @@ public class DTDElementDecl extends DTDDeclNode {
 		int start = name.getEnd();
 		int end = getEnd();
 
-		String text = getOwnerDocument().getText();
+		CharSequence text = getOwnerDocument().getTextSequence();
 		int wordStart = -1;
 		int wordEnd = -1;
 		// Loop for content after <!ELEMENT element-name (
@@ -180,7 +180,7 @@ public class DTDElementDecl extends DTDDeclNode {
 	 *         <code>wordStart</code> offset and ends at <code>wordEnd</code>
 	 *         matches the given <code>searchName</code>
 	 */
-	private static boolean isMatchName(String searchWord, String text, int wordStart, int wordEnd) {
+	private static boolean isMatchName(String searchWord, CharSequence text, int wordStart, int wordEnd) {
 		int length = wordEnd - wordStart;
 		if (searchWord.length() != length) {
 			return false;

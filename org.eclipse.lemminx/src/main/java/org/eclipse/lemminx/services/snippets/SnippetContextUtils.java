@@ -58,7 +58,7 @@ public class SnippetContextUtils {
 			if (element.isInInsideStartEndTag(offset)) {
 				// <a>|</a>
 				// <a></|</a>
-				String text = request.getXMLDocument().getText();
+				CharSequence text = request.getXMLDocument().getTextSequence();
 				if (text.charAt(offset - 1) == '/') {
 					// <a></|</a> -> should be ignore
 					return false;
@@ -78,7 +78,7 @@ public class SnippetContextUtils {
 			if (!element.hasEndTag()) {
 				// <a>|
 				// <a></|
-				String text = request.getXMLDocument().getText();
+				CharSequence text = request.getXMLDocument().getTextSequence();
 				if (text.charAt(node.getEnd() - 1) == '/') {
 					// <a></ -> should be ignore
 					return false;

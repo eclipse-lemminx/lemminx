@@ -56,7 +56,7 @@ public interface ILineTracker {
 	 * @param text the text whose number of lines should be computed
 	 * @return the number of lines in the given text
 	 */
-	int computeNumberOfLines(String text);
+	int computeNumberOfLines(CharSequence text);
 
 	/**
 	 * Returns the number of lines.
@@ -135,14 +135,14 @@ public interface ILineTracker {
 	 * @param text the substitution text
 	 * @exception BadLocationException if specified range is unknown to this tracker
 	 */
-	void replace(int offset, int length, String text) throws BadLocationException;
+	void replace(int offset, int length, CharSequence text) throws BadLocationException;
 
 	/**
 	 * Sets the tracked text to the specified text.
 	 *
 	 * @param text the new tracked text
 	 */
-	void set(String text);
+	void set(CharSequence text);
 
 	Position getPositionAt(int position) throws BadLocationException;
 
