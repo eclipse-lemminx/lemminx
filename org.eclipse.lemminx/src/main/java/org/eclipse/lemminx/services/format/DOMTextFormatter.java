@@ -38,7 +38,7 @@ public class DOMTextFormatter {
 		// Don't format the spacing in text for case of preserve empty content setting
 		FormatElementCategory formatElementCategory = parentConstraints.getFormatElementCategory();
 		if (formatElementCategory == FormatElementCategory.PreserveSpace && isTrimTrailingWhitespace()) {
-			String text = formatterDocument.getText();
+			CharSequence text = formatterDocument.getText();
 			int i = text.length() - 1;
 			char curr = text.charAt(i);
 			boolean removeSpaces = true;
@@ -68,7 +68,7 @@ public class DOMTextFormatter {
 		} else if (formatElementCategory == FormatElementCategory.PreserveSpace) {
 			return;
 		}
-		String text = formatterDocument.getText();
+		CharSequence text = formatterDocument.getText();
 		int availableLineWidth = parentConstraints.getAvailableLineWidth();
 		int indentLevel = parentConstraints.getIndentLevel();
 		boolean isMixedContent = formatElementCategory == FormatElementCategory.MixedContent;

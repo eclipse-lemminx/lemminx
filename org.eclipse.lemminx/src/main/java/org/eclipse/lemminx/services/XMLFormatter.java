@@ -89,7 +89,7 @@ class XMLFormatter {
 	private boolean shouldMergeEdits(List<? extends TextEdit> edits, DOMDocument xmlDocument) {
 		// Merge if there are many edits (> 1000) or if the document is large (> 100KB)
 		int editCount = edits != null ? edits.size() : 0;
-		int documentSize = xmlDocument.getTextDocument().getText().length();
+		int documentSize = xmlDocument.getTextDocument().getTextSequence().length();
 		return editCount > 1000 || documentSize > 100_000;
 	}
 	
@@ -103,7 +103,7 @@ class XMLFormatter {
 	private Range getFullDocumentRange(DOMDocument xmlDocument) throws BadLocationException {
 		TextDocument textDocument = xmlDocument.getTextDocument();
 		Position start = new Position(0, 0);
-		Position end = textDocument.positionAt(textDocument.getText().length());
+		Position end = textDocument.positionAt(textDocument.getTextSequence().length());
 		return new Range(start, end);
 	}
 

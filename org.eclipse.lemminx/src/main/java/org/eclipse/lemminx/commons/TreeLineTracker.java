@@ -693,7 +693,7 @@ public class TreeLineTracker implements ILineTracker {
 	}
 
 	@Override
-	public final void replace(int offset, int length, String text) throws BadLocationException {
+	public final void replace(int offset, int length, CharSequence text) throws BadLocationException {
 		if (ASSERT) {
 			checkTree();
 		}
@@ -750,7 +750,7 @@ public class TreeLineTracker implements ILineTracker {
 	 * @param firstLineDelta the number of characters from the replacement offset to
 	 *                       the end of <code>node</code> &gt; <code>length</code>
 	 */
-	private void replaceInternal(Node node, String text, int length, int firstLineDelta) {
+	private void replaceInternal(Node node, CharSequence text, int length, int firstLineDelta) {
 		// 1) modification on a single line
 
 		DelimiterInfo info = text == null ? null : nextDelimiterInfo(text, 0);
@@ -797,7 +797,7 @@ public class TreeLineTracker implements ILineTracker {
 	 *                       offset to the end of <code>node</code>, &lt;=
 	 *                       <code>length</code>
 	 */
-	private void replaceFromTo(Node node, Node last, String text, int length, int firstLineDelta) {
+	private void replaceFromTo(Node node, Node last, CharSequence text, int length, int firstLineDelta) {
 		// 2) modification covers several lines
 
 		// delete intermediate nodes
@@ -1179,7 +1179,7 @@ public class TreeLineTracker implements ILineTracker {
 	 * @param offset the offset in the given text
 	 * @return the information of the first found delimiter or <code>null</code>
 	 */
-	protected DelimiterInfo nextDelimiterInfo(String text, int offset) {
+	protected DelimiterInfo nextDelimiterInfo(CharSequence text, int offset) {
 		char ch;
 		int length = text.length();
 		for (int i = offset; i < length; i++) {
@@ -1222,7 +1222,7 @@ public class TreeLineTracker implements ILineTracker {
 	}
 
 	@Override
-	public final int computeNumberOfLines(String text) {
+	public final int computeNumberOfLines(CharSequence text) {
 		int count = 0;
 		int start = 0;
 		DelimiterInfo delimiterInfo = nextDelimiterInfo(text, start);
@@ -1416,7 +1416,7 @@ public class TreeLineTracker implements ILineTracker {
 	}
 
 	@Override
-	public final void set(String text) {
+	public final void set(CharSequence text) {
 		fRoot = new Node(0, NO_DELIM);
 		try {
 			replace(0, 0, text);

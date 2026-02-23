@@ -11,12 +11,12 @@
 *******************************************************************************/
 package org.eclipse.lemminx.utils;
 
-import java.io.StringReader;
 import java.net.URL;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
 
+import org.eclipse.lemminx.commons.text.CharSequenceUtils;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMElement;
 import org.eclipse.lemminx.dom.DOMNode;
@@ -220,8 +220,7 @@ public class DOMUtils {
 	 * @return true if the given URI is a XSL and false otherwise.
 	 */
 	public static boolean isXSL(String uri) {
-		return uri != null
-				&& (uri.endsWith(XSL_EXTENSION));
+		return uri != null && (uri.endsWith(XSL_EXTENSION));
 	}
 
 	/**
@@ -281,10 +280,10 @@ public class DOMUtils {
 	}
 
 	public static InputSource createInputSource(DOMDocument document) {
-		String content = document.getText();
+		CharSequence content = document.getTextSequence();
 		String uri = document.getDocumentURI();
 		InputSource inputSource = new InputSource();
-		inputSource.setCharacterStream(new StringReader(content));
+		inputSource.setCharacterStream(CharSequenceUtils.newReader(content));
 		inputSource.setSystemId(uri);
 		return inputSource;
 	}
@@ -292,8 +291,9 @@ public class DOMUtils {
 	/**
 	 * Returns false if the range is zero-length, and true otherwise.
 	 * 
-	 * @param range the range to check
-	 * @param adjust true if the leading and trailing quotes should be removed before checking if it's zero-length, false otherwise
+	 * @param range  the range to check
+	 * @param adjust true if the leading and trailing quotes should be removed
+	 *               before checking if it's zero-length, false otherwise
 	 * @return false if the range is zero-length, and true otherwise
 	 */
 	public static boolean isNonEmptyRange(DOMRange range, boolean adjust) {

@@ -21,7 +21,7 @@ import org.w3c.dom.DOMException;
 public class DOMProcessingInstruction extends DOMCharacterData implements org.w3c.dom.ProcessingInstruction {
 
 	boolean startTagClose;
-	String target;
+	CharSequence target;
 	boolean prolog = false;
 	boolean processingInstruction = false;
 	int startContent;
@@ -86,7 +86,7 @@ public class DOMProcessingInstruction extends DOMCharacterData implements org.w3
 	 */
 	@Override
 	public String getTarget() {
-		return target;
+		return target.toString();
 	}
 
 	/*

@@ -36,6 +36,7 @@ public class DOMParserPerformance {
 		while (true) {
 			long start = System.currentTimeMillis();
 			DOMDocument xmlDocument = DOMParser.getInstance().parse(document, null);
+			//xmlDocument.dispose();
 			System.err.println("Parsed 'content.xml' with DOMParser in " + (System.currentTimeMillis() - start) + " ms.");
 		}
 	}

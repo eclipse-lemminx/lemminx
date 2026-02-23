@@ -1728,7 +1728,7 @@ public class XMLAssert {
 			assertEquals(expectedMatches[i], actualStartOffset);
 			int actualEndOffset = document.offsetAt(highlight.getRange().getEnd());
 			assertEquals(expectedMatches[i] + (elementName != null ? elementName.length() : 0), actualEndOffset);
-			assertEquals(elementName, document.getText().substring(actualStartOffset, actualEndOffset).toLowerCase());
+			assertEquals(elementName, document.getTextSequence().subSequence(actualStartOffset, actualEndOffset).toString().toLowerCase());
 		}
 	}
 

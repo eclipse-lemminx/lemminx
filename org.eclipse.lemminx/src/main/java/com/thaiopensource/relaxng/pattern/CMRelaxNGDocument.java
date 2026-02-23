@@ -317,6 +317,6 @@ public class CMRelaxNGDocument implements CMDocument {
 	private static String getTextContent(DOMElement element) {
 		int start = element.getStartTagCloseOffset() + 1;
 		int end = element.getEndTagOpenOffset();
-		return element.getOwnerDocument().getText().substring(start, end);
+		return element.getOwnerDocument().getTextSequence().subSequence(start, end).toString();
 	}
 }

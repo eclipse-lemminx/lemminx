@@ -53,7 +53,7 @@ public class DownloadDisabledResourceCodeAction implements ICodeActionParticipan
 			Range diagnosticRange = diagnostic.getRange();
 			int start = document.offsetAt(diagnosticRange.getStart());
 			int end = document.offsetAt(diagnosticRange.getEnd());
-			String url = document.getText().substring(start, end);
+			String url = document.getTextSequence().subSequence(start, end).toString();
 
 			String title = MessageFormat.format(FORCE_DOWNLOAD_TITLE, url);
 			CodeAction codeAction = new CodeAction(title);
