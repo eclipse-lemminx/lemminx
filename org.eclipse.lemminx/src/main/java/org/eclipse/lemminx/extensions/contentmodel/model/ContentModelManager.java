@@ -546,4 +546,8 @@ public class ContentModelManager {
 		cacheResolverExtension.forceDownloadExternalResource(url);
 	}
 
+	public void waitForDownload(String resourceUri) {
+		cacheResolverExtension.waitForDownload(resourceUri);		
+	}
+
 }

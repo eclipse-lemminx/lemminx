@@ -96,6 +96,8 @@ public class XMLLanguageService extends XMLExtensionsRegistry implements IXMLFul
 	private final XMLLinkedEditing linkedEditing;
 	private final XMLDocumentColor documentColor;
 
+	private boolean retriggerValidationWhenDownloadError;
+
 	public XMLLanguageService() {
 		this.formatter = new XMLFormatter(this);
 		this.highlighting = new XMLHighlighting(this);
@@ -115,6 +117,7 @@ public class XMLLanguageService extends XMLExtensionsRegistry implements IXMLFul
 		this.rename = new XMLRename(this);
 		this.selectionRanges = new XMLSelectionRanges();
 		this.linkedEditing = new XMLLinkedEditing(this);
+		setRetriggerValidationWhenDownloadError(true);
 	}
 
 	@Override
@@ -208,8 +211,15 @@ public class XMLLanguageService extends XMLExtensionsRegistry implements IXMLFul
 
 		// If there are some XSD, DTD which are downloading, wait for all download and
 		// re-trigger the validation.
+		if (retriggerValidationWhenDownloadError) {
 		List<CompletableFuture<?>> futures = diagnostics.getFutures();
 		if (!futures.isEmpty()) {
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
 			CompletableFuture<Void> allFutures = CompletableFuture
 					.allOf(futures.toArray(new CompletableFuture[futures.size()]));
 			allFutures.thenAccept(Void -> {
@@ -218,6 +228,7 @@ public class XMLLanguageService extends XMLExtensionsRegistry implements IXMLFul
 				triggerValidation.accept(document);
 				return null;
 			});
+		}
 		}
 		return null;
 	}
@@ -333,6 +344,10 @@ public class XMLLanguageService extends XMLExtensionsRegistry implements IXMLFul
 	public LinkedEditingRanges findLinkedEditingRanges(DOMDocument xmlDocument, Position position,
 			CancelChecker cancelChecker) {
 		return linkedEditing.findLinkedEditingRanges(xmlDocument, position, cancelChecker);
+	}
+	
+	public void setRetriggerValidationWhenDownloadError(boolean retriggerValidationWhenDownloadError) {
+		this.retriggerValidationWhenDownloadError = retriggerValidationWhenDownloadError;
 	}
 
 }

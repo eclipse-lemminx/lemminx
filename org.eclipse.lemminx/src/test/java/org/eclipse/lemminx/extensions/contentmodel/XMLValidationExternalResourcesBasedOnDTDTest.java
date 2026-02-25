@@ -78,12 +78,14 @@ public class XMLValidationExternalResourcesBasedOnDTDTest extends AbstractCacheB
 		validation.setResolveExternalEntities(true);
 
 		XMLLanguageService ls = new XMLLanguageService();
+		ls.setRetriggerValidationWhenDownloadError(false);
 
 		String xml = "<!DOCTYPE root-element PUBLIC \"public-id\" \"http://localhost:8080/sample.dtd\">\r\n" + //
 				"<root-element>\r\n" + //
 				"</root-element>";
 
-		String dtdCachePath = CacheResourcesManager.getResourceCachePath("http://localhost:8080/sample.dtd").toString();
+		String resourceUri = "http://localhost:8080/sample.dtd";
+		String dtdCachePath = CacheResourcesManager.getResourceCachePath(resourceUri).toString();
 		String fileURI = "test.xml";
 		// Downloading...
 		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls,
@@ -96,7 +98,8 @@ public class XMLValidationExternalResourcesBasedOnDTDTest extends AbstractCacheB
 						new Diagnostic(r(1, 1, 1, 13), "Element type \"root-element\" must be declared.",
 								DiagnosticSeverity.Error, "xml", DTDErrorCode.MSG_ELEMENT_NOT_DECLARED.getCode())));
 
-		TimeUnit.SECONDS.sleep(5); // HACK: to make the timing work on slow machines
+		ContentModelManager contentModelManager = ls.getComponent(ContentModelManager.class);
+		contentModelManager.waitForDownload(resourceUri);
 
 		// Downloaded error
 		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls,
@@ -154,6 +157,7 @@ public class XMLValidationExternalResourcesBasedOnDTDTest extends AbstractCacheB
 		validation.setResolveExternalEntities(true);
 
 		XMLLanguageService ls = new XMLLanguageService();
+		ls.setRetriggerValidationWhenDownloadError(false);
 
 		String xml = "<!DOCTYPE root-element [\r\n" + //
 				"	<!ELEMENT root-element (#PCDATA)>\r\n" + //
@@ -164,7 +168,8 @@ public class XMLValidationExternalResourcesBasedOnDTDTest extends AbstractCacheB
 				"	&abcd;\r\n" + //
 				"</root-element>";
 
-		String dtdCachePath = CacheResourcesManager.getResourceCachePath("http://localhost:8080/sample.dtd").toString();
+		String resourceUri = "http://localhost:8080/sample.dtd";
+		String dtdCachePath = CacheResourcesManager.getResourceCachePath(resourceUri).toString();
 		String fileURI = "test.xml";
 		// Downloading...
 		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls,
@@ -177,7 +182,8 @@ public class XMLValidationExternalResourcesBasedOnDTDTest extends AbstractCacheB
 						new Diagnostic(r(6, 1, 6, 7), "The entity \"abcd\" was referenced, but not declared.",
 								DiagnosticSeverity.Error, "xml", DTDErrorCode.EntityNotDeclared.getCode())));
 
-		TimeUnit.SECONDS.sleep(5); // HACK: to make the timing work on slow machines
+		ContentModelManager contentModelManager = ls.getComponent(ContentModelManager.class);
+		contentModelManager.waitForDownload(resourceUri);
 
 		// Downloaded error
 		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls,

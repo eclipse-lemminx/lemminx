@@ -31,6 +31,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -491,5 +492,17 @@ public class CacheResourcesManager {
 	 */
 	private boolean isForceDownloadExternalResource(String url) {
 		return forceDownloadExternalResources.getIfPresent(url) != null;
+	}
+
+	public void waitForDownload(String resourceUri) {
+		CompletableFuture<Path> downloadedFile = resourcesLoading.get(resourceUri);
+		if (downloadedFile != null) {
+			try {
+				downloadedFile.get();
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+			} catch (ExecutionException e) {
+			}
+		}
 	}
 }
