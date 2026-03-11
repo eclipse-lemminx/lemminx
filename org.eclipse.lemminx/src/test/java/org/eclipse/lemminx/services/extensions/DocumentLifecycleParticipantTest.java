@@ -93,7 +93,7 @@ public class DocumentLifecycleParticipantTest extends AbstractCacheBasedTest {
 	public void didOpen() {
 		assertEquals(0, documentLifecycleParticipant.getDidOpen());
 		server.didOpen("test.xml", "<foo ");
-		waitFor();
+		waitUntil(() -> documentLifecycleParticipant.getDidOpen() >= 1);
 		assertEquals(1, documentLifecycleParticipant.getDidOpen());
 	}
 
@@ -102,7 +102,7 @@ public class DocumentLifecycleParticipantTest extends AbstractCacheBasedTest {
 		assertEquals(0, documentLifecycleParticipant.getDidChange());
 		server.didOpen("test.xml", "<foo ");
 		server.didChange("test.xml", Collections.emptyList());
-		waitFor();
+		waitUntil(() -> documentLifecycleParticipant.getDidChange() >= 1);
 		assertEquals(1, documentLifecycleParticipant.getDidChange());
 	}
 
@@ -111,7 +111,7 @@ public class DocumentLifecycleParticipantTest extends AbstractCacheBasedTest {
 		assertEquals(0, documentLifecycleParticipant.getDidSave());
 		server.didOpen("test.xml", "<foo ");
 		server.didSave("test.xml");
-		waitFor();
+		waitUntil(() -> documentLifecycleParticipant.getDidSave() >= 1);
 		assertEquals(1, documentLifecycleParticipant.getDidSave());
 	}
 
@@ -123,10 +123,18 @@ public class DocumentLifecycleParticipantTest extends AbstractCacheBasedTest {
 		assertEquals(1, documentLifecycleParticipant.getDidClose());
 	}
 
-	private static void waitFor() {
-		try {
-			Thread.sleep(600);
-		} catch (Exception e) {
+	private static void waitUntil(java.util.function.BooleanSupplier condition) {
+		long deadline = System.currentTimeMillis() + 5000;
+		while (!condition.getAsBoolean()) {
+			if (System.currentTimeMillis() >= deadline) {
+				break;
+			}
+			try {
+				Thread.sleep(20);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				break;
+			}
 		}
 	}
 }

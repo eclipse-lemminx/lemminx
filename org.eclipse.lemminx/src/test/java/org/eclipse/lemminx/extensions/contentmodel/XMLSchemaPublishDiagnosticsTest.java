@@ -16,7 +16,6 @@ import static org.eclipse.lemminx.XMLAssert.pd;
 import static org.eclipse.lemminx.XMLAssert.r;
 import static org.eclipse.lemminx.XMLAssert.d;
 
-import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
 import org.eclipse.lemminx.AbstractCacheBasedTest;
@@ -146,8 +145,6 @@ public class XMLSchemaPublishDiagnosticsTest extends AbstractCacheBasedTest {
 				"</invoice> \r\n" + //
 				"";
 
-		TimeUnit.SECONDS.sleep(2); // HACK: to make the timing work on slow machines
-
 		// Downloading...
 		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, ls, pd(fileURI,
 				new Diagnostic(r(2, 32, 2, 50),
@@ -156,7 +153,7 @@ public class XMLSchemaPublishDiagnosticsTest extends AbstractCacheBasedTest {
 				new Diagnostic(r(1, 1, 1, 8), "cvc-elt.1.a: Cannot find the declaration of element 'invoice'.",
 						DiagnosticSeverity.Error, "xml", XMLSchemaErrorCode.cvc_elt_1_a.getCode())));
 
-		TimeUnit.SECONDS.sleep(5); // HACK: to make the timing work on slow machines
+		XMLAssert.awaitDownloads(ls, xml, fileURI);
 
 		// Downloaded error
 		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, ls, pd(fileURI,

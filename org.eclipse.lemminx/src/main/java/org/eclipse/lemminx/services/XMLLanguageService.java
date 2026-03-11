@@ -12,7 +12,6 @@
  */
 package org.eclipse.lemminx.services;
 
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -190,7 +189,7 @@ public class XMLLanguageService extends XMLExtensionsRegistry implements IXMLFul
 		return diagnostics.doDiagnostics(xmlDocument, validationSettings, validationArgs, cancelChecker);
 	}
 
-	public CompletableFuture<Path> publishDiagnostics(DOMDocument xmlDocument,
+	public CompletableFuture<Void> publishDiagnostics(DOMDocument xmlDocument,
 			Consumer<PublishDiagnosticsParams> publishDiagnostics, Consumer<TextDocument> triggerValidation,
 			XMLValidationRootSettings validationSettings, Map<String, Object> validationArgs,
 			CancelChecker cancelChecker) {
@@ -218,6 +217,7 @@ public class XMLLanguageService extends XMLExtensionsRegistry implements IXMLFul
 				triggerValidation.accept(document);
 				return null;
 			});
+			return allFutures;
 		}
 		return null;
 	}
