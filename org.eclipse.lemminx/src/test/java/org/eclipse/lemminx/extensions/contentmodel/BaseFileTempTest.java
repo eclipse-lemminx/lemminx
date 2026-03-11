@@ -18,6 +18,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileTime;
+import java.time.Instant;
 
 import org.eclipse.lemminx.AbstractCacheBasedTest;
 
@@ -39,16 +41,12 @@ public abstract class BaseFileTempTest extends AbstractCacheBasedTest {
 		updateFile(fileURI, contents);
 	}
 	protected static void updateFile(URI fileURI, String contents) throws IOException {
-		// For Mac OS, Linux OS, the call of Files.getLastModifiedTime is working for 1
-		// second.
-		// Here we wait for > 1s to be sure that call of Files.getLastModifiedTime will
-		// work.
-		try {
-			Thread.sleep(1050);
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-		}
 		createFile(fileURI, contents);
+		// Set the last modified time 2 seconds into the future to ensure
+		// Files.getLastModifiedTime detects the change (filesystem timestamp
+		// resolution on macOS/Linux is 1 second).
+		Path path = Paths.get(fileURI);
+		Files.setLastModifiedTime(path, FileTime.from(Instant.now().plusSeconds(2)));
 	}
 
 	protected Path getTempDirPath() {

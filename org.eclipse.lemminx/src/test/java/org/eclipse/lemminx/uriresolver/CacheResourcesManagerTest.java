@@ -96,7 +96,7 @@ public class CacheResourcesManagerTest extends AbstractCacheBasedTest {
 			} catch (CacheResourceDownloadedException e) {
 			}
 		}
-		TimeUnit.SECONDS.sleep(2); // wait past the cache expiration date
+		TimeUnit.MILLISECONDS.sleep(200); // wait past the cache expiration date
 		try {
 			cacheResourcesManager.getResource(uri);
 			fail("cacheResourcesManager should be busy re-downloading the url");
@@ -119,7 +119,7 @@ public class CacheResourcesManagerTest extends AbstractCacheBasedTest {
 		assertNotNull(path);
 		assertNotNull(cacheResourcesManager.getResource(uri));
 		server.stop();
-		TimeUnit.SECONDS.sleep(2); // wait past the cache expiration date
+		TimeUnit.MILLISECONDS.sleep(200); // wait past the cache expiration date
 		cacheResourcesManager.getResource(uri);
 		// Manager should return cached content, even if server is offline
 		assertNotNull(cacheResourcesManager.getResource(uri));
@@ -194,7 +194,7 @@ public class CacheResourcesManagerTest extends AbstractCacheBasedTest {
 	}
 
 	private Cache<String, CacheResourceDownloadedException> testingCache() {
-		return CacheBuilder.newBuilder().expireAfterWrite(1, TimeUnit.SECONDS).maximumSize(1).build();
+		return CacheBuilder.newBuilder().expireAfterWrite(100, TimeUnit.MILLISECONDS).maximumSize(1).build();
 	}
 
 }

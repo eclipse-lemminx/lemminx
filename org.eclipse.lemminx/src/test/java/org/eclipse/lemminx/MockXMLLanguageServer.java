@@ -46,6 +46,10 @@ public class MockXMLLanguageServer extends XMLLanguageServer {
 		return getLanguageClient().getPublishDiagnostics();
 	}
 
+	public void waitForDiagnosticCount(int expectedCount, long timeoutMs) {
+		getLanguageClient().waitForDiagnosticCount(expectedCount, timeoutMs);
+	}
+
 	@Override
 	public MockXMLLanguageClient getLanguageClient() {
 		return (MockXMLLanguageClient) super.getLanguageClient();

@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -912,21 +911,41 @@ public class XMLAssert {
 
 	public static void publishDiagnostics(DOMDocument xmlDocument, XMLValidationRootSettings validationSettings,
 			List<PublishDiagnosticsParams> actual, XMLLanguageService languageService) {
-		CompletableFuture<Path> error = languageService.publishDiagnostics(xmlDocument, params -> {
+		languageService.publishDiagnostics(xmlDocument, params -> {
 			actual.add(params);
 		}, (doc) -> {
-			// Retrigger validation
-			publishDiagnostics(xmlDocument, actual, languageService);
 		}, validationSettings, Collections.emptyMap(), () -> {
 		});
+	}
 
-		if (error != null) {
+	/**
+	 * Await completion of any in-progress resource downloads (XSD, DTD) for the
+	 * given XML content. This replaces Thread.sleep() calls in tests that need to
+	 * wait for async downloads to complete before re-validating.
+	 */
+	public static void awaitDownloads(XMLLanguageService ls, String xml, String fileURI) {
+		awaitDownloads(ls, xml, fileURI, null);
+	}
+
+	/**
+	 * Await completion of any in-progress resource downloads (XSD, DTD) for the
+	 * given XML content. This replaces Thread.sleep() calls in tests that need to
+	 * wait for async downloads to complete before re-validating.
+	 */
+	public static void awaitDownloads(XMLLanguageService ls, String xml, String fileURI,
+			XMLValidationRootSettings validationSettings) {
+		DOMDocument xmlDocument = DOMParser.getInstance().parse(xml, fileURI, ls.getResolverExtensionManager());
+		ls.setDocumentProvider((uri) -> xmlDocument);
+		CompletableFuture<Void> downloadsFuture = ls.publishDiagnostics(xmlDocument,
+				params -> {
+				}, (doc) -> {
+				}, validationSettings, Collections.emptyMap(), () -> {
+				});
+		if (downloadsFuture != null) {
 			try {
-				error.join();
-				// Wait for 500 ms to collect the last params
-				Thread.sleep(200);
+				downloadsFuture.get(10, java.util.concurrent.TimeUnit.SECONDS);
 			} catch (Exception e) {
-				e.printStackTrace();
+				// Expected - downloads may fail
 			}
 		}
 	}
