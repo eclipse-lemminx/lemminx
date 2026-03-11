@@ -17,8 +17,6 @@ import static org.eclipse.lemminx.XMLAssert.pd;
 import static org.eclipse.lemminx.XMLAssert.r;
 import static org.eclipse.lemminx.XMLAssert.testCodeActionsFor;
 
-import java.util.concurrent.TimeUnit;
-
 import org.eclipse.lemminx.AbstractCacheBasedTest;
 import org.eclipse.lemminx.XMLAssert;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
@@ -99,7 +97,7 @@ public class XMLValidationExternalResourcesBasedOnXSDTest extends AbstractCacheB
 				new Diagnostic(r(0, 1, 0, 13), "cvc-elt.1.a: Cannot find the declaration of element 'root-element'.",
 						DiagnosticSeverity.Error, "xml", XMLSchemaErrorCode.cvc_elt_1_a.getCode())));
 
-		TimeUnit.SECONDS.sleep(5); // HACK: to make the timing work on slow machines
+		XMLAssert.awaitDownloads(ls, xml, fileURI, validation);
 
 		// Downloaded error
 		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls, pd(fileURI,
@@ -173,7 +171,7 @@ public class XMLValidationExternalResourcesBasedOnXSDTest extends AbstractCacheB
 				new Diagnostic(r(0, 1, 0, 13), "cvc-elt.1.a: Cannot find the declaration of element 'root-element'.",
 						DiagnosticSeverity.Error, "xml", XMLSchemaErrorCode.cvc_elt_1_a.getCode())));
 
-		TimeUnit.SECONDS.sleep(5); // HACK: to make the timing work on slow machines
+		XMLAssert.awaitDownloads(ls, xml, fileURI, validation);
 
 		// Downloaded error
 		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls, pd(fileURI,

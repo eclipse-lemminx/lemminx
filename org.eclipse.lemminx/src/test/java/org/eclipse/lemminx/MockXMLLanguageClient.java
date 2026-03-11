@@ -14,6 +14,7 @@ package org.eclipse.lemminx;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.lemminx.customservice.ActionableNotification;
 import org.eclipse.lemminx.customservice.XMLLanguageClientAPI;
@@ -96,6 +97,25 @@ public class MockXMLLanguageClient implements XMLLanguageClientAPI {
 
 	public List<PublishDiagnosticsParams> getPublishDiagnostics() {
 		return publishDiagnostics;
+	}
+
+	/**
+	 * Wait until the total number of published diagnostics reaches the expected
+	 * count, or the timeout expires.
+	 */
+	public void waitForDiagnosticCount(int expectedCount, long timeoutMs) {
+		long deadline = System.currentTimeMillis() + timeoutMs;
+		while (publishDiagnostics.size() < expectedCount) {
+			if (System.currentTimeMillis() >= deadline) {
+				break;
+			}
+			try {
+				Thread.sleep(20);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				break;
+			}
+		}
 	}
 
 	public List<MessageParams> getLogMessages() {

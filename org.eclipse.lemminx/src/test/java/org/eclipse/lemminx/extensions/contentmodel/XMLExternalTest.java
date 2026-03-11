@@ -41,7 +41,6 @@ import org.junit.jupiter.api.Test;
  */
 public class XMLExternalTest extends BaseFileTempTest {
 
-	private int threadSleepMs = 600;
 	private MockXMLLanguageServer languageServer;
 
 	@BeforeEach
@@ -79,7 +78,7 @@ public class XMLExternalTest extends BaseFileTempTest {
 
 		clientOpenFile(languageServer, xmlTextDocument);
 
-		Thread.sleep(threadSleepMs);
+		languageServer.waitForDiagnosticCount(1, 5000);
 
 		List<PublishDiagnosticsParams> actualDiagnostics = languageServer.getPublishDiagnostics();
 		assertEquals(1, actualDiagnostics.size());
@@ -88,7 +87,7 @@ public class XMLExternalTest extends BaseFileTempTest {
 		editFile(testDtd, 2, "");
 		didChangedWatchedFiles(languageServer, testDtd);
 
-		Thread.sleep(threadSleepMs);
+		languageServer.waitForDiagnosticCount(2, 5000);
 
 		assertEquals(2, actualDiagnostics.size());
 		assertFalse(actualDiagnostics.get(1).getDiagnostics().isEmpty());
@@ -134,7 +133,7 @@ public class XMLExternalTest extends BaseFileTempTest {
 
 		clientOpenFile(languageServer, xmlTextDocument);
 
-		Thread.sleep(threadSleepMs);
+		languageServer.waitForDiagnosticCount(1, 5000);
 
 		List<PublishDiagnosticsParams> actualDiagnostics = languageServer.getPublishDiagnostics();
 		assertEquals(1, actualDiagnostics.size());
@@ -143,7 +142,7 @@ public class XMLExternalTest extends BaseFileTempTest {
 		editFile(testXsd, 12, "            maxOccurs=\"2\"/>");
 		didChangedWatchedFiles(languageServer, testXsd);
 
-		Thread.sleep(threadSleepMs);
+		languageServer.waitForDiagnosticCount(2, 5000);
 
 		assertEquals(2, actualDiagnostics.size());
 		assertEquals("cvc-complex-type.2.4.f", actualDiagnostics.get(1).getDiagnostics().get(0).getCode().getLeft());

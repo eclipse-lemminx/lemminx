@@ -17,8 +17,6 @@ import static org.eclipse.lemminx.XMLAssert.pd;
 import static org.eclipse.lemminx.XMLAssert.r;
 import static org.eclipse.lemminx.XMLAssert.testCodeActionsFor;
 
-import java.util.concurrent.TimeUnit;
-
 import org.eclipse.lemminx.AbstractCacheBasedTest;
 import org.eclipse.lemminx.XMLAssert;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
@@ -96,7 +94,7 @@ public class XMLValidationExternalResourcesBasedOnDTDTest extends AbstractCacheB
 						new Diagnostic(r(1, 1, 1, 13), "Element type \"root-element\" must be declared.",
 								DiagnosticSeverity.Error, "xml", DTDErrorCode.MSG_ELEMENT_NOT_DECLARED.getCode())));
 
-		TimeUnit.SECONDS.sleep(5); // HACK: to make the timing work on slow machines
+		XMLAssert.awaitDownloads(ls, xml, fileURI, validation);
 
 		// Downloaded error
 		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls,
@@ -177,7 +175,7 @@ public class XMLValidationExternalResourcesBasedOnDTDTest extends AbstractCacheB
 						new Diagnostic(r(6, 1, 6, 7), "The entity \"abcd\" was referenced, but not declared.",
 								DiagnosticSeverity.Error, "xml", DTDErrorCode.EntityNotDeclared.getCode())));
 
-		TimeUnit.SECONDS.sleep(5); // HACK: to make the timing work on slow machines
+		XMLAssert.awaitDownloads(ls, xml, fileURI, validation);
 
 		// Downloaded error
 		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls,

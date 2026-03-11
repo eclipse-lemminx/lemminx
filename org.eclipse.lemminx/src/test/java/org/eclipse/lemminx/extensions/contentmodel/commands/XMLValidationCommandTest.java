@@ -86,10 +86,8 @@ public class XMLValidationCommandTest extends BaseFileTempTest {
 			// Open the XML document, the validation is triggered asynchronously
 			TextDocumentIdentifier xmlIdentifier = languageServer.didOpen("test.xml", xml);
 
-			// Wait for:
-			// - downloading of XSD from the HTTP server to lemminx cache
-			// - validation triggers
-			Thread.sleep(1000);
+			// Wait for downloading of XSD and validation to trigger
+			languageServer.waitForDiagnosticCount(2, 5000);
 
 			// 1.1 Validation test
 
@@ -141,10 +139,8 @@ public class XMLValidationCommandTest extends BaseFileTempTest {
 			// Execute command cache
 			languageServer.executeCommand(XMLValidationFileCommand.COMMAND_ID, xmlIdentifier).get();
 
-			// Wait for:
-			// - downloading of XSD from the HTTP server to lemminx cache
-			// - validation triggers
-			Thread.sleep(1000);
+			// Wait for downloading and validation to trigger
+			languageServer.waitForDiagnosticCount(2, 5000);
 
 			// 3.1 Validation test
 
@@ -224,9 +220,8 @@ public class XMLValidationCommandTest extends BaseFileTempTest {
 			// Open the XML document, the validation is triggered asynchronously
 			TextDocumentIdentifier xml1Identifier = languageServer.didOpen("test1.xml", xml1);
 
-			// Wait for to collect diagnostics in the proper order (XSD diagnostics followed
-			// by DTD diagnostics)
-			Thread.sleep(2000);
+			// Wait for XSD diagnostics before opening second file
+			languageServer.waitForDiagnosticCount(2, 5000);
 
 			// Open the second XML file bound to the DTD
 			String xml2 = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\r\n" + //
@@ -238,10 +233,8 @@ public class XMLValidationCommandTest extends BaseFileTempTest {
 			// Open the XML document, the validation is triggered asynchronously
 			TextDocumentIdentifier xml2Identifier = languageServer.didOpen("test2.xml", xml2);
 
-			// Wait for:
-			// - downloading of XSD from the HTTP server to lemminx cache
-			// - validation triggers
-			Thread.sleep(1000);
+			// Wait for all 4 diagnostics (2 for each XML file)
+			languageServer.waitForDiagnosticCount(4, 5000);
 
 			// 1.1 Validation test
 
@@ -316,13 +309,10 @@ public class XMLValidationCommandTest extends BaseFileTempTest {
 			XMLAssert.assertCompletion(list2, c("tag", "<tag />"), 5 /* region, endregion, cdata, comment, tag */);
 
 			// Execute command cache
-			Thread.sleep(1000);
 			languageServer.executeCommand(XMLValidationAllFilesCommand.COMMAND_ID).get();
 
-			// Wait for:
-			// - downloading of XSD from the HTTP server to lemminx cache
-			// - validation triggers
-			Thread.sleep(1000);
+			// Wait for downloading and validation to trigger (4 diagnostics: 2 per file)
+			languageServer.waitForDiagnosticCount(4, 5000);
 
 			// 3.1 Validation test
 

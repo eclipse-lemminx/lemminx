@@ -17,8 +17,6 @@ import static org.eclipse.lemminx.XMLAssert.pd;
 import static org.eclipse.lemminx.XMLAssert.r;
 import static org.eclipse.lemminx.XMLAssert.testCodeActionsFor;
 
-import java.util.concurrent.TimeUnit;
-
 import org.eclipse.lemminx.AbstractCacheBasedTest;
 import org.eclipse.lemminx.XMLAssert;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
@@ -96,7 +94,7 @@ public class XSDValidationExternalResourcesTest extends AbstractCacheBasedTest {
 								DiagnosticSeverity.Information, "xsd",
 								ExternalResourceErrorCode.DownloadingResource.getCode())));
 
-		TimeUnit.SECONDS.sleep(5); // HACK: to make the timing work on slow machines
+		XMLAssert.awaitDownloads(ls, xsd, fileURI, validation);
 
 		// Downloaded error
 		XMLAssert.testPublishDiagnosticsFor(xsd, fileURI, validation, ls,
