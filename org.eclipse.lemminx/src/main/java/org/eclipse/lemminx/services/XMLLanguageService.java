@@ -66,7 +66,7 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
  * XML Language service.
  *
  */
-public class XMLLanguageService extends XMLExtensionsRegistry implements IXMLFullFormatter {
+public class XMLLanguageService extends XMLExtensionsRegistry implements IXMLFullFormatter, IXMLMinifier {
 
 	private static final CancelChecker NULL_CHECKER = new CancelChecker() {
 
@@ -77,6 +77,7 @@ public class XMLLanguageService extends XMLExtensionsRegistry implements IXMLFul
 	};
 
 	private final XMLFormatter formatter;
+	private final XMLMinifier minifier;
 	private final XMLHighlighting highlighting;
 	private final XMLSymbolsProvider symbolsProvider;
 	private final XMLCompletions completions;
@@ -97,6 +98,7 @@ public class XMLLanguageService extends XMLExtensionsRegistry implements IXMLFul
 
 	public XMLLanguageService() {
 		this.formatter = new XMLFormatter(this);
+		this.minifier = new XMLMinifier();
 		this.highlighting = new XMLHighlighting(this);
 		this.symbolsProvider = new XMLSymbolsProvider(this);
 		this.completions = new XMLCompletions(this);
@@ -132,6 +134,24 @@ public class XMLLanguageService extends XMLExtensionsRegistry implements IXMLFul
 
 	public List<? extends TextEdit> format(DOMDocument xmlDocument, Range range, SharedSettings sharedSettings) {
 		return formatter.format(xmlDocument, range, sharedSettings);
+	}
+
+	@Override
+	public String minify(String text, String uri, SharedSettings sharedSettings, CancelChecker cancelChecker) {
+		DOMDocument xmlDocument = DOMParser.getInstance().parse(new TextDocument(text, uri), null);
+		List<? extends TextEdit> edits = this.minify(xmlDocument, null, sharedSettings);
+		try {
+			return TextEditUtils.applyEdits(xmlDocument.getTextDocument(), edits);
+		} catch (Exception e) {
+			if (edits != null && edits.size() == 1) {
+				return edits.get(0).getNewText();
+			}
+			return text;
+		}
+	}
+
+	public List<? extends TextEdit> minify(DOMDocument xmlDocument, Range range, SharedSettings sharedSettings) {
+		return minifier.minify(xmlDocument, range, sharedSettings);
 	}
 
 	public List<DocumentHighlight> findDocumentHighlights(DOMDocument xmlDocument, Position position) {

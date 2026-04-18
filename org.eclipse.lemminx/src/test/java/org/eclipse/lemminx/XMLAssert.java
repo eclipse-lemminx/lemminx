@@ -182,16 +182,14 @@ public class XMLAssert {
 	}
 
 	public static CompletionList testCompletionFor(String value, Integer expectedCount, boolean enableItemDefaults,
-			CompletionItem... expectedItems)
-			throws BadLocationException {
+			CompletionItem... expectedItems) throws BadLocationException {
 		SharedSettings settings = new SharedSettings();
 		return testCompletionFor(new XMLLanguageService(), value, null, null, null, expectedCount, settings,
 				enableItemDefaults, expectedItems);
 	}
 
 	public static CompletionList testCompletionFor(String value, String catalogPath, String fileURI,
-			Integer expectedCount,
-			CompletionItem... expectedItems) throws BadLocationException {
+			Integer expectedCount, CompletionItem... expectedItems) throws BadLocationException {
 		return testCompletionFor(new XMLLanguageService(), value, catalogPath, null, fileURI, expectedCount, true,
 				expectedItems);
 	}
@@ -204,8 +202,7 @@ public class XMLAssert {
 	public static CompletionList testCompletionFor(XMLLanguageService xmlLanguageService, String value,
 			String catalogPath, Consumer<XMLLanguageService> customConfiguration, String fileURI, Integer expectedCount,
 			boolean autoCloseTags, CompletionItem... expectedItems) throws BadLocationException {
-		return testCompletionFor(xmlLanguageService, value,
-				catalogPath, customConfiguration, fileURI, expectedCount,
+		return testCompletionFor(xmlLanguageService, value, catalogPath, customConfiguration, fileURI, expectedCount,
 				autoCloseTags, false, expectedItems);
 	}
 
@@ -228,8 +225,7 @@ public class XMLAssert {
 	}
 
 	public static CompletionList testCompletionFor(XMLLanguageService xmlLanguageService, String value,
-			String catalogPath,
-			Consumer<XMLLanguageService> customConfiguration, String fileURI, Integer expectedCount,
+			String catalogPath, Consumer<XMLLanguageService> customConfiguration, String fileURI, Integer expectedCount,
 			SharedSettings sharedSettings, boolean enableItemDefaults, CompletionItem... expectedItems)
 			throws BadLocationException {
 		if (enableItemDefaults) {
@@ -327,10 +323,8 @@ public class XMLAssert {
 				List<TextEdit> matchedAdditionalTextEdits = match.getAdditionalTextEdits() != null
 						? match.getAdditionalTextEdits()
 						: Collections.emptyList();
-				assertEquals(expected.getAdditionalTextEdits().size(),
-						matchedAdditionalTextEdits.size());
-				assertArrayEquals(expected.getAdditionalTextEdits().toArray(),
-						matchedAdditionalTextEdits.toArray());
+				assertEquals(expected.getAdditionalTextEdits().size(), matchedAdditionalTextEdits.size());
+				assertArrayEquals(expected.getAdditionalTextEdits().toArray(), matchedAdditionalTextEdits.toArray());
 			}
 		} else {
 			assertNull(match.getTextEdit());
@@ -522,8 +516,7 @@ public class XMLAssert {
 	}
 
 	public static void testCompletionItemUnresolvedFor(XMLLanguageService xmlLanguageService, String value,
-			String catalogPath,
-			Consumer<XMLLanguageService> customConfiguration, String fileURI, Integer expectedCount,
+			String catalogPath, Consumer<XMLLanguageService> customConfiguration, String fileURI, Integer expectedCount,
 			SharedSettings sharedSettings, CompletionItem... expectedItems) throws BadLocationException {
 		int offset = value.indexOf('|');
 		value = value.substring(0, offset) + value.substring(offset + 1);
@@ -574,8 +567,7 @@ public class XMLAssert {
 	public static void testCompletionItemResolveFor(String value, String catalogPath, String fileURI,
 			Integer expectedCount, CompletionItem... expectedItems) throws BadLocationException {
 		CompletionItemResolveSupportCapabilities completionItemResolveSupportCapabilities = new CompletionItemResolveSupportCapabilities();
-		completionItemResolveSupportCapabilities
-				.setProperties(Arrays.asList("documentation"));
+		completionItemResolveSupportCapabilities.setProperties(Arrays.asList("documentation"));
 		CompletionItemCapabilities completionItemCapabilities = new CompletionItemCapabilities();
 		completionItemCapabilities.setResolveSupport(completionItemResolveSupportCapabilities);
 		CompletionCapabilities completionCapabilities = new CompletionCapabilities();
@@ -588,8 +580,7 @@ public class XMLAssert {
 	}
 
 	public static void testCompletionItemResolveFor(XMLLanguageService xmlLanguageService, String value,
-			String catalogPath,
-			Consumer<XMLLanguageService> customConfiguration, String fileURI, Integer expectedCount,
+			String catalogPath, Consumer<XMLLanguageService> customConfiguration, String fileURI, Integer expectedCount,
 			SharedSettings sharedSettings, CompletionItem... expectedItems) throws BadLocationException {
 		int offset = value.indexOf('|');
 		value = value.substring(0, offset) + value.substring(offset + 1);
@@ -630,15 +621,13 @@ public class XMLAssert {
 			assertEquals(expectedCount.intValue(), list.getItems().size());
 		}
 
-		CompletionList resolved = new CompletionList(
-				list.getItems().stream() //
-						.map((item) -> {
-							return (CompletionItem) xmlLanguageService.resolveCompletionItem(item, htmlDoc,
-									sharedSettings,
-									() -> {
-									});
-						}) //
-						.collect(Collectors.toList()));
+		CompletionList resolved = new CompletionList(list.getItems().stream() //
+				.map((item) -> {
+					return (CompletionItem) xmlLanguageService.resolveCompletionItem(item, htmlDoc, sharedSettings,
+							() -> {
+							});
+				}) //
+				.collect(Collectors.toList()));
 
 		if (expectedItems != null) {
 			for (CompletionItem item : expectedItems) {
@@ -838,14 +827,13 @@ public class XMLAssert {
 	}
 
 	public static void testPublishDiagnosticsFor(String xml, String fileURI,
-			XMLValidationRootSettings validationSettings,
-			PublishDiagnosticsParams... expected) {
+			XMLValidationRootSettings validationSettings, PublishDiagnosticsParams... expected) {
 		testPublishDiagnosticsFor(xml, fileURI, validationSettings, (Consumer<XMLLanguageService>) null, expected);
 	}
 
 	public static void testPublishDiagnosticsFor(String xml, String fileURI,
-			XMLValidationRootSettings validationSettings,
-			Consumer<XMLLanguageService> configuration, PublishDiagnosticsParams... expected) {
+			XMLValidationRootSettings validationSettings, Consumer<XMLLanguageService> configuration,
+			PublishDiagnosticsParams... expected) {
 		XMLLanguageService xmlLanguageService = new XMLLanguageService();
 		if (configuration != null) {
 			xmlLanguageService.initializeIfNeeded();
@@ -860,8 +848,8 @@ public class XMLAssert {
 	}
 
 	public static void testPublishDiagnosticsFor(String xml, String fileURI,
-			XMLValidationRootSettings validationSettings,
-			XMLLanguageService xmlLanguageService, PublishDiagnosticsParams... expected) {
+			XMLValidationRootSettings validationSettings, XMLLanguageService xmlLanguageService,
+			PublishDiagnosticsParams... expected) {
 		List<PublishDiagnosticsParams> actual = new ArrayList<>();
 
 		DOMDocument xmlDocument = DOMParser.getInstance().parse(xml, fileURI,
@@ -876,7 +864,8 @@ public class XMLAssert {
 	public static void assertPublishDiagnostics(List<PublishDiagnosticsParams> actual,
 			PublishDiagnosticsParams... expected) {
 		assertEquals(expected.length, actual.size(), () -> {
-			return "Unexpected diagnostics. Expected:"+ getMessages(Arrays.stream(expected)) + ",\nReceived: " +getMessages(actual.stream());
+			return "Unexpected diagnostics. Expected:" + getMessages(Arrays.stream(expected)) + ",\nReceived: "
+					+ getMessages(actual.stream());
 		});
 		for (int i = 0; i < expected.length; i++) {
 			assertEquals(expected[i].getUri(), actual.get(i).getUri());
@@ -892,8 +881,7 @@ public class XMLAssert {
 
 	private static List<String> getMessages(Stream<PublishDiagnosticsParams> diagParams) {
 		return diagParams.flatMap(d -> d.getDiagnostics().stream())
-						.map(d -> cleanExceptionMessage.apply(d.getMessage()))
-						.collect(Collectors.toList());
+				.map(d -> cleanExceptionMessage.apply(d.getMessage())).collect(Collectors.toList());
 	}
 
 	private static final Function<String, String> cleanExceptionMessage = (message) -> {
@@ -962,8 +950,7 @@ public class XMLAssert {
 	}
 
 	public static List<CodeAction> testCodeActionsFor(String xml, Diagnostic diagnostic, int index,
-			CodeAction... expected)
-			throws BadLocationException {
+			CodeAction... expected) throws BadLocationException {
 		SharedSettings settings = new SharedSettings();
 		settings.getFormattingSettings().setTabSize(4);
 		settings.getFormattingSettings().setInsertSpaces(false);
@@ -1013,9 +1000,8 @@ public class XMLAssert {
 	}
 
 	public static List<CodeAction> testCodeActionsFor(String xml, Diagnostic diagnostic, Range range,
-			String catalogPath,
-			String fileURI, SharedSettings sharedSettings, XMLLanguageService xmlLanguageService, int index,
-			CodeAction... expected) throws BadLocationException {
+			String catalogPath, String fileURI, SharedSettings sharedSettings, XMLLanguageService xmlLanguageService,
+			int index, CodeAction... expected) throws BadLocationException {
 		int offset = xml.indexOf('|');
 		if (offset != -1) {
 			xml = xml.substring(0, offset) + xml.substring(offset + 1);
@@ -1145,7 +1131,9 @@ public class XMLAssert {
 	private static CodeAction internalCa(Diagnostic d, JsonObject data,
 			Either<TextDocumentEdit, ResourceOperation>... ops) {
 		CodeAction codeAction = new CodeAction();
-		codeAction.setDiagnostics(Collections.singletonList(d));
+		if (d != null) {
+			codeAction.setDiagnostics(Collections.singletonList(d));
+		}
 		if (ops != null && ops.length > 0) {
 			codeAction.setEdit(new WorkspaceEdit(Arrays.asList(ops)));
 		}
@@ -1679,15 +1667,13 @@ public class XMLAssert {
 		testHighlightsFor(xml, null, expected);
 	}
 
-	public static void testHighlightsFor(String value, String fileURI,
-			DocumentHighlight... expected)
+	public static void testHighlightsFor(String value, String fileURI, DocumentHighlight... expected)
 			throws BadLocationException {
 		testHighlightsFor(new XMLLanguageService(), value, fileURI, expected);
 	}
 
 	public static void testHighlightsFor(XMLLanguageService xmlLanguageService, String value, String fileURI,
-			DocumentHighlight... expected)
-			throws BadLocationException {
+			DocumentHighlight... expected) throws BadLocationException {
 		int offset = value.indexOf('|');
 		value = value.substring(0, offset) + value.substring(offset + 1);
 
@@ -1811,6 +1797,24 @@ public class XMLAssert {
 		}
 	}
 
+	// ------------------- Minify assert
+
+	public static String minify(String unminified, SharedSettings sharedSettings) throws BadLocationException {
+		return minify(unminified, sharedSettings, "test.xml", null);
+	}
+
+	public static String minify(String unminified, SharedSettings sharedSettings, String uri, Range range)
+			throws BadLocationException {
+		TextDocument document = new TextDocument(unminified, uri);
+		document.setIncremental(true);
+		DOMDocument xmlDocument = DOMParser.getInstance().parse(document, null);
+
+		XMLLanguageService languageService = new XMLLanguageService();
+		List<? extends TextEdit> edits = languageService.minify(xmlDocument, range, sharedSettings);
+
+		return applyEdits(document, edits);
+	}
+
 	// ------------------- Prepare rename assert
 
 	public static PrepareRenameResult pr(Range range, String placeholder) {
@@ -1821,8 +1825,7 @@ public class XMLAssert {
 		assertRename(value, null);
 	}
 
-	public static void assertPrepareRename(String value, PrepareRenameResult expected)
-			throws BadLocationException {
+	public static void assertPrepareRename(String value, PrepareRenameResult expected) throws BadLocationException {
 		assertPrepareRename(null, value, expected);
 	}
 
@@ -1837,8 +1840,7 @@ public class XMLAssert {
 		value = value.substring(0, offset) + value.substring(offset + 1);
 
 		fileURI = fileURI != null ? fileURI : "test://test/test.html";
-		DOMDocument document = DOMParser.getInstance().parse(value, fileURI,
-				null);
+		DOMDocument document = DOMParser.getInstance().parse(value, fileURI, null);
 
 		Position position = document.positionAt(offset);
 
@@ -1873,8 +1875,7 @@ public class XMLAssert {
 		value = value.substring(0, offset) + value.substring(offset + 1);
 
 		fileURI = fileURI != null ? fileURI : "test://test/test.html";
-		DOMDocument document = DOMParser.getInstance().parse(value, fileURI,
-				null);
+		DOMDocument document = DOMParser.getInstance().parse(value, fileURI, null);
 
 		Position position = document.positionAt(offset);
 
@@ -1884,10 +1885,8 @@ public class XMLAssert {
 		WorkspaceEdit workspaceEdit = languageService.doRename(document, position, newText, () -> {
 		});
 		final String uri = fileURI;
-		Optional<TextDocumentEdit> documentChange = workspaceEdit.getDocumentChanges()
-				.stream().filter(Either::isLeft)
-				.filter(e -> uri.equals(e.getLeft().getTextDocument().getUri()))
-				.map(Either::getLeft).findFirst();
+		Optional<TextDocumentEdit> documentChange = workspaceEdit.getDocumentChanges().stream().filter(Either::isLeft)
+				.filter(e -> uri.equals(e.getLeft().getTextDocument().getUri())).map(Either::getLeft).findFirst();
 		List<TextEdit> actualEdits = documentChange.isPresent() ? documentChange.get().getEdits()
 				: Collections.emptyList();
 		assertArrayEquals(expectedEdits.toArray(), actualEdits.toArray());
@@ -1905,8 +1904,7 @@ public class XMLAssert {
 	}
 
 	public static void testLinkedEditingFor(XMLLanguageService xmlLanguageService, String value, String fileURI,
-			LinkedEditingRanges expected)
-			throws BadLocationException {
+			LinkedEditingRanges expected) throws BadLocationException {
 		int offset = value.indexOf('|');
 		value = value.substring(0, offset) + value.substring(offset + 1);
 
@@ -2005,15 +2003,15 @@ public class XMLAssert {
 		return selectionRange;
 	}
 
-	public static void assertSurroundWith(String xml, SurroundWithKind kind, boolean snippetsSupported,
-			String expected) throws BadLocationException, InterruptedException, ExecutionException {
+	public static void assertSurroundWith(String xml, SurroundWithKind kind, boolean snippetsSupported, String expected)
+			throws BadLocationException, InterruptedException, ExecutionException {
 		assertSurroundWith(xml, kind, snippetsSupported, (service) -> {
 		}, "src/test/resources/test.xml", expected);
 	}
 
 	public static void assertSurroundWith(String xml, SurroundWithKind kind, boolean snippetsSupported,
-			Consumer<XMLLanguageService> configuration, String uri,
-			String expected) throws BadLocationException, InterruptedException, ExecutionException {
+			Consumer<XMLLanguageService> configuration, String uri, String expected)
+			throws BadLocationException, InterruptedException, ExecutionException {
 		MockXMLLanguageServer languageServer = new MockXMLLanguageServer();
 
 		configuration.accept(languageServer.getXMLLanguageService());
@@ -2035,10 +2033,8 @@ public class XMLAssert {
 		TextDocumentIdentifier xmlIdentifier = languageServer.didOpen(uri, x.toString());
 
 		// Execute surround with tags command
-		SurroundWithResponse response = (SurroundWithResponse) languageServer
-				.executeCommand(SurroundWithCommand.COMMAND_ID, xmlIdentifier, selection, kind.name(),
-						snippetsSupported)
-				.get();
+		SurroundWithResponse response = (SurroundWithResponse) languageServer.executeCommand(
+				SurroundWithCommand.COMMAND_ID, xmlIdentifier, selection, kind.name(), snippetsSupported).get();
 
 		String actual = applyEdits(document, Arrays.asList(response.getStart(), response.getEnd()));
 		assertEquals(expected, actual);
@@ -2077,8 +2073,7 @@ public class XMLAssert {
 	// ------------------- ColorInformation assert
 
 	public static void testColorPresentationFor(String value, String fileURI, Color color, Range range,
-			XMLColorsSettings colorSettings,
-			ColorPresentation... expected) {
+			XMLColorsSettings colorSettings, ColorPresentation... expected) {
 		TextDocument document = new TextDocument(value, fileURI != null ? fileURI : "test://test/test.xml");
 
 		XMLLanguageService xmlLanguageService = new XMLLanguageService();
