@@ -35,6 +35,7 @@ import org.eclipse.lemminx.extensions.contentmodel.participants.codeactions.nogr
 import org.eclipse.lemminx.extensions.contentmodel.participants.codeactions.nogrammarconstraints.GenerateXSINoNamespaceSchemaCodeActionResolver;
 import org.eclipse.lemminx.extensions.contentmodel.settings.ContentModelSettings;
 import org.eclipse.lemminx.extensions.contentmodel.settings.XMLValidationRootSettings;
+import org.eclipse.lemminx.extensions.minify.participants.MinifyCodeActionResolver;
 import org.eclipse.lemminx.services.XMLLanguageService;
 import org.eclipse.lemminx.services.data.DataEntryField;
 import org.eclipse.lemminx.settings.SharedSettings;
@@ -239,7 +240,9 @@ public class XMLProblemsTest extends AbstractCacheBasedTest {
 				ca(d, createData("test.xml", GenerateRelaxNGSchemaCodeActionResolver.PARTICIPANT_ID, "test.rng")),
 				// Open binding wizard command
 				ca(d, new Command("Bind to existing grammar/schema", OPEN_BINDING_WIZARD,
-						Arrays.asList(new Object[] { "test.xml" }))));
+						Arrays.asList(new Object[] { "test.xml" }))), //
+				// XML Minify
+				ca(null, createData("test.xml", MinifyCodeActionResolver.PARTICIPANT_ID, null)));
 
 		// Test resolve of
 		// Code action to generate DTD, XSD
@@ -294,7 +297,9 @@ public class XMLProblemsTest extends AbstractCacheBasedTest {
 
 	private JsonObject createData(String uri, String particpantId, String file) {
 		JsonObject data = DataEntryField.createData(uri, particpantId);
-		data.addProperty("file", file);
+		if (file != null) {
+			data.addProperty("file", file);
+		}
 		return data;
 	}
 

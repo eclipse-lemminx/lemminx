@@ -15,6 +15,7 @@ package org.eclipse.lemminx.settings.capabilities;
 import java.util.Arrays;
 import java.util.UUID;
 
+import org.eclipse.lsp4j.CodeActionKind;
 import org.eclipse.lsp4j.CodeActionOptions;
 import org.eclipse.lsp4j.CodeLensOptions;
 import org.eclipse.lsp4j.ColorProviderOptions;
@@ -94,6 +95,10 @@ public class ServerCapabilitiesConstants {
 	private static CodeActionOptions createDefaultCodeActionOptions() {
 		CodeActionOptions options = new CodeActionOptions();
 		options.setResolveProvider(Boolean.TRUE);
+		options.setCodeActionKinds(Arrays.asList(
+			CodeActionKind.QuickFix,
+			CodeActionKind.Source
+		));
 		return options;
 	}
 }
