@@ -42,11 +42,11 @@ public class StringUtils {
 		return c == '\'' || c == '"';
 	}
 
-	public static boolean isWhitespace(String value, int index) {
+	public static boolean isWhitespace(CharSequence value, int index) {
 		return isWhitespace(value, index, value.length());
 	}
 
-	public static boolean isWhitespace(String value, int index, int end) {
+	public static boolean isWhitespace(CharSequence value, int index, int end) {
 		if (value == null) {
 			return false;
 		}
@@ -134,7 +134,7 @@ public class StringUtils {
 	 * @param text  the text
 	 * @return the whitespaces from the given range start/end of the given text.
 	 */
-	public static String getWhitespaces(String text, int start, int end) {
+	public static String getWhitespaces(CharSequence text, int start, int end) {
 		StringBuilder whitespaces = new StringBuilder();
 		for (int i = start; i < end; i++) {
 			char c = text.charAt(i);
@@ -421,7 +421,7 @@ public class StringUtils {
 	 * @return the start word offset from the left of the given <code>offset</code>
 	 *         and -1 if no word.
 	 */
-	public static int findStartWord(String text, int offset, Predicate<Character> isValidChar) {
+	public static int findStartWord(CharSequence text, int offset, Predicate<Character> isValidChar) {
 		return findStartWord(text, offset, 0, isValidChar);
 	}
 
@@ -437,7 +437,7 @@ public class StringUtils {
 	 * @return the start word offset from the left of the given <code>offset</code>
 	 *         to the given <code>min</code> and -1 if no word.
 	 */
-	public static int findStartWord(String text, int offset, int min, Predicate<Character> isValidChar) {
+	public static int findStartWord(CharSequence text, int offset, int min, Predicate<Character> isValidChar) {
 		if (offset < 0 || offset >= text.length()) {
 			return -1;
 		}
@@ -460,7 +460,7 @@ public class StringUtils {
 	 * @return the start word offset from the right of the given <code>offset</code>
 	 *         and -1 if no word.
 	 */
-	public static int findEndWord(String text, int offset, Predicate<Character> isValidChar) {
+	public static int findEndWord(CharSequence text, int offset, Predicate<Character> isValidChar) {
 		return findEndWord(text, offset, text.length(), isValidChar);
 	}
 
@@ -475,7 +475,7 @@ public class StringUtils {
 	 * @return the start word offset from the right of the given <code>offset</code>
 	 *         and -1 if no word.
 	 */
-	public static int findEndWord(String text, int offset, int max, Predicate<Character> isValidChar) {
+	public static int findEndWord(CharSequence text, int offset, int max, Predicate<Character> isValidChar) {
 		if (offset < 0 || offset >= text.length() || !isValidChar.test(text.charAt(offset))) {
 			return -1;
 		}

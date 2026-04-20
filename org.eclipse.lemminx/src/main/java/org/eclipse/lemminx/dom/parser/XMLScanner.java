@@ -139,7 +139,7 @@ public class XMLScanner implements Scanner {
 	boolean isInitialAttlistDeclCompleted = false;
 	private int nbBraceOpened;
 
-	public XMLScanner(String input, int initialOffset, ScannerState initialState, boolean isDTDFile) {
+	public XMLScanner(CharSequence input, int initialOffset, ScannerState initialState, boolean isDTDFile) {
 		stream = new MultiLineStream(input, initialOffset);
 		state = initialState;
 		tokenOffset = 0;
@@ -257,7 +257,7 @@ public class XMLScanner implements Scanner {
 				return finishToken(offset, TokenType.PIEnd);
 			}
 			if (stream.advanceUntilAnyOfChars(END_WS_OR_PROLOG_PATTERN) || stream.eos()) { // \n or \r or ' ' or '?'
-				String name = getTokenTextFromOffset(offset);
+				CharSequence name = getTokenTextFromOffset(offset);
 				if (PROLOG_NAME_OPTIONS.matcher(name).matches()) { // name eg: xml
 					state = ScannerState.WithinTag;
 					return finishToken(offset, TokenType.PrologName);
@@ -1030,8 +1030,8 @@ public class XMLScanner implements Scanner {
 	}
 
 	@Override
-	public String getTokenText() {
-		return stream.getSource().substring(tokenOffset, stream.pos());
+	public CharSequence getTokenText() {
+		return stream.getSource().subSequence(tokenOffset, stream.pos());
 	}
 
 	@Override
@@ -1049,32 +1049,32 @@ public class XMLScanner implements Scanner {
 		return tokenError;
 	}
 
-	public String getTokenTextFromOffset(int offset) {
-		return stream.getSource().substring(offset, stream.pos());
+	public CharSequence getTokenTextFromOffset(int offset) {
+		return stream.getSource().subSequence(offset, stream.pos());
 	}
 
-	public static Scanner createScanner(String input) {
+	public static Scanner createScanner(CharSequence input) {
 		return createScanner(input, false);
 	}
 
-	public static Scanner createScanner(String input, boolean isDTD) {
+	public static Scanner createScanner(CharSequence input, boolean isDTD) {
 		return createScanner(input, 0, isDTD);
 	}
 
-	public static Scanner createScanner(String input, int initialOffset) {
+	public static Scanner createScanner(CharSequence input, int initialOffset) {
 		return createScanner(input, initialOffset, false);
 	}
 
-	public static Scanner createScanner(String input, int initialOffset, boolean isDTDFile) {
+	public static Scanner createScanner(CharSequence input, int initialOffset, boolean isDTDFile) {
 		return createScanner(input, initialOffset,
 				isDTDFile ? ScannerState.DTDWithinContent : ScannerState.WithinContent, isDTDFile);
 	}
 
-	public static Scanner createScanner(String input, int initialOffset, ScannerState initialState) {
+	public static Scanner createScanner(CharSequence input, int initialOffset, ScannerState initialState) {
 		return new XMLScanner(input, initialOffset, initialState, false);
 	}
 
-	public static Scanner createScanner(String input, int initialOffset, ScannerState initialState, boolean isDTDFile) {
+	public static Scanner createScanner(CharSequence input, int initialOffset, ScannerState initialState, boolean isDTDFile) {
 		return new XMLScanner(input, initialOffset, initialState, isDTDFile);
 	}
 

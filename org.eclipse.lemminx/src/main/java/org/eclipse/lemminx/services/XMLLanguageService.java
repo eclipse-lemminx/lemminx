@@ -303,7 +303,7 @@ public class XMLLanguageService extends XMLExtensionsRegistry implements IXMLFul
 			XMLCompletionSettings completionSettings, CancelChecker cancelChecker) {
 		try {
 			int offset = xmlDocument.offsetAt(position);
-			String text = xmlDocument.getText();
+			CharSequence text = xmlDocument.getTextSequence();
 			if (offset > 0) {
 				char c = text.charAt(offset - 1);
 				if (c == '>' || c == '/') {

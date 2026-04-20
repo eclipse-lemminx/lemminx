@@ -67,7 +67,7 @@ public class DOMDocument extends DOMNode implements Document {
 	private String externalGrammarFromNamespaceURI;
 
 	public DOMDocument(TextDocument textDocument, URIResolverExtensionManager resolverExtensionManager) {
-		super(0, textDocument.getText().length());
+		super(0, textDocument.getTextSequence().length());
 		this.textDocument = textDocument;
 		this.resolverExtensionManager = resolverExtensionManager;
 		resetGrammar();
@@ -136,10 +136,19 @@ public class DOMDocument extends DOMNode implements Document {
 	 * 
 	 * @return the text content of the XML document.
 	 */
-	public String getText() {
-		return textDocument.getText();
+	public CharSequence getTextSequence() {
+		return textDocument.getTextSequence();
 	}
 
+	/**
+	 * Returns the text content of the XML document.
+	 * 
+	 * @return the text content of the XML document.
+	 */
+	public CharSequence getText() {
+		return textDocument.getText();
+	}
+	
 	public TextDocument getTextDocument() {
 		return textDocument;
 	}
@@ -892,7 +901,7 @@ public class DOMDocument extends DOMNode implements Document {
 	}
 
 	public Range getTrimmedRange(int start, int end) {
-		String text = getText();
+		CharSequence text = getTextSequence();
 		char c = text.charAt(start);
 		while (Character.isWhitespace(c)) {
 			start++;

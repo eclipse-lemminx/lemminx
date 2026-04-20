@@ -43,12 +43,12 @@ public class MultiLineStream {
 		return ch == _WSP || ch == _TAB || ch == _NWL || ch == _LFD || ch == _CAR;
 	};
 
-	private final String source;
+	private final CharSequence source;
 	private final int len;
 	private int position;
 	private final Map<Pattern, Matcher> regexpCache;
 
-	public MultiLineStream(String source, int position) {
+	public MultiLineStream(CharSequence source, int position) {
 		this.source = source;
 		this.len = source.length();
 		this.position = position;
@@ -59,7 +59,7 @@ public class MultiLineStream {
 		return this.len <= this.position;
 	}
 
-	public String getSource() {
+	public CharSequence getSource() {
 		return this.source;
 	}
 
@@ -103,7 +103,7 @@ public class MultiLineStream {
 		if (pos >= len) {
 			return -1;
 		}
-		return this.source.codePointAt(pos);
+		return this.source.charAt(pos);
 	}
 
 	/**
@@ -115,7 +115,7 @@ public class MultiLineStream {
 		if (offset >= len || offset < 0) {
 			return -1;
 		}
-		return this.source.codePointAt(offset);
+		return this.source.charAt(offset);
 	}
 
 	public boolean advanceIfChar(int ch) {

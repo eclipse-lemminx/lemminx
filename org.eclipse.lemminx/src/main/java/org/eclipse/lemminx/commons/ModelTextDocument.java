@@ -97,12 +97,12 @@ public class ModelTextDocument<T> extends TextDocument {
 		return model;
 	}
 
-	@Override
+	/*@Override
 	public void setText(String text) {
 		super.setText(text);
 		// text changed, cancel the completable future which load the model
 		cancelModel();
-	}
+	}*/
 
 	@Override
 	public void setVersion(int version) {

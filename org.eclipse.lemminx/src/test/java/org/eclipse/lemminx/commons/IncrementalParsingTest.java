@@ -57,7 +57,7 @@ public class IncrementalParsingTest {
 
 		document.update(changes);
 
-		assertEquals(expectedText, document.getText());
+		assertEquals(expectedText, document.getTextSequence().toString());
 
 	}
 
@@ -84,7 +84,7 @@ public class IncrementalParsingTest {
 
 		document.update(changes);
 
-		assertEquals(expectedText, document.getText());
+		assertEquals(expectedText, document.getTextSequence().toString());
 	}
 
 	@Test
@@ -110,7 +110,7 @@ public class IncrementalParsingTest {
 
 		document.update(changes);
 
-		assertEquals(expectedText, document.getText());
+		assertEquals(expectedText, document.getTextSequence().toString());
 	}
 
 	@Test
@@ -136,7 +136,7 @@ public class IncrementalParsingTest {
 
 		document.update(changes);
 
-		assertEquals(expectedText, document.getText());
+		assertEquals(expectedText, document.getTextSequence().toString());
 	}
 
 	// https://github.com/eclipse-lemminx/lemminx/issues/1674
@@ -159,7 +159,7 @@ public class IncrementalParsingTest {
 
 		document.update(changes);
 
-		assertEquals(expectedText, document.getText());
+		assertEquals(expectedText, document.getTextSequence().toString());
 	}
 
 	@Test
@@ -190,7 +190,7 @@ public class IncrementalParsingTest {
 
 		document.update(changes);
 
-		assertEquals(expectedText, document.getText());
+		assertEquals(expectedText, document.getTextSequence().toString());
 
 	}
 
@@ -222,7 +222,7 @@ public class IncrementalParsingTest {
 
 		document.update(changes);
 
-		assertEquals(expectedText, document.getText());
+		assertEquals(expectedText, document.getTextSequence().toString());
 
 	}
 
@@ -249,7 +249,7 @@ public class IncrementalParsingTest {
 
 		document.update(changes);
 
-		assertEquals(expectedText, document.getText());
+		assertEquals(expectedText, document.getTextSequence().toString());
 
 	}
 
@@ -280,7 +280,7 @@ public class IncrementalParsingTest {
 
 		document.update(changes);
 
-		assertEquals(expectedText, document.getText());
+		assertEquals(expectedText, document.getTextSequence().toString());
 
 	}
 }

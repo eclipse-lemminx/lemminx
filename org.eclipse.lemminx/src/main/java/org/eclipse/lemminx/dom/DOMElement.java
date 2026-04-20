@@ -32,7 +32,7 @@ import org.w3c.dom.TypeInfo;
  */
 public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 
-	String tag;
+	CharSequence tag;
 	boolean selfClosed;
 
 	// DomElement.start == startTagOpenOffset
@@ -74,6 +74,10 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 */
 	@Override
 	public String getTagName() {
+		return tag != null ? tag.toString() : null;
+	}
+	
+	public CharSequence getTag() {
 		return tag;
 	}
 
@@ -223,8 +227,8 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 		}
 		if (!StringUtils.isEmpty(namespaceURI)) {
 			switch (namespaceURI) {
-				case "http://www.w3.org/XML/1998/namespace":
-					return "xml";
+			case "http://www.w3.org/XML/1998/namespace":
+				return "xml";
 			}
 		}
 		return null;
@@ -249,7 +253,7 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 * position after the character you want to start at.
 	 */
 	public Integer endsWith(char c, int startOffset) {
-		String text = this.getOwnerDocument().getText();
+		CharSequence text = this.getOwnerDocument().getTextSequence();
 		if (startOffset > text.length() || startOffset < 0) {
 			return null;
 		}
@@ -276,7 +280,7 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 * @return true if the given tag is the same tag of this element and false
 	 *         otherwise.
 	 */
-	public boolean isSameTag(String tag) {
+	public boolean isSameTag(CharSequence tag) {
 		return Objects.equals(this.tag, tag);
 	}
 
@@ -405,7 +409,7 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 */
 	public int getOffsetAfterStartTag() {
 		if (hasTagName()) {
-			return getStartTagOpenOffset() + getTagName().length() + 1;
+			return getStartTagOpenOffset() + getTag().length() + 1;
 		}
 		return getStartTagOpenOffset() + 1;
 	}
@@ -458,7 +462,7 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 *          with an angle bracket
 	 */
 	public int getUnclosedStartTagCloseOffset() {
-		String documentText = getOwnerDocument().getText();
+		CharSequence documentText = getOwnerDocument().getTextSequence();
 		int i = getStart() + 1;
 		for (; i < documentText.length() && documentText.charAt(i) != '/' && documentText.charAt(i) != '<'; i++) {
 		}

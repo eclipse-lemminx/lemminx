@@ -35,8 +35,8 @@ public class FixMissingSpaceCodeAction implements ICodeActionParticipant {
 		try {
 			int startOffset = document.offsetAt(diagnosticRange.getStart());
 			int endOffset = document.offsetAt(diagnosticRange.getEnd());
-			String text = document.getText();
-			String value = text.substring(startOffset, endOffset);
+			CharSequence text = document.getTextSequence();
+			String value = text.subSequence(startOffset, endOffset).toString();
 			codeActions.add(CodeActionFactory.insert("Add space after '" + value + "'", diagnosticRange.getEnd(), " ",
 					document.getTextDocument(), diagnostic));
 		} catch (BadLocationException | IndexOutOfBoundsException e) {

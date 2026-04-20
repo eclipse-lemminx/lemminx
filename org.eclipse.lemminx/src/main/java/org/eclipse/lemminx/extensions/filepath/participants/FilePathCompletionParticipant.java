@@ -216,7 +216,7 @@ public class FilePathCompletionParticipant extends CompletionParticipantAdapter 
 		// ex: <a href="|path/to/fil|" />
 		// base dir is equals for instance to C://path/to
 		Character separator = expression != null ? expression.getSeparator() : null;
-		FilePathCompletionResult result = FilePathCompletionResult.create(xmlDocument.getText(),
+		FilePathCompletionResult result = FilePathCompletionResult.create(xmlDocument.getTextSequence(),
 				xmlDocument.getDocumentURI(), startOffset, endOffset, completionOffset, separator);
 		Path baseDir = result.getBaseDir();
 		if (baseDir == null) {

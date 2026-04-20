@@ -28,7 +28,7 @@ public class DOMCDATAFormatter {
 
 	public void formatCDATASection(DOMCDATASection cDATANode, XMLFormattingConstraints parentConstraints,
 			List<TextEdit> edits) {
-		String text = formatterDocument.getText();
+		CharSequence text = formatterDocument.getText();
 		int start = cDATANode.getStart();
 		int leftWhitespaceOffset = start > 0 ? start - 1 : 0;
 

@@ -137,7 +137,7 @@ public abstract class DOMCharacterData extends DOMNode implements org.w3c.dom.Ch
 	public String getData() {
 		// No caching - extract directly from document to save memory
 		// The document text is already in memory, so this is just a substring operation
-		return getOwnerDocument().getText().substring(getStartContent(), getEndContent());
+		return getOwnerDocument().getTextSequence().subSequence(getStartContent(), getEndContent()).toString();
 	}
 
 	/*

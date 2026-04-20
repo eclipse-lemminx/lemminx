@@ -28,7 +28,6 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ResourceOperation;
 import org.eclipse.lsp4j.TextDocumentEdit;
-import org.eclipse.lsp4j.TextDocumentItem;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.WorkspaceEdit;
@@ -49,7 +48,7 @@ public class CodeActionFactory {
 	 * @param diagnostic
 	 * @return
 	 */
-	public static CodeAction remove(String title, Range range, TextDocumentItem document, Diagnostic diagnostic) {
+	public static CodeAction remove(String title, Range range, TextDocument document, Diagnostic diagnostic) {
 		return replace(title, range, "", document, diagnostic);
 	}
 
@@ -64,7 +63,7 @@ public class CodeActionFactory {
 	 *
 	 * @return the CodeAction to insert a new content at the end of the given range.
 	 */
-	public static CodeAction insert(String title, Position position, String insertText, TextDocumentItem document,
+	public static CodeAction insert(String title, Position position, String insertText, TextDocument document,
 			Diagnostic diagnostic) {
 		CodeAction insertContentAction = new CodeAction(title);
 		insertContentAction.setKind(CodeActionKind.QuickFix);
@@ -84,7 +83,7 @@ public class CodeActionFactory {
 	 *
 	 * @return the text edit to insert a new content at the end of the given range.
 	 */
-	public static TextDocumentEdit insertEdit(String insertText, Position position, TextDocumentItem document) {
+	public static TextDocumentEdit insertEdit(String insertText, Position position, TextDocument document) {
 		TextEdit edit = insertEdit(insertText, position);
 		return insertEdits(document, Collections.singletonList(edit));
 	}
@@ -93,19 +92,19 @@ public class CodeActionFactory {
 		return new TextEdit(new Range(position, position), insertText);
 	}
 
-	public static TextDocumentEdit insertEdits(TextDocumentItem document, List<TextEdit> edits) {
+	public static TextDocumentEdit insertEdits(TextDocument document, List<TextEdit> edits) {
 		VersionedTextDocumentIdentifier versionedTextDocumentIdentifier = new VersionedTextDocumentIdentifier(
 				document.getUri(), document.getVersion());
 		return new TextDocumentEdit(versionedTextDocumentIdentifier, edits);
 	}
 
-	public static CodeAction replace(String title, Range range, String replaceText, TextDocumentItem document,
+	public static CodeAction replace(String title, Range range, String replaceText, TextDocument document,
 			Diagnostic diagnostic) {
 		TextEdit replace = new TextEdit(range, replaceText);
 		return replace(title, Collections.singletonList(replace), document, diagnostic);
 	}
 
-	public static CodeAction replace(String title, List<TextEdit> replace, TextDocumentItem document,
+	public static CodeAction replace(String title, List<TextEdit> replace, TextDocument document,
 			Diagnostic diagnostic) {
 
 		CodeAction insertContentAction = new CodeAction(title);
@@ -128,7 +127,7 @@ public class CodeActionFactory {
 	 * @param document
 	 * @return the workspace edit of a given replacement text and range.
 	 */
-	public static WorkspaceEdit getReplaceWorkspaceEdit(String replaceText, Range range, TextDocumentItem document) {
+	public static WorkspaceEdit getReplaceWorkspaceEdit(String replaceText, Range range, TextDocument document) {
 		TextEdit replace = new TextEdit(range, replaceText);
 		VersionedTextDocumentIdentifier versionedTextDocumentIdentifier = new VersionedTextDocumentIdentifier(
 				document.getUri(), document.getVersion());
@@ -137,8 +136,8 @@ public class CodeActionFactory {
 		return new WorkspaceEdit(Collections.singletonList(Either.forLeft(textDocumentEdit)));
 	}
 
-	public static CodeAction replaceAt(String title, String replaceText, TextDocumentItem document,
-			Diagnostic diagnostic, Collection<Range> ranges) {
+	public static CodeAction replaceAt(String title, String replaceText, TextDocument document, Diagnostic diagnostic,
+			Collection<Range> ranges) {
 		CodeAction insertContentAction = new CodeAction(title);
 		insertContentAction.setKind(CodeActionKind.QuickFix);
 		insertContentAction.setDiagnostics(Arrays.asList(diagnostic));

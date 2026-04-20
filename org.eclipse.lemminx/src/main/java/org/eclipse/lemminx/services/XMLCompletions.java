@@ -95,11 +95,11 @@ public class XMLCompletions {
 			return completionResponse;
 		}
 
-		String text = xmlDocument.getText();
+		CharSequence text = xmlDocument.getTextSequence();
 		int offset = completionRequest.getOffset();
 		DOMNode node = completionRequest.getNode();
 		try {
-			if (text.isEmpty()) {
+			if (text.length() == 0) {
 				// When XML document is empty, try to collect root element (from file
 				// association)
 				collectInsideContent(completionRequest, completionResponse, cancelChecker);
@@ -107,7 +107,7 @@ public class XMLCompletions {
 			}
 
 			Scanner scanner = XMLScanner.createScanner(text, node.getStart(), isInsideDTDContent(node, xmlDocument));
-			String currentTag = "";
+			CharSequence currentTag = "";
 			TokenType token = scanner.scan();
 			TokenType lastToken = null;
 			while (token != TokenType.EOS && scanner.getTokenOffset() <= offset) {
@@ -233,7 +233,7 @@ public class XMLCompletions {
 					case StartTagSelfClose:
 						if (offset <= scanner.getTokenEnd()) {
 							if (currentTag != null && currentTag.length() > 0
-									&& xmlDocument.getText().charAt(offset - 1) == '>') { // if the actual character
+									&& xmlDocument.getTextSequence().charAt(offset - 1) == '>') { // if the actual character
 																							// typed
 																							// was
 																							// '>'
@@ -358,7 +358,7 @@ public class XMLCompletions {
 	 */
 	private void collectSnippetSuggestions(CompletionRequest completionRequest, CompletionResponse completionResponse) {
 		DOMDocument document = completionRequest.getXMLDocument();
-		String text = document.getText();
+		CharSequence text = document.getTextSequence();
 		int endExpr = completionRequest.getOffset();
 		// compute the from for search expression according to the node
 		int fromSearchExpr = getExprLimitStart(completionRequest.getNode(), endExpr);
@@ -407,7 +407,7 @@ public class XMLCompletions {
 		}
 	}
 
-	private static Integer getSuffixIndex(String text, String suffix, final int initOffset) {
+	private static Integer getSuffixIndex(CharSequence text, String suffix, final int initOffset) {
 		int offset = initOffset;
 		char ch = text.charAt(offset);
 		// Try to search the first character which matches the suffix
@@ -491,7 +491,7 @@ public class XMLCompletions {
 		return element.getStartTagCloseOffset() + 1;
 	}
 
-	private static int getExprStart(String value, int from, int to) {
+	private static int getExprStart(CharSequence value, int from, int to) {
 		if (to == 0) {
 			return to;
 		}
@@ -556,8 +556,8 @@ public class XMLCompletions {
 		if (offset <= 0) {
 			return null;
 		}
-		char c = xmlDocument.getText().charAt(offset - 1);
-		char cBefore = xmlDocument.getText().charAt(offset - 2);
+		char c = xmlDocument.getTextSequence().charAt(offset - 1);
+		char cBefore = xmlDocument.getTextSequence().charAt(offset - 2);
 		String snippet = null;
 		if (XMLPositionUtility.isInAttributeValue(xmlDocument, position)) {
 			return null;
@@ -598,7 +598,7 @@ public class XMLCompletions {
 							return null;
 						}
 					}
-					String text = xmlDocument.getText();
+					CharSequence text = xmlDocument.getTextSequence();
 					// After the slash is a close bracket
 					boolean closeBracketAfterSlash = offset < text.length() ? text.charAt(offset) == '>' : false;
 
@@ -684,7 +684,7 @@ public class XMLCompletions {
 			CompletionRequest completionRequest, CompletionResponse completionResponse, CancelChecker cancelChecker) {
 		try {
 			DOMDocument document = completionRequest.getXMLDocument();
-			String text = document.getText();
+			CharSequence text = document.getTextSequence();
 			int tagNameEnd = document.offsetAt(replaceRange.getEnd());
 			int newOffset = getOffsetFollowedBy(text, tagNameEnd, ScannerState.WithinEndTag, TokenType.EndTagClose);
 			if (newOffset != -1) {
@@ -710,15 +710,15 @@ public class XMLCompletions {
 		DOMElement parentNode = completionRequest.getParentElement();
 		if (parentNode != null && !parentNode.getOwnerDocument().hasGrammar()) {
 			// no grammar, collect similar tags from the parent node
-			Set<String> seenElements = new HashSet<>();
+			Set<CharSequence> seenElements = new HashSet<>();
 			if (parentNode != null && parentNode.isElement() && parentNode.hasChildNodes()) {
 				parentNode.getChildren().forEach(node -> {
 					DOMElement element = node.isElement() ? (DOMElement) node : null;
-					if (element == null || element.getTagName() == null
-							|| seenElements.contains(element.getTagName())) {
+					if (element == null || !element.hasTagName()
+							|| seenElements.contains(element.getTag())) {
 						return;
 					}
-					String tag = element.getTagName();
+					CharSequence tag = element.getTag();
 					seenElements.add(tag);
 					DOMElementCompletionItem item = new DOMElementCompletionItem(element, completionRequest);
 					completionResponse.addCompletionItem(item);
@@ -731,7 +731,7 @@ public class XMLCompletions {
 			CompletionRequest completionRequest, CompletionResponse completionResponse, CancelChecker cancelChecker) {
 		try {
 			Range range = getReplaceRange(afterOpenBracket, tagNameEnd, completionRequest);
-			String text = completionRequest.getXMLDocument().getText();
+			CharSequence text = completionRequest.getXMLDocument().getTextSequence();
 			boolean hasCloseTag = isFollowedBy(text, tagNameEnd, ScannerState.WithinEndTag, TokenType.EndTagClose);
 			collectCloseTagSuggestions(range, false, !hasCloseTag, inOpenTag, completionRequest, completionResponse);
 		} catch (BadLocationException e) {
@@ -742,7 +742,7 @@ public class XMLCompletions {
 	private void collectCloseTagSuggestions(Range range, boolean openEndTag, boolean closeEndTag, boolean inOpenTag,
 			CompletionRequest completionRequest, CompletionResponse completionResponse) {
 		try {
-			String text = completionRequest.getXMLDocument().getText();
+			CharSequence text = completionRequest.getXMLDocument().getTextSequence();
 			DOMNode curr = completionRequest.getNode();
 			if (inOpenTag) {
 				curr = curr.getParentNode(); // don't suggest the own tag, it's not yet open
@@ -887,7 +887,7 @@ public class XMLCompletions {
 	private void collectAttributeNameSuggestions(int nameStart, int nameEnd, CompletionRequest completionRequest,
 			CompletionResponse completionResponse, CancelChecker cancelChecker) {
 		int replaceEnd = completionRequest.getOffset();
-		String text = completionRequest.getXMLDocument().getText();
+		CharSequence text = completionRequest.getXMLDocument().getTextSequence();
 		while (replaceEnd < nameEnd && text.charAt(replaceEnd) != '<' && text.charAt(replaceEnd) != '?') { // < is a
 																											// valid
 																											// attribute
@@ -928,7 +928,7 @@ public class XMLCompletions {
 		boolean addQuotes = false;
 		String valuePrefix;
 		int offset = completionRequest.getOffset();
-		String text = completionRequest.getXMLDocument().getText();
+		CharSequence text = completionRequest.getXMLDocument().getTextSequence();
 
 		// Adjusts range to handle if quotations for the value exist
 		if (offset > valueStart && offset <= valueEnd && StringUtils.isQuote(text.charAt(valueStart))) {
@@ -940,13 +940,13 @@ public class XMLCompletions {
 				valueContentEnd--;
 			}
 			valuePrefix = offset >= valueContentStart && offset <= valueContentEnd
-					? text.substring(valueContentStart, offset)
+					? text.subSequence(valueContentStart, offset).toString()
 					: "";
 			valueStart = valueContentStart;
 			valueEnd = valueContentEnd;
 			addQuotes = false;
 		} else {
-			valuePrefix = text.substring(valueStart, offset);
+			valuePrefix = text.subSequence(valueStart, offset).toString();
 			addQuotes = true;
 		}
 
@@ -992,11 +992,11 @@ public class XMLCompletions {
 	private void collectDTDSystemIdSuggestions(int valueStart, int valueEnd, CompletionRequest completionRequest,
 			CompletionResponse completionResponse, CancelChecker cancelChecker) {
 		int offset = completionRequest.getOffset();
-		String text = completionRequest.getXMLDocument().getText();
+		CharSequence text = completionRequest.getXMLDocument().getTextSequence();
 		int valueContentStart = valueStart + 1;
 		int valueContentEnd = valueEnd - 1;
 		String valuePrefix = offset >= valueContentStart && offset <= valueContentEnd
-				? text.substring(valueContentStart, offset)
+				? text.subSequence(valueContentStart, offset).toString()
 				: "";
 		Collection<ICompletionParticipant> completionParticipants = getCompletionParticipants();
 
@@ -1046,7 +1046,7 @@ public class XMLCompletions {
 		return extensionsRegistry.getCompletionParticipants();
 	}
 
-	private static boolean isFollowedBy(String s, int offset, ScannerState intialState, TokenType expectedToken) {
+	private static boolean isFollowedBy(CharSequence s, int offset, ScannerState intialState, TokenType expectedToken) {
 		return getOffsetFollowedBy(s, offset, intialState, expectedToken) != -1;
 	}
 
@@ -1060,7 +1060,7 @@ public class XMLCompletions {
 	 * @param expectedToken
 	 * @return
 	 */
-	public static int getOffsetFollowedBy(String s, int offset, ScannerState intialState, TokenType expectedToken) {
+	public static int getOffsetFollowedBy(CharSequence s, int offset, ScannerState intialState, TokenType expectedToken) {
 		Scanner scanner = XMLScanner.createScanner(s, offset, intialState);
 		TokenType token = scanner.scan();
 		while (token == TokenType.Whitespace) {
@@ -1079,19 +1079,19 @@ public class XMLCompletions {
 		return XMLPositionUtility.createRange(replaceStart, replaceEnd, document);
 	}
 
-	private static String getLineIndent(int offset, String text) {
+	private static String getLineIndent(int offset, CharSequence text) {
 		int start = offset;
 		while (start > 0) {
 			char ch = text.charAt(start - 1);
 			if ("\n\r".indexOf(ch) >= 0) {
-				return text.substring(start, offset);
+				return text.subSequence(start, offset).toString();
 			}
 			if (!isWhitespace(ch)) {
 				return null;
 			}
 			start--;
 		}
-		return text.substring(0, offset);
+		return text.subSequence(0, offset).toString();
 	}
 
 	private boolean isEmptyElement(String tag) {

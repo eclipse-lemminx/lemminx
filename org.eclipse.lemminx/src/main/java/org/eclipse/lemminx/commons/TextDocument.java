@@ -17,19 +17,52 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.eclipse.lemminx.commons.text.CompositeCharSequence;
+import org.eclipse.lemminx.commons.text.ImmutableCharSequence;
+import org.eclipse.lemminx.commons.text.ImmutableCharSequenceImpl;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.eclipse.lsp4j.TextDocumentItem;
+import org.eclipse.lsp4j.jsonrpc.util.Preconditions;
+import org.eclipse.lsp4j.jsonrpc.validation.NonNull;
 
 /**
  * Text document extends LSP4j {@link TextDocumentItem} to provide methods to
  * retrieve position.
  *
  */
-public class TextDocument extends TextDocumentItem {
+public class TextDocument {
 
 	private static final Logger LOGGER = Logger.getLogger(TextDocument.class.getName());
+	
+	// Consolidate CompositeCharSequence after this many updates to prevent deep nesting
+	private static final int CONSOLIDATION_THRESHOLD = 100;
+
+	/**
+	 * The text document's uri.
+	 */
+	@NonNull
+	private String uri;
+
+	/**
+	 * The text document's language identifier
+	 */
+	@NonNull
+	private String languageId;
+
+	/**
+	 * The version number of this document (it will strictly increase after each
+	 * change, including undo/redo).
+	 */
+	private int version;
+
+	/**
+	 * The content of the opened text document.
+	 */
+	// CharSequence-based text storage for memory-efficient incremental updates
+	@NonNull
+	private ImmutableCharSequence text;
 
 	private final Object lock = new Object();
 
@@ -38,16 +71,19 @@ public class TextDocument extends TextDocumentItem {
 	private ILineTracker lineTracker;
 
 	private boolean incremental;
+	
+	// Counter for tracking when to consolidate CompositeCharSequence
+	private int updatesSinceConsolidation = 0;
 
 	public TextDocument(TextDocumentItem document) {
 		this(document.getText(), document.getUri());
-		super.setVersion(document.getVersion());
-		super.setLanguageId(document.getLanguageId());
+		this.setVersion(document.getVersion());
+		this.setLanguageId(document.getLanguageId());
 	}
 
 	public TextDocument(String text, String uri) {
-		super.setUri(uri);
-		super.setText(text);
+		this.setUri(uri);
+		this.text = ImmutableCharSequenceImpl.fromString(text);
 	}
 
 	public void setIncremental(boolean incremental) {
@@ -74,8 +110,8 @@ public class TextDocument extends TextDocumentItem {
 	public String lineText(int lineNumber) throws BadLocationException {
 		ILineTracker lineTracker = getLineTracker();
 		Line line = lineTracker.getLineInformation(lineNumber);
-		String text = super.getText();
-		return text.substring(line.offset, line.offset + line.length);
+		CharSequence text = getTextSequence();
+		return text.subSequence(line.offset, line.offset + line.length).toString();
 	}
 
 	public int lineOffsetAt(int position) throws BadLocationException {
@@ -115,8 +151,8 @@ public class TextDocument extends TextDocumentItem {
 			Position pos = positionAt(textOffset);
 			ILineTracker lineTracker = getLineTracker();
 			Line line = lineTracker.getLineInformation(pos.getLine());
-			String text = super.getText();
-			String lineText = text.substring(line.offset, textOffset);
+			CharSequence text = getTextSequence();
+			String lineText = text.subSequence(line.offset, textOffset).toString();
 			int position = lineText.length();
 			Matcher m = wordDefinition.matcher(lineText);
 			int currentPosition = 0;
@@ -149,7 +185,7 @@ public class TextDocument extends TextDocumentItem {
 			return lineTracker;
 		}
 		ILineTracker lineTracker = isIncremental() ? new TreeLineTracker(new ListLineTracker()) : new ListLineTracker();
-		lineTracker.set(super.getText());
+		lineTracker.set(getTextSequence());
 		return lineTracker;
 	}
 
@@ -168,31 +204,57 @@ public class TextDocument extends TextDocumentItem {
 			try {
 				long start = System.currentTimeMillis();
 				synchronized (lock) {
-					// Initialize buffer and line tracker from the current text document
-					StringBuilder buffer = new StringBuilder(getText());
+					// Get current text as CharSequence (no copy)
+					CharSequence currentText = getTextSequence();
 
 					// Loop for each changes and update the buffer
 					for (int i = 0; i < changes.size(); i++) {
 
 						TextDocumentContentChangeEvent changeEvent = changes.get(i);
 						Range range = changeEvent.getRange();
-						int length = 0;
 
 						if (range != null) {
 							Integer rangeLength = changeEvent.getRangeLength();
-							length = rangeLength != null ? rangeLength.intValue() : offsetAt(range.getEnd()) - offsetAt(range.getStart());
+							int startOffset = offsetAt(range.getStart());
+							int length;
+							
+							if (rangeLength != null) {
+								// Use rangeLength if provided (preferred)
+								length = rangeLength.intValue();
+							} else {
+								// Calculate length from range.end
+								int endOffset = offsetAt(range.getEnd());
+								length = endOffset - startOffset;
+							}
+
+							String text = changeEvent.getText();
+
+							// Use CompositeCharSequence for zero-copy update
+							// This avoids copying the entire document text
+							ImmutableCharSequence newText = CompositeCharSequence.replaceRange(currentText, startOffset,
+									startOffset + length, ImmutableCharSequenceImpl.fromString(text));
+
+							lineTracker.replace(startOffset, length, text);
+							setText(newText);
+							
+							// IMPORTANT: Update currentText for next iteration
+							currentText = newText;
+							
+							// Periodically consolidate to prevent deep nesting
+							updatesSinceConsolidation++;
+							if (updatesSinceConsolidation >= CONSOLIDATION_THRESHOLD) {
+								consolidateText();
+								currentText = getTextSequence();
+								updatesSinceConsolidation = 0;
+							}
 						} else {
-							// range is optional and if not given, the whole file content is replaced
-							length = buffer.length();
-							range = new Range(positionAt(0), positionAt(length));
+							// Full replacement
+							setText(changeEvent.getText());
+							lineTracker.set(changeEvent.getText());
+							currentText = getTextSequence();
+							updatesSinceConsolidation = 0;
 						}
-						String text = changeEvent.getText();
-						int startOffset = offsetAt(range.getStart());
-						buffer.replace(startOffset, startOffset + length, text);
-						lineTracker.replace(startOffset, length, text);
 					}
-					// Update the new text content from the updated buffer
-					setText(buffer.toString());
 				}
 				LOGGER.fine("Text document content updated in " + (System.currentTimeMillis() - start) + "ms");
 			} catch (BadLocationException e) {
@@ -209,4 +271,97 @@ public class TextDocument extends TextDocumentItem {
 			}
 		}
 	}
+
+	/**
+	 * Set the text content from a String. Converts to ImmutableCharSequence
+	 * internally.
+	 *
+	 * @param text the new text content
+	 */
+	private void setText(String text) {
+		this.text = ImmutableCharSequenceImpl.fromString(text);
+	}
+
+	private void setText(ImmutableCharSequence text) {
+		this.text = text;
+	}
+	
+	/**
+	 * Consolidate the current text by converting CompositeCharSequence to a simple
+	 * ImmutableCharSequenceImpl. This prevents deep nesting of CompositeCharSequence
+	 * objects which can consume excessive memory.
+	 */
+	private void consolidateText() {
+		if (text instanceof CompositeCharSequence) {
+			// Convert to String and back to ImmutableCharSequenceImpl
+			// This flattens the structure
+			String textString = text.toString();
+			this.text = ImmutableCharSequenceImpl.fromString(textString);
+		}
+	}
+
+	public int getTextLength() {
+		return getTextSequence().length();
+	}
+
+	/**
+	 * The text document's uri.
+	 */
+	@NonNull
+	public String getUri() {
+		return this.uri;
+	}
+
+	/**
+	 * The text document's uri.
+	 */
+	public void setUri(@NonNull final String uri) {
+		this.uri = Preconditions.checkNotNull(uri, "uri");
+	}
+
+	/**
+	 * The text document's language identifier
+	 */
+	@NonNull
+	public String getLanguageId() {
+		return this.languageId;
+	}
+
+	/**
+	 * The text document's language identifier
+	 */
+	public void setLanguageId(@NonNull final String languageId) {
+		this.languageId = Preconditions.checkNotNull(languageId, "languageId");
+	}
+
+	/**
+	 * The version number of this document (it will strictly increase after each
+	 * change, including undo/redo).
+	 */
+	public int getVersion() {
+		return this.version;
+	}
+
+	/**
+	 * The version number of this document (it will strictly increase after each
+	 * change, including undo/redo).
+	 */
+	public void setVersion(final int version) {
+		this.version = version;
+	}
+
+	/**
+	 * The content of the opened text document.
+	 */
+	public CharSequence getTextSequence() {
+		return text;
+	}
+
+	/**
+	 * The content of the opened text document.
+	 */
+	public String getText() {
+		return text.toString();
+	}
+
 }

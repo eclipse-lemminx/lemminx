@@ -43,7 +43,7 @@ public interface Scanner {
 	 */
 	int getTokenEnd();
 
-	String getTokenText();
+	CharSequence getTokenText();
 
 	String getTokenError();
 

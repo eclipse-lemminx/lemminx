@@ -304,7 +304,7 @@ class ListLineTracker implements ILineTracker {
 	}
 
 	@Override
-	public final int computeNumberOfLines(String text) {
+	public final int computeNumberOfLines(CharSequence text) {
 		int count = 0;
 		int start = 0;
 		DelimiterInfo delimiterInfo = nextDelimiterInfo(text, start);
@@ -343,7 +343,7 @@ class ListLineTracker implements ILineTracker {
 	 * @param offset the offset in the given text
 	 * @return the information of the first found delimiter or <code>null</code>
 	 */
-	protected DelimiterInfo nextDelimiterInfo(String text, int offset) {
+	protected DelimiterInfo nextDelimiterInfo(CharSequence text, int offset) {
 		char ch;
 		int length = text.length();
 		for (int i = offset; i < length; i++) {
@@ -389,7 +389,7 @@ class ListLineTracker implements ILineTracker {
 	 * @param offset         the offset of all newly created lines
 	 * @return the number of newly created lines
 	 */
-	private int createLines(String text, int insertPosition, int offset) {
+	private int createLines(CharSequence text, int insertPosition, int offset) {
 
 		int count = 0;
 		int start = 0;
@@ -427,12 +427,12 @@ class ListLineTracker implements ILineTracker {
 	}
 
 	@Override
-	public final void replace(int position, int length, String text) throws BadLocationException {
+	public final void replace(int position, int length, CharSequence text) throws BadLocationException {
 		throw new UnsupportedOperationException();
 	}
 
 	@Override
-	public final void set(String text) {
+	public final void set(CharSequence text) {
 		fLines.clear();
 		if (text != null) {
 			fTextLength = text.length();

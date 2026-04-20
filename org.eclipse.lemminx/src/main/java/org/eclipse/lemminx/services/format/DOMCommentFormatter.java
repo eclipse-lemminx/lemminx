@@ -35,7 +35,7 @@ public class DOMCommentFormatter {
 			return;
 		}
 
-		String text = formatterDocument.getText();
+		CharSequence text = formatterDocument.getText();
 		int availableLineWidth = parentConstraints.getAvailableLineWidth();
 		int start = commentNode.getStart();
 		int leftWhitespaceOffset = start > 0 ? start - 1 : 0;
