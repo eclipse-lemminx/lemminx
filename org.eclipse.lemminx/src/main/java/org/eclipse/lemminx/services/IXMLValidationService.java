@@ -16,6 +16,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.eclipse.lemminx.dom.DOMDocument;
+import org.eclipse.lemminx.extensions.contentmodel.settings.XMLValidationRootSettings;
 
 /**
  * XML Document validation service available to XML LS extensions
@@ -31,7 +32,8 @@ public interface IXMLValidationService {
 	 * @param document       the XML document
 	 * @param validationArgs validation arguments.
 	 */
-	void validate(DOMDocument document, Map<String, Object> validationArgs);
+	void validate(DOMDocument document, Map<String, Object> validationArgs,
+			XMLValidationRootSettings validationSettings);
 
 	/**
 	 * Performs XML document validation
@@ -39,7 +41,7 @@ public interface IXMLValidationService {
 	 * @param document the XML document
 	 */
 	default void validate(DOMDocument document) {
-		validate(document, Collections.emptyMap());
+		validate(document, Collections.emptyMap(), null);
 	}
 
 }
