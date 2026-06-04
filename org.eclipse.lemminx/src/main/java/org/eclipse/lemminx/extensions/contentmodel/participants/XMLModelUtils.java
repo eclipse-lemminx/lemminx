@@ -21,14 +21,14 @@ import org.eclipse.lemminx.dom.XMLModel;
 
 /**
  * XML model utilities.
- * 
+ *
  */
 public class XMLModelUtils {
 
 	/**
 	 * Returns the DOM range of the href of the xml-model processing instruction
 	 * which matches the given hrefLocation.
-	 * 
+	 *
 	 * @param document     the DOM document.
 	 * @param hrefLocation the href location.
 	 * @return the DOM range of the href of the xml-model processing instruction
@@ -46,6 +46,8 @@ public class XMLModelUtils {
 				String href = xmlModel.getHref();
 				String xmlModelLocation = getResolvedLocation(documentURI, href);
 				if (hrefLocation.equals(xmlModelLocation)) {
+					return xmlModel.getHrefNode();
+				} else if (hrefLocation.equals(href)) {
 					return xmlModel.getHrefNode();
 				}
 			}

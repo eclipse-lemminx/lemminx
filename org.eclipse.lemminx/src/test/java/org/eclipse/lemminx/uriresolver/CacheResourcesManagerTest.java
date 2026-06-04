@@ -70,6 +70,8 @@ public class CacheResourcesManagerTest extends AbstractCacheBasedTest {
 		assertEquals(useCacheEnabled, cacheResourcesManager.canUseCache("ftp://foo"));
 		assertEquals(useCacheEnabled, cacheResourcesManager.canUseCache("https://foo"));
 		assertFalse(cacheResourcesManager.canUseCache("file:///foo"));
+		assertEquals(useCacheEnabled, cacheResourcesManager.canUseCache("file://example.com/schemas/my-schema.xsd"));
+		assertEquals(useCacheEnabled, cacheResourcesManager.canUseCache("//example.com/schemas/my-schema.xsd"));
 	}
 
 	@Test

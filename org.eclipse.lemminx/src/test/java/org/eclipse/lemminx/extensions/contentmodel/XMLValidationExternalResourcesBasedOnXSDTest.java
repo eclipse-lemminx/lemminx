@@ -16,6 +16,7 @@ import static org.eclipse.lemminx.XMLAssert.ca;
 import static org.eclipse.lemminx.XMLAssert.pd;
 import static org.eclipse.lemminx.XMLAssert.r;
 import static org.eclipse.lemminx.XMLAssert.testCodeActionsFor;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 import org.eclipse.lemminx.AbstractCacheBasedTest;
 import org.eclipse.lemminx.XMLAssert;
@@ -143,6 +144,173 @@ public class XMLValidationExternalResourcesBasedOnXSDTest extends AbstractCacheB
 				ca(d, DownloadDisabledResourceCodeAction.createDownloadCommand(
 						"Force download of 'http://localhost:8080/sample.xsd'.", "http://localhost:8080/sample.xsd",
 						fileURI)));
+	}
+
+	@Test
+	public void schemaLocationDownloadDisabledUNC() throws Exception {
+
+		XMLValidationRootSettings validation = new XMLValidationRootSettings();
+		validation.setResolveExternalEntities(true);
+
+		XMLLanguageService ls = new XMLLanguageService();
+		ls.initializeIfNeeded();
+		// Disable download
+		ContentModelManager contentModelManager = ls.getComponent(ContentModelManager.class);
+		contentModelManager.setDownloadExternalResources(false);
+
+		String xml = "<?xml-model href=\"file://example.com/schemas/my-schema.xsd\"?>\r\n" + //
+				"<root-element>\r\n" + //
+				"	\r\n" + //
+				"</root-element>\r\n";
+
+		String fileURI = "test.xml";
+
+		Diagnostic d = new Diagnostic(r(0, 18, 0, 58), "Downloading external resources is disabled.",
+				DiagnosticSeverity.Error, "xml", ExternalResourceErrorCode.DownloadResourceDisabled.getCode());
+
+		// Test diagnostics
+		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls, pd(fileURI, d, //
+				new Diagnostic(r(1, 1, 1, 13), "cvc-elt.1.a: Cannot find the declaration of element 'root-element'.",
+						DiagnosticSeverity.Error, "xml", XMLSchemaErrorCode.cvc_elt_1_a.getCode())));
+
+		// Test code action
+		testCodeActionsFor(xml, fileURI, d, //
+				ca(d, DownloadDisabledResourceCodeAction.createDownloadCommand(
+						"Force download of 'file://example.com/schemas/my-schema.xsd'.", "file://example.com/schemas/my-schema.xsd",
+						fileURI)));
+	}
+
+	@Test
+	public void schemaLocationDownloadDisabledUNC2() throws Exception {
+
+		XMLValidationRootSettings validation = new XMLValidationRootSettings();
+		validation.setResolveExternalEntities(true);
+
+		XMLLanguageService ls = new XMLLanguageService();
+		ls.initializeIfNeeded();
+		// Disable download
+		ContentModelManager contentModelManager = ls.getComponent(ContentModelManager.class);
+		contentModelManager.setDownloadExternalResources(false);
+
+		String xml = "<?xml-model href=\"//example.com/schemas/my-schema.xsd\"?>\r\n" + //
+				"<root-element>\r\n" + //
+				"	\r\n" + //
+				"</root-element>\r\n";
+
+		String fileURI = "test.xml";
+
+		Diagnostic d = new Diagnostic(r(0, 18, 0, 53), "Downloading external resources is disabled.",
+				DiagnosticSeverity.Error, "xml", ExternalResourceErrorCode.DownloadResourceDisabled.getCode());
+
+		// Test diagnostics
+		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls, pd(fileURI, d, //
+				new Diagnostic(r(1, 1, 1, 13), "cvc-elt.1.a: Cannot find the declaration of element 'root-element'.",
+						DiagnosticSeverity.Error, "xml", XMLSchemaErrorCode.cvc_elt_1_a.getCode())));
+
+		// FIXME:
+		testCodeActionsFor(xml, fileURI, d, //
+				ca(d, DownloadDisabledResourceCodeAction.createDownloadCommand(
+						"Force download of '//example.com/schemas/my-schema.xsd'.", "//example.com/schemas/my-schema.xsd",
+						fileURI)));
+	}
+
+	@Test
+	public void schemaLocationDownloadDisabledUNC3() throws Exception {
+
+		XMLValidationRootSettings validation = new XMLValidationRootSettings();
+		validation.setResolveExternalEntities(true);
+
+		XMLLanguageService ls = new XMLLanguageService();
+		ls.initializeIfNeeded();
+		// Disable download
+		ContentModelManager contentModelManager = ls.getComponent(ContentModelManager.class);
+		contentModelManager.setDownloadExternalResources(false);
+
+		String xml = "<?xml-model href=\"file:////example.com/schemas/my-schema.xsd\"?>\r\n" + //
+				"<root-element>\r\n" + //
+				"	\r\n" + //
+				"</root-element>\r\n";
+
+		String fileURI = "test.xml";
+
+		Diagnostic d = new Diagnostic(r(0, 18, 0, 60), "Downloading external resources is disabled.",
+				DiagnosticSeverity.Error, "xml", ExternalResourceErrorCode.DownloadResourceDisabled.getCode());
+
+		// Test diagnostics
+		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls, pd(fileURI, d, //
+				new Diagnostic(r(1, 1, 1, 13), "cvc-elt.1.a: Cannot find the declaration of element 'root-element'.",
+						DiagnosticSeverity.Error, "xml", XMLSchemaErrorCode.cvc_elt_1_a.getCode())));
+
+		testCodeActionsFor(xml, fileURI, d, //
+				ca(d, DownloadDisabledResourceCodeAction.createDownloadCommand(
+						"Force download of 'file:////example.com/schemas/my-schema.xsd'.", "file:////example.com/schemas/my-schema.xsd",
+						fileURI)));
+	}
+
+	@Test
+	public void schemaLocationDownloadDisabledUNC4() throws Exception {
+
+		assumeTrue("\r\n".equals(System.lineSeparator()));
+
+		XMLValidationRootSettings validation = new XMLValidationRootSettings();
+		validation.setResolveExternalEntities(true);
+
+		XMLLanguageService ls = new XMLLanguageService();
+		ls.initializeIfNeeded();
+		// Disable download
+		ContentModelManager contentModelManager = ls.getComponent(ContentModelManager.class);
+		contentModelManager.setDownloadExternalResources(false);
+
+		String xml = "<?xml-model href=\"\\\\example.com\\schemas\\my-schema.xsd\"?>\r\n" + //
+				"<root-element>\r\n" + //
+				"	\r\n" + //
+				"</root-element>\r\n";
+
+		String fileURI = "test.xml";
+
+		Diagnostic d = new Diagnostic(r(0, 18, 0, 53), "Downloading external resources is disabled.",
+				DiagnosticSeverity.Error, "xml", ExternalResourceErrorCode.DownloadResourceDisabled.getCode());
+
+		// Test diagnostics
+		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls, pd(fileURI, d, //
+				new Diagnostic(r(1, 1, 1, 13), "cvc-elt.1.a: Cannot find the declaration of element 'root-element'.",
+						DiagnosticSeverity.Error, "xml", XMLSchemaErrorCode.cvc_elt_1_a.getCode())));
+
+		testCodeActionsFor(xml, fileURI, d, //
+				ca(d, DownloadDisabledResourceCodeAction.createDownloadCommand(
+						"Force download of '\\\\example.com\\schemas\\my-schema.xsd'.", "\\\\example.com\\schemas\\my-schema.xsd",
+						fileURI)));
+	}
+
+	@Test
+	public void schemaLocationDownloadDisabledUNC5() throws Exception {
+
+		assumeTrue("\r\n".equals(System.lineSeparator()));
+
+		XMLValidationRootSettings validation = new XMLValidationRootSettings();
+		validation.setResolveExternalEntities(true);
+
+		XMLLanguageService ls = new XMLLanguageService();
+		ls.initializeIfNeeded();
+		// Disable download
+		ContentModelManager contentModelManager = ls.getComponent(ContentModelManager.class);
+		contentModelManager.setDownloadExternalResources(false);
+
+		String xml = "<?xml-model href=\"\\\\localhost\\C$\\Users\\Mira\\schemas\\my-schema.xsd\"?>\r\n" + //
+				"<root-element>\r\n" + //
+				"	\r\n" + //
+				"</root-element>\r\n";
+
+		String fileURI = "test.xml";
+
+		Diagnostic d = new Diagnostic(r(0, 18, 0, 65), "schema_reference.4: Failed to read schema document 'file://localhost/C$/Users/Mira/schemas/my-schema.xsd', because 1) could not find the document; 2) the document could not be read; 3) the root element of the document is not <xsd:schema>.",
+				DiagnosticSeverity.Warning, "xml", XMLSchemaErrorCode.schema_reference_4.getCode());
+
+		// Test diagnostics
+		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls, pd(fileURI, d, //
+				new Diagnostic(r(1, 1, 1, 13), "cvc-elt.1.a: Cannot find the declaration of element 'root-element'.",
+						DiagnosticSeverity.Error, "xml", XMLSchemaErrorCode.cvc_elt_1_a.getCode())));
+
 	}
 
 	@Test

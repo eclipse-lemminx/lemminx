@@ -316,10 +316,17 @@ public class CacheResourcesManager {
 		if (normalizedUri.getPath().contains("/../")) {
 			throw new InvalidURIException(uri.toString(), InvalidURIError.INVALID_PATH);
 		}
-		Path resourceCachePath = normalizedUri.getPort() > 0
-				? Paths.get(CACHE_PATH, normalizedUri.getScheme(), normalizedUri.getHost(),
-						String.valueOf(normalizedUri.getPort()), normalizedUri.getPath())
-				: Paths.get(CACHE_PATH, normalizedUri.getScheme(), normalizedUri.getHost(), normalizedUri.getPath());
+		Path resourceCachePath;
+		if (normalizedUri.getPort() > 0) {
+			resourceCachePath = Paths.get(CACHE_PATH, normalizedUri.getScheme(), normalizedUri.getHost(),
+						String.valueOf(normalizedUri.getPort()), normalizedUri.getPath());
+		} else {
+			if (normalizedUri.getHost() != null) {
+				resourceCachePath = Paths.get(CACHE_PATH, normalizedUri.getScheme(), normalizedUri.getHost(), normalizedUri.getPath());
+			} else {
+				resourceCachePath = Paths.get(CACHE_PATH, normalizedUri.getScheme(), normalizedUri.getPath());
+			}
+		}
 		return FilesUtils.getDeployedPath(resourceCachePath);
 	}
 
@@ -459,6 +466,17 @@ public class CacheResourcesManager {
 			if (url.startsWith(protocol)) {
 				return true;
 			}
+		}
+		try {
+			URI uri = URI.create(url);
+			if ((uri.getScheme() == null || uri.getScheme().isEmpty() || "file".equals(uri.getScheme()))
+					&& ((uri.getHost() != null && !uri.getHost().isEmpty() && !"localhost".equals(uri.getHost()))
+							|| ((uri.getHost() == null || uri.getHost().isEmpty()) && uri.getPath().startsWith(
+									"//")))) {
+				// UNC path
+				return true;
+			}
+		} catch (Exception e) {
 		}
 		return false;
 	}
