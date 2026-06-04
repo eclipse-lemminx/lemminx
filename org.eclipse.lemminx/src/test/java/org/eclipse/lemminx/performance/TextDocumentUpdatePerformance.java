@@ -42,7 +42,7 @@ public class TextDocumentUpdatePerformance {
 			// Insert a space
 			List<TextDocumentContentChangeEvent> changes = new ArrayList<>();
 			TextDocumentContentChangeEvent change = new TextDocumentContentChangeEvent(
-					new Range(new Position(14, 13), new Position(14, 13)), 0, " ");
+					new Range(new Position(14, 13), new Position(14, 13)), " ");
 			changes.add(change);
 			document.update(changes);
 			System.err.println("Update 'content.xml' text document in " + (System.currentTimeMillis() - start) + " ms.");

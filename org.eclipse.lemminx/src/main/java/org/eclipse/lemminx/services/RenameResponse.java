@@ -17,6 +17,7 @@ import java.util.Optional;
 
 import org.eclipse.lemminx.services.extensions.rename.IRenameResponse;
 import org.eclipse.lsp4j.ResourceOperation;
+import org.eclipse.lsp4j.SnippetTextEdit;
 import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
@@ -39,7 +40,8 @@ class RenameResponse implements IRenameResponse {
 				.map(Either::getLeft).findFirst();
 		if(change.isPresent()) {
 			TextDocumentEdit existingTextDocumentEdit = change.get();
-			List<TextEdit> edits = new ArrayList<>();
+			// Convert Either<TextEdit, SnippetTextEdit> to TextEdit for comparison
+			List<Either<TextEdit, SnippetTextEdit>> edits = new ArrayList<>();
 			edits.addAll(existingTextDocumentEdit.getEdits());
 			textDocumentEdit.getEdits().stream().forEach(te -> {
 				if (!edits.contains(te)) {

@@ -52,12 +52,16 @@ public class RootElementTypeMustMatchDoctypedeclCodeAction implements ICodeActio
 			return;
 		}
 
-		String currentRootText = getCurrentRoot(diagnostic.getMessage());
+		// Get message as String from Either<String, MarkupContent>
+		String message = diagnostic.getMessage().isLeft() ? diagnostic.getMessage().getLeft() :
+			diagnostic.getMessage().getRight().getValue();
+		
+		String currentRootText = getCurrentRoot(message);
 		if (currentRootText == null || !currentRootText.equals(root.getNodeName())) {
 			return;
 		}
 
-		String doctypeRootText = getDoctypeRoot(diagnostic.getMessage());
+		String doctypeRootText = getDoctypeRoot(message);
 		if (doctypeRootText == null) {
 			return;
 		}

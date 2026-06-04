@@ -17,6 +17,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionKind;
@@ -27,6 +28,7 @@ import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ResourceOperation;
+import org.eclipse.lsp4j.SnippetTextEdit;
 import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextDocumentItem;
 import org.eclipse.lsp4j.TextEdit;
@@ -96,7 +98,10 @@ public class CodeActionFactory {
 	public static TextDocumentEdit insertEdits(TextDocumentItem document, List<TextEdit> edits) {
 		VersionedTextDocumentIdentifier versionedTextDocumentIdentifier = new VersionedTextDocumentIdentifier(
 				document.getUri(), document.getVersion());
-		return new TextDocumentEdit(versionedTextDocumentIdentifier, edits);
+		List<Either<TextEdit, SnippetTextEdit>> eitherEdits = edits.stream()
+				.map(Either::<TextEdit, SnippetTextEdit>forLeft)
+				.collect(Collectors.toList());
+		return new TextDocumentEdit(versionedTextDocumentIdentifier, eitherEdits);
 	}
 
 	public static CodeAction replace(String title, Range range, String replaceText, TextDocumentItem document,
@@ -114,7 +119,10 @@ public class CodeActionFactory {
 
 		VersionedTextDocumentIdentifier versionedTextDocumentIdentifier = new VersionedTextDocumentIdentifier(
 				document.getUri(), document.getVersion());
-		TextDocumentEdit textDocumentEdit = new TextDocumentEdit(versionedTextDocumentIdentifier, replace);
+		List<Either<TextEdit, SnippetTextEdit>> eitherEdits = replace.stream()
+				.map(Either::<TextEdit, SnippetTextEdit>forLeft)
+				.collect(Collectors.toList());
+		TextDocumentEdit textDocumentEdit = new TextDocumentEdit(versionedTextDocumentIdentifier, eitherEdits);
 		WorkspaceEdit workspaceEdit = new WorkspaceEdit(Collections.singletonList(Either.forLeft(textDocumentEdit)));
 		insertContentAction.setEdit(workspaceEdit);
 		return insertContentAction;
@@ -132,8 +140,9 @@ public class CodeActionFactory {
 		TextEdit replace = new TextEdit(range, replaceText);
 		VersionedTextDocumentIdentifier versionedTextDocumentIdentifier = new VersionedTextDocumentIdentifier(
 				document.getUri(), document.getVersion());
-		TextDocumentEdit textDocumentEdit = new TextDocumentEdit(versionedTextDocumentIdentifier,
-				Collections.singletonList(replace));
+		List<Either<TextEdit, SnippetTextEdit>> eitherEdits = Collections.singletonList(
+				Either.forLeft(replace));
+		TextDocumentEdit textDocumentEdit = new TextDocumentEdit(versionedTextDocumentIdentifier, eitherEdits);
 		return new WorkspaceEdit(Collections.singletonList(Either.forLeft(textDocumentEdit)));
 	}
 
@@ -150,7 +159,10 @@ public class CodeActionFactory {
 			TextEdit edit = new TextEdit(range, replaceText);
 			edits.add(edit);
 		}
-		TextDocumentEdit textDocumentEdit = new TextDocumentEdit(versionedTextDocumentIdentifier, edits);
+		List<Either<TextEdit, SnippetTextEdit>> eitherEdits = edits.stream()
+				.map(Either::<TextEdit, SnippetTextEdit>forLeft)
+				.collect(Collectors.toList());
+		TextDocumentEdit textDocumentEdit = new TextDocumentEdit(versionedTextDocumentIdentifier, eitherEdits);
 		WorkspaceEdit workspaceEdit = new WorkspaceEdit(Collections.singletonList(Either.forLeft(textDocumentEdit)));
 
 		insertContentAction.setEdit(workspaceEdit);
@@ -192,7 +204,9 @@ public class CodeActionFactory {
 		// 2. update the created file with the given content
 		VersionedTextDocumentIdentifier identifier = new VersionedTextDocumentIdentifier(fileURI, 0);
 		TextEdit te = new TextEdit(new Range(new Position(0, 0), new Position(0, 0)), fileContent);
-		actionsToTake.add(Either.forLeft(new TextDocumentEdit(identifier, Collections.singletonList(te))));
+		List<Either<TextEdit, SnippetTextEdit>> eitherEdits = Collections.singletonList(
+				Either.forLeft(te));
+		actionsToTake.add(Either.forLeft(new TextDocumentEdit(identifier, eitherEdits)));
 
 		WorkspaceEdit createAndAddContentEdit = new WorkspaceEdit(actionsToTake);
 		return createAndAddContentEdit;

@@ -50,7 +50,7 @@ public class IncrementalParsingTest {
 		document.setIncremental(true);
 
 		Range range1 = new Range(new Position(0, 1), new Position(0, 1));
-		TextDocumentContentChangeEvent change1 = new TextDocumentContentChangeEvent(range1, 0, "a");
+		TextDocumentContentChangeEvent change1 = new TextDocumentContentChangeEvent(range1, "a");
 
 		ArrayList<TextDocumentContentChangeEvent> changes = new ArrayList<>();
 		changes.add(change1);
@@ -77,7 +77,7 @@ public class IncrementalParsingTest {
 		document.setIncremental(true);
 
 		Range range1 = new Range(new Position(0, 1), new Position(0, 1));
-		TextDocumentContentChangeEvent change1 = new TextDocumentContentChangeEvent(range1, 0, "aaa");
+		TextDocumentContentChangeEvent change1 = new TextDocumentContentChangeEvent(range1, "aaa");
 
 		ArrayList<TextDocumentContentChangeEvent> changes = new ArrayList<>();
 		changes.add(change1);
@@ -103,7 +103,7 @@ public class IncrementalParsingTest {
 		document.setIncremental(true);
 
 		Range range1 = new Range(new Position(0, 1), new Position(0, 4));
-		TextDocumentContentChangeEvent change1 = new TextDocumentContentChangeEvent(range1, 3, "aaa");
+		TextDocumentContentChangeEvent change1 = new TextDocumentContentChangeEvent(range1, "aaa");
 
 		ArrayList<TextDocumentContentChangeEvent> changes = new ArrayList<>();
 		changes.add(change1);
@@ -115,12 +115,14 @@ public class IncrementalParsingTest {
 
 	@Test
 	public void testRangeLengthPreferredOverRangeEndPosition() {
-		String text = "<zzz>\r\n" + // /// <-- inserting 'a' in tag name
+		// Note: In LSP4J 1.0.0, rangeLength parameter was removed.
+		// This test now uses the proper range end position instead.
+		String text = "<zzz>\r\n" + // /// <-- replacing 'zzz' with 'aaa' in tag name
 				"  <b>\r\n" + //
 				"  </b>\r\n" + //
 				"</aaa>\r\n";
 
-		String expectedText = "<aaa>\r\n" + // /// <-- inserted 'a' in tag name
+		String expectedText = "<aaa>\r\n" + // /// <-- replaced 'zzz' with 'aaa' in tag name
 				"  <b>\r\n" + //
 				"  </b>\r\n" + //
 				"</aaa>\r\n";
@@ -128,8 +130,9 @@ public class IncrementalParsingTest {
 		TextDocument document = new TextDocument(text, "uri");
 		document.setIncremental(true);
 
-		Range range1 = new Range(new Position(0, 1), new Position(-1, -1));
-		TextDocumentContentChangeEvent change1 = new TextDocumentContentChangeEvent(range1, 3, "aaa");
+		// Use proper range end position (0, 4) to replace "zzz" with "aaa"
+		Range range1 = new Range(new Position(0, 1), new Position(0, 4));
+		TextDocumentContentChangeEvent change1 = new TextDocumentContentChangeEvent(range1, "aaa");
 
 		ArrayList<TextDocumentContentChangeEvent> changes = new ArrayList<>();
 		changes.add(change1);
@@ -152,7 +155,7 @@ public class IncrementalParsingTest {
 		document.setIncremental(true);
 
 		Range range1 = new Range(new Position(0, 4), new Position(2, 5));
-		TextDocumentContentChangeEvent change1 = new TextDocumentContentChangeEvent(range1, null, "/");
+		TextDocumentContentChangeEvent change1 = new TextDocumentContentChangeEvent(range1, "/");
 
 		ArrayList<TextDocumentContentChangeEvent> changes = new ArrayList<>();
 		changes.add(change1);
@@ -178,10 +181,10 @@ public class IncrementalParsingTest {
 		document.setIncremental(true);
 
 		Range range1 = new Range(new Position(0, 1), new Position(0, 1));
-		TextDocumentContentChangeEvent change1 = new TextDocumentContentChangeEvent(range1, 0, "a");
+		TextDocumentContentChangeEvent change1 = new TextDocumentContentChangeEvent(range1, "a");
 
 		Range range2 = new Range(new Position(2, 4), new Position(2, 4));
-		TextDocumentContentChangeEvent change2 = new TextDocumentContentChangeEvent(range2, 0, "b");
+		TextDocumentContentChangeEvent change2 = new TextDocumentContentChangeEvent(range2, "b");
 
 		ArrayList<TextDocumentContentChangeEvent> changes = new ArrayList<>();
 		// The order they are added in is backwards with the largest offset being first
@@ -210,10 +213,10 @@ public class IncrementalParsingTest {
 		document.setIncremental(true);
 
 		Range range1 = new Range(new Position(0, 1), new Position(0, 4));
-		TextDocumentContentChangeEvent change1 = new TextDocumentContentChangeEvent(range1, 3, "a");
+		TextDocumentContentChangeEvent change1 = new TextDocumentContentChangeEvent(range1, "a");
 
 		Range range2 = new Range(new Position(2, 4), new Position(2, 7));
-		TextDocumentContentChangeEvent change2 = new TextDocumentContentChangeEvent(range2, 3, "b");
+		TextDocumentContentChangeEvent change2 = new TextDocumentContentChangeEvent(range2, "b");
 
 		ArrayList<TextDocumentContentChangeEvent> changes = new ArrayList<>();
 		// The order they are added in is backwards with the largest offset being first
@@ -242,7 +245,7 @@ public class IncrementalParsingTest {
 		document.setIncremental(true);
 
 		Range range1 = new Range(new Position(0, 2), new Position(0, 3));
-		TextDocumentContentChangeEvent change1 = new TextDocumentContentChangeEvent(range1, 1, "");
+		TextDocumentContentChangeEvent change1 = new TextDocumentContentChangeEvent(range1, "");
 
 		ArrayList<TextDocumentContentChangeEvent> changes = new ArrayList<>();
 		changes.add(change1);
@@ -269,10 +272,10 @@ public class IncrementalParsingTest {
 		document.setIncremental(true);
 
 		Range range1 = new Range(new Position(0, 2), new Position(0, 3));
-		TextDocumentContentChangeEvent change1 = new TextDocumentContentChangeEvent(range1, 1, "");
+		TextDocumentContentChangeEvent change1 = new TextDocumentContentChangeEvent(range1, "");
 
 		Range range2 = new Range(new Position(2, 5), new Position(2, 6));
-		TextDocumentContentChangeEvent change2 = new TextDocumentContentChangeEvent(range2, 1, "");
+		TextDocumentContentChangeEvent change2 = new TextDocumentContentChangeEvent(range2, "");
 
 		ArrayList<TextDocumentContentChangeEvent> changes = new ArrayList<>();
 		changes.add(change2);

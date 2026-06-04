@@ -103,6 +103,7 @@ import org.eclipse.lsp4j.ResourceOperation;
 import org.eclipse.lsp4j.SelectionRange;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.SymbolKind;
+import org.eclipse.lsp4j.SnippetTextEdit;
 import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextEdit;
@@ -746,7 +747,7 @@ public class XMLAssert {
 	public static void assertDiagnostics(List<Diagnostic> actual, List<Diagnostic> expected, boolean filter) {
 		List<Diagnostic> received = actual;
 		final boolean filterMessage;
-		if (expected != null && !expected.isEmpty() && !StringUtils.isEmpty(expected.get(0).getMessage())) {
+		if (expected != null && !expected.isEmpty() && !StringUtils.isEmpty(getMessageAsString(expected.get(0)))) {
 			filterMessage = true;
 		} else {
 			filterMessage = false;
@@ -870,10 +871,12 @@ public class XMLAssert {
 		for (int i = 0; i < expected.length; i++) {
 			assertEquals(expected[i].getUri(), actual.get(i).getUri());
 			actual.get(i).getDiagnostics().forEach(d -> {
-				d.setMessage(cleanExceptionMessage.apply(d.getMessage()));
+				String msg = getMessageAsString(d);
+				d.setMessage(cleanExceptionMessage.apply(msg));
 			});
 			expected[i].getDiagnostics().forEach(d -> {
-				d.setMessage(cleanExceptionMessage.apply(d.getMessage()));
+				String msg = getMessageAsString(d);
+				d.setMessage(cleanExceptionMessage.apply(msg));
 			});
 			assertDiagnostics(actual.get(i).getDiagnostics(), expected[i].getDiagnostics(), false);
 		}
@@ -881,7 +884,16 @@ public class XMLAssert {
 
 	private static List<String> getMessages(Stream<PublishDiagnosticsParams> diagParams) {
 		return diagParams.flatMap(d -> d.getDiagnostics().stream())
-				.map(d -> cleanExceptionMessage.apply(d.getMessage())).collect(Collectors.toList());
+				.map(d -> cleanExceptionMessage.apply(getMessageAsString(d))).collect(Collectors.toList());
+	}
+	
+	/**
+		* Helper method to extract String from Either<String, MarkupContent>
+		*/
+	private static String getMessageAsString(Diagnostic diagnostic) {
+		return diagnostic.getMessage().isLeft() ?
+			diagnostic.getMessage().getLeft() :
+			diagnostic.getMessage().getRight().getValue();
 	}
 
 	private static final Function<String, String> cleanExceptionMessage = (message) -> {
@@ -1185,7 +1197,10 @@ public class XMLAssert {
 	public static TextDocumentEdit tde(String uri, int version, TextEdit... te) {
 		VersionedTextDocumentIdentifier versionedTextDocumentIdentifier = new VersionedTextDocumentIdentifier(uri,
 				version);
-		return new TextDocumentEdit(versionedTextDocumentIdentifier, Arrays.asList(te));
+		List<Either<TextEdit, SnippetTextEdit>> edits = Arrays.stream(te)
+				.map(Either::<TextEdit, SnippetTextEdit>forLeft)
+				.collect(Collectors.toList());
+		return new TextDocumentEdit(versionedTextDocumentIdentifier, edits);
 	}
 
 	public static TextEdit te(int startLine, int startCharacter, int endLine, int endCharacter, String newText) {
@@ -1204,12 +1219,17 @@ public class XMLAssert {
 
 	public static Either<TextDocumentEdit, ResourceOperation> teOp(String uri, int startLine, int startChar,
 			int endLine, int endChar, String newText) {
-		return Either.forLeft(new TextDocumentEdit(new VersionedTextDocumentIdentifier(uri, 0),
-				Collections.singletonList(te(startLine, startChar, endLine, endChar, newText))));
+		TextEdit edit = te(startLine, startChar, endLine, endChar, newText);
+		List<Either<TextEdit, SnippetTextEdit>> edits = Collections.singletonList(
+				Either.<TextEdit, SnippetTextEdit>forLeft(edit));
+		return Either.forLeft(new TextDocumentEdit(new VersionedTextDocumentIdentifier(uri, 0), edits));
 	}
 
 	public static Either<TextDocumentEdit, ResourceOperation> teOp(String uri, TextEdit... te) {
-		return Either.forLeft(new TextDocumentEdit(new VersionedTextDocumentIdentifier(uri, 0), Arrays.asList(te)));
+		List<Either<TextEdit, SnippetTextEdit>> edits = Arrays.stream(te)
+				.map(Either::<TextEdit, SnippetTextEdit>forLeft)
+				.collect(Collectors.toList());
+		return Either.forLeft(new TextDocumentEdit(new VersionedTextDocumentIdentifier(uri, 0), edits));
 	}
 
 	// ------------------- Hover assert
@@ -1887,7 +1907,11 @@ public class XMLAssert {
 		final String uri = fileURI;
 		Optional<TextDocumentEdit> documentChange = workspaceEdit.getDocumentChanges().stream().filter(Either::isLeft)
 				.filter(e -> uri.equals(e.getLeft().getTextDocument().getUri())).map(Either::getLeft).findFirst();
-		List<TextEdit> actualEdits = documentChange.isPresent() ? documentChange.get().getEdits()
+		List<TextEdit> actualEdits = documentChange.isPresent() ?
+				documentChange.get().getEdits().stream()
+					.filter(Either::isLeft)
+					.map(Either::getLeft)
+					.collect(Collectors.toList())
 				: Collections.emptyList();
 		assertArrayEquals(expectedEdits.toArray(), actualEdits.toArray());
 	}

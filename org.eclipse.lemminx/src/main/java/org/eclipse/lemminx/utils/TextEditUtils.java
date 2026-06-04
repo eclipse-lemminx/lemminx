@@ -24,10 +24,12 @@ import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ResourceOperation;
+import org.eclipse.lsp4j.SnippetTextEdit;
 import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.WorkspaceEdit;
+import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 /**
@@ -160,7 +162,7 @@ public class TextEditUtils {
 
 	/**
 	 * Creates a TextDocumentEdit object for the specified document and list of text edits
-	 * 
+	 *
 	 * @param document Document to be changed
 	 * @param textEdits a list of text edit changes
 	 * @return A Text Dpcument Edit object
@@ -168,7 +170,11 @@ public class TextEditUtils {
 	public static TextDocumentEdit creatTextDocumentEdit(DOMDocument document, List<TextEdit> textEdits) {
 		VersionedTextDocumentIdentifier projectVersionedTextDocumentIdentifier = new VersionedTextDocumentIdentifier(
 				document.getDocumentURI(), document.getTextDocument().getVersion());
-		return new TextDocumentEdit(projectVersionedTextDocumentIdentifier, textEdits);
+		// Convert List<TextEdit> to List<Either<TextEdit, SnippetTextEdit>> for LSP4J 1.0.0
+		List<Either<TextEdit, SnippetTextEdit>> edits = textEdits.stream()
+				.map(Either::<TextEdit, SnippetTextEdit>forLeft)
+				.collect(Collectors.toList());
+		return new TextDocumentEdit(projectVersionedTextDocumentIdentifier, edits);
 	}
 	
 	public static WorkspaceEdit createWorkspaceEdit(List<Either<TextDocumentEdit, ResourceOperation>> documentChanges) {
