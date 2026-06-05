@@ -19,6 +19,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import org.eclipse.lemminx.utils.TextEditUtils;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionKind;
 import org.eclipse.lsp4j.Command;
@@ -98,9 +99,7 @@ public class CodeActionFactory {
 	public static TextDocumentEdit insertEdits(TextDocumentItem document, List<TextEdit> edits) {
 		VersionedTextDocumentIdentifier versionedTextDocumentIdentifier = new VersionedTextDocumentIdentifier(
 				document.getUri(), document.getVersion());
-		List<Either<TextEdit, SnippetTextEdit>> eitherEdits = edits.stream()
-				.map(Either::<TextEdit, SnippetTextEdit>forLeft)
-				.collect(Collectors.toList());
+		List<Either<TextEdit, SnippetTextEdit>> eitherEdits = TextEditUtils.toEitherTextEdits(edits);
 		return new TextDocumentEdit(versionedTextDocumentIdentifier, eitherEdits);
 	}
 
@@ -119,9 +118,7 @@ public class CodeActionFactory {
 
 		VersionedTextDocumentIdentifier versionedTextDocumentIdentifier = new VersionedTextDocumentIdentifier(
 				document.getUri(), document.getVersion());
-		List<Either<TextEdit, SnippetTextEdit>> eitherEdits = replace.stream()
-				.map(Either::<TextEdit, SnippetTextEdit>forLeft)
-				.collect(Collectors.toList());
+		List<Either<TextEdit, SnippetTextEdit>> eitherEdits = TextEditUtils.toEitherTextEdits(replace);
 		TextDocumentEdit textDocumentEdit = new TextDocumentEdit(versionedTextDocumentIdentifier, eitherEdits);
 		WorkspaceEdit workspaceEdit = new WorkspaceEdit(Collections.singletonList(Either.forLeft(textDocumentEdit)));
 		insertContentAction.setEdit(workspaceEdit);
@@ -159,9 +156,7 @@ public class CodeActionFactory {
 			TextEdit edit = new TextEdit(range, replaceText);
 			edits.add(edit);
 		}
-		List<Either<TextEdit, SnippetTextEdit>> eitherEdits = edits.stream()
-				.map(Either::<TextEdit, SnippetTextEdit>forLeft)
-				.collect(Collectors.toList());
+		List<Either<TextEdit, SnippetTextEdit>> eitherEdits = TextEditUtils.toEitherTextEdits(edits);
 		TextDocumentEdit textDocumentEdit = new TextDocumentEdit(versionedTextDocumentIdentifier, eitherEdits);
 		WorkspaceEdit workspaceEdit = new WorkspaceEdit(Collections.singletonList(Either.forLeft(textDocumentEdit)));
 

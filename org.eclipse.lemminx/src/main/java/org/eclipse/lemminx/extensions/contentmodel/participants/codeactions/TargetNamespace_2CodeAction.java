@@ -22,6 +22,7 @@ import org.eclipse.lemminx.dom.DOMNode;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionParticipant;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionRequest;
 import org.eclipse.lemminx.settings.SharedSettings;
+import org.eclipse.lemminx.utils.MarkupContentFactory;
 import org.eclipse.lemminx.utils.StringUtils;
 import org.eclipse.lemminx.utils.XMLPositionUtility;
 import org.eclipse.lsp4j.CodeAction;
@@ -44,9 +45,7 @@ public class TargetNamespace_2CodeAction implements ICodeActionParticipant {
 	public void doCodeAction(ICodeActionRequest request, List<CodeAction> codeActions, CancelChecker cancelChecker) {
 		Diagnostic diagnostic = request.getDiagnostic();
 		DOMDocument document = request.getDocument();
-		// Get message as String from Either<String, MarkupContent>
-		String message = diagnostic.getMessage().isLeft() ? diagnostic.getMessage().getLeft() :
-			diagnostic.getMessage().getRight().getValue();
+		String message = MarkupContentFactory.getDiagnosticMessage(diagnostic);
 		String namespace = extractNamespace(message);
 		if (StringUtils.isEmpty(namespace)) {
 			return;

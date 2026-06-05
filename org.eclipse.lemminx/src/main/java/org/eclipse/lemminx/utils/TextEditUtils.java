@@ -30,7 +30,6 @@ import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 /**
  * Utilities for {@link TextEdit}.
@@ -41,6 +40,22 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 public class TextEditUtils {
 
 	private static final Logger LOGGER = Logger.getLogger(TextEditUtils.class.getName());
+
+	/**
+	 * Converts a list of TextEdit to a list of Either<TextEdit, SnippetTextEdit>.
+	 * <p>
+	 * In LSP4J 1.0.0, TextDocumentEdit requires Either wrappers to support both
+	 * regular text edits and snippet text edits with placeholders.
+	 * </p>
+	 *
+	 * @param textEdits the list of text edits
+	 * @return the list of Either wrappers containing the text edits
+	 */
+	public static List<Either<TextEdit, SnippetTextEdit>> toEitherTextEdits(List<TextEdit> textEdits) {
+		return textEdits.stream()
+				.map(Either::<TextEdit, SnippetTextEdit>forLeft)
+				.collect(Collectors.toList());
+	}
 
 	/**
 	 * Returns the {@link TextEdit} to insert the given expected content from the
@@ -171,9 +186,7 @@ public class TextEditUtils {
 		VersionedTextDocumentIdentifier projectVersionedTextDocumentIdentifier = new VersionedTextDocumentIdentifier(
 				document.getDocumentURI(), document.getTextDocument().getVersion());
 		// Convert List<TextEdit> to List<Either<TextEdit, SnippetTextEdit>> for LSP4J 1.0.0
-		List<Either<TextEdit, SnippetTextEdit>> edits = textEdits.stream()
-				.map(Either::<TextEdit, SnippetTextEdit>forLeft)
-				.collect(Collectors.toList());
+		List<Either<TextEdit, SnippetTextEdit>> edits = toEitherTextEdits(textEdits);
 		return new TextDocumentEdit(projectVersionedTextDocumentIdentifier, edits);
 	}
 	

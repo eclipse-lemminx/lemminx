@@ -23,6 +23,7 @@ import org.eclipse.lemminx.dom.DOMNode;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionParticipant;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionRequest;
 import org.eclipse.lemminx.settings.SharedSettings;
+import org.eclipse.lemminx.utils.MarkupContentFactory;
 import org.eclipse.lemminx.utils.XMLBuilder;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.Diagnostic;
@@ -226,9 +227,7 @@ public class EntityNotDeclaredCodeAction implements ICodeActionParticipant {
 		Range range = diagnostic.getRange();
 		String name = doc.getText().substring(doc.offsetAt(range.getStart()), doc.offsetAt(range.getEnd()));
 		String removedAmpAndSemiColon = name.substring(1, name.length() - 1);
-		// Get message as String from Either<String, MarkupContent>
-		String message = diagnostic.getMessage().isLeft() ? diagnostic.getMessage().getLeft() :
-			diagnostic.getMessage().getRight().getValue();
+		String message = MarkupContentFactory.getDiagnosticMessage(diagnostic);
 		if (!message.contains("\"" + removedAmpAndSemiColon + "\"")) {
 			return null;
 		}
