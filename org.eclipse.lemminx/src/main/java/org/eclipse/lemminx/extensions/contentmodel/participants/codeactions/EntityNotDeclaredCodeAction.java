@@ -15,6 +15,7 @@ import java.util.logging.Logger;
 
 import org.eclipse.lemminx.commons.BadLocationException;
 import org.eclipse.lemminx.commons.CodeActionFactory;
+import org.eclipse.lemminx.commons.DiagnosticUtils;
 import org.eclipse.lemminx.commons.TextDocument;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMDocumentType;
@@ -23,7 +24,6 @@ import org.eclipse.lemminx.dom.DOMNode;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionParticipant;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionRequest;
 import org.eclipse.lemminx.settings.SharedSettings;
-import org.eclipse.lemminx.utils.MarkupContentFactory;
 import org.eclipse.lemminx.utils.XMLBuilder;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.Diagnostic;
@@ -227,7 +227,7 @@ public class EntityNotDeclaredCodeAction implements ICodeActionParticipant {
 		Range range = diagnostic.getRange();
 		String name = doc.getText().substring(doc.offsetAt(range.getStart()), doc.offsetAt(range.getEnd()));
 		String removedAmpAndSemiColon = name.substring(1, name.length() - 1);
-		String message = MarkupContentFactory.getDiagnosticMessage(diagnostic);
+		String message = DiagnosticUtils.getDiagnosticMessage(diagnostic);
 		if (!message.contains("\"" + removedAmpAndSemiColon + "\"")) {
 			return null;
 		}

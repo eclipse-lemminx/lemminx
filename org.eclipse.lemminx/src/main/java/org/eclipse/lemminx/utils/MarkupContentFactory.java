@@ -14,12 +14,10 @@ package org.eclipse.lemminx.utils;
 import java.util.List;
 
 import org.eclipse.lemminx.services.extensions.ISharedSettingsRequest;
-import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.MarkupContent;
 import org.eclipse.lsp4j.MarkupKind;
 import org.eclipse.lsp4j.Range;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
 /**
  * Factory to create LSP4J {@link MarkupContent}
@@ -30,21 +28,6 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
 public class MarkupContentFactory {
 
 	public static final String MARKDOWN_SEPARATOR = "___";
-
-	/**
-	 * Extracts the diagnostic message as a String from Either<String, MarkupContent>.
-	 * <p>
-	 * In LSP4J 1.0.0, diagnostic messages can be either plain strings or rich MarkupContent.
-	 * This method extracts the plain text representation from either format.
-	 * </p>
-	 *
-	 * @param diagnostic the diagnostic
-	 * @return the diagnostic message as a String
-	 */
-	public static String getDiagnosticMessage(Diagnostic diagnostic) {
-		Either<String, MarkupContent> message = diagnostic.getMessage();
-		return message.isLeft() ? message.getLeft() : message.getRight().getValue();
-	}
 
 	/**
 	 * Create the markup content according the given markup kind and the capability

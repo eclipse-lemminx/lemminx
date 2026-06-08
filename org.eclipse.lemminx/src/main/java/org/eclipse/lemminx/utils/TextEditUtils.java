@@ -11,23 +11,15 @@
 *******************************************************************************/
 package org.eclipse.lemminx.utils;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 import org.eclipse.lemminx.commons.BadLocationException;
 import org.eclipse.lemminx.commons.TextDocument;
 import org.eclipse.lemminx.dom.DOMDocument;
-import org.eclipse.lsp4j.Position;
-import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ResourceOperation;
 import org.eclipse.lsp4j.SnippetTextEdit;
 import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextEdit;
-import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
@@ -35,162 +27,57 @@ import org.eclipse.lsp4j.jsonrpc.messages.Either;
  * Utilities for {@link TextEdit}.
  * 
  * @author Angelo ZERR
- *
+ * @deprecated Use {@link org.eclipse.lemminx.commons.TextEditUtils} for generic LSP4J utilities
+ *             or {@link DOMTextEditUtils} for DOM-specific utilities
  */
+@Deprecated
 public class TextEditUtils {
 
-	private static final Logger LOGGER = Logger.getLogger(TextEditUtils.class.getName());
-
 	/**
-	 * Converts a list of TextEdit to a list of Either<TextEdit, SnippetTextEdit>.
-	 * <p>
-	 * In LSP4J 1.0.0, TextDocumentEdit requires Either wrappers to support both
-	 * regular text edits and snippet text edits with placeholders.
-	 * </p>
-	 *
-	 * @param textEdits the list of text edits
-	 * @return the list of Either wrappers containing the text edits
+	 * @deprecated Use {@link org.eclipse.lemminx.commons.TextEditUtils#toEitherTextEdits(List)}
 	 */
+	@Deprecated
 	public static List<Either<TextEdit, SnippetTextEdit>> toEitherTextEdits(List<TextEdit> textEdits) {
-		return textEdits.stream()
-				.map(Either::<TextEdit, SnippetTextEdit>forLeft)
-				.collect(Collectors.toList());
+		return org.eclipse.lemminx.commons.TextEditUtils.toEitherTextEdits(textEdits);
 	}
 
 	/**
-	 * Returns the {@link TextEdit} to insert the given expected content from the
-	 * given range (from, to) of the given text document and null otherwise.
-	 * 
-	 * @param from            the range from.
-	 * @param to              the range to.
-	 * @param expectedContent the expected content.
-	 * @param textDocument    the text document.
-	 * 
-	 * @return the {@link TextEdit} to insert the given expected content from the
-	 *         given range (from, to) of the given text document and null otherwise.
+	 * @deprecated Use {@link org.eclipse.lemminx.commons.TextEditUtils#createTextEditIfNeeded(int, int, String, TextDocument)}
 	 */
+	@Deprecated
 	public static TextEdit createTextEditIfNeeded(int from, int to, String expectedContent, TextDocument textDocument) {
-		String text = textDocument.getText();
-
-		// Check if content from the range [from, to] is the same than expected content
-		if (isMatchExpectedContent(from, to, expectedContent, text)) {
-			// The expected content exists, no need to create a TextEdit
-			return null;
-		}
-
-		// Insert the expected content.
-		try {
-			Position endPos = textDocument.positionAt(to);
-			Position startPos = to == from ? endPos : textDocument.positionAt(from);
-			Range range = new Range(startPos, endPos);
-			return new TextEdit(range, expectedContent);
-		} catch (BadLocationException e) {
-			LOGGER.log(Level.SEVERE, e.getMessage(), e);
-		}
-		return null;
+		return org.eclipse.lemminx.commons.TextEditUtils.createTextEditIfNeeded(from, to, expectedContent, textDocument);
 	}
 
 	/**
-	 * Returns true if the given content from the range [from, to] of the given text
-	 * is the same than expected content and false otherwise.
-	 * 
-	 * @param from            the from range.
-	 * @param to              the to range.
-	 * @param expectedContent the expected content.
-	 * @param text            the text document.
-	 * 
-	 * @return true if the given content from the range [from, to] of the given text
-	 *         is the same than expected content and false otherwise.
+	 * @deprecated Use {@link org.eclipse.lemminx.commons.TextEditUtils#applyEdits(TextDocument, List)}
 	 */
-	private static boolean isMatchExpectedContent(int from, int to, String expectedContent, String text) {
-		if (expectedContent.length() == to - from) {
-			int j = 0;
-			for (int i = from; i < to; i++) {
-				char c = text.charAt(i);
-				if (expectedContent.charAt(j) != c) {
-					return false;
-				}
-				j++;
-			}
-		} else {
-			return false;
-		}
-		return true;
-	}
-
+	@Deprecated
 	public static String applyEdits(TextDocument document, List<? extends TextEdit> edits) throws BadLocationException {
-		String text = document.getText();
-		Collections.sort(edits /* .map(getWellformedEdit) */, (a, b) -> {
-			int diff = a.getRange().getStart().getLine() - b.getRange().getStart().getLine();
-			if (diff == 0) {
-				return a.getRange().getStart().getCharacter() - b.getRange().getStart().getCharacter();
-			}
-			return diff;
-		});
-		
-		// Use StringBuilder for better memory efficiency, especially for large files
-		// Pre-allocate capacity based on original text size to minimize reallocations
-		StringBuilder result = new StringBuilder(text.length());
-		int lastModifiedOffset = 0;
-		
-		for (TextEdit e : edits) {
-			int startOffset = document.offsetAt(e.getRange().getStart());
-			if (startOffset < lastModifiedOffset) {
-				throw new Error("Overlapping edit");
-			} else if (startOffset > lastModifiedOffset) {
-				// Append unchanged text between edits
-				result.append(text, lastModifiedOffset, startOffset);
-			}
-			if (e.getNewText() != null) {
-				result.append(e.getNewText());
-			}
-			lastModifiedOffset = document.offsetAt(e.getRange().getEnd());
-		}
-		// Append remaining text after last edit
-		result.append(text, lastModifiedOffset, text.length());
-		return result.toString();
+		return org.eclipse.lemminx.commons.TextEditUtils.applyEdits(document, edits);
 	}
 
 	/**
-	 * Returns the offset of the first whitespace that's found in the given range
-	 * [leftLimit,to] from the left of the to, and leftLimit otherwise.
-	 * 
-	 * @param leftLimit the left limit range.
-	 * @param to        the to range.
-	 * 
-	 * @return the offset of the first whitespace that's found in the given range
-	 *         [leftLimit,to] from the left of the to, and leftLimit otherwise.
+	 * @deprecated Use {@link org.eclipse.lemminx.commons.TextEditUtils#adjustOffsetWithLeftWhitespaces(int, int, String)}
 	 */
+	@Deprecated
 	public static int adjustOffsetWithLeftWhitespaces(int leftLimit, int to, String text) {
-		if (to == 0) {
-			return -1;
-		}
-		for (int i = to - 1; i >= leftLimit; i--) {
-			char c = text.charAt(i);
-			if (!Character.isWhitespace(c)) {
-				// The current character is not a whitespace, return the offset of the character
-				return i + 1;
-			}
-		}
-		return leftLimit;
+		return org.eclipse.lemminx.commons.TextEditUtils.adjustOffsetWithLeftWhitespaces(leftLimit, to, text);
 	}
 
 	/**
-	 * Creates a TextDocumentEdit object for the specified document and list of text edits
-	 *
-	 * @param document Document to be changed
-	 * @param textEdits a list of text edit changes
-	 * @return A Text Dpcument Edit object
+	 * @deprecated Use {@link DOMTextEditUtils#creatTextDocumentEdit(DOMDocument, List)}
 	 */
+	@Deprecated
 	public static TextDocumentEdit creatTextDocumentEdit(DOMDocument document, List<TextEdit> textEdits) {
-		VersionedTextDocumentIdentifier projectVersionedTextDocumentIdentifier = new VersionedTextDocumentIdentifier(
-				document.getDocumentURI(), document.getTextDocument().getVersion());
-		// Convert List<TextEdit> to List<Either<TextEdit, SnippetTextEdit>> for LSP4J 1.0.0
-		List<Either<TextEdit, SnippetTextEdit>> edits = toEitherTextEdits(textEdits);
-		return new TextDocumentEdit(projectVersionedTextDocumentIdentifier, edits);
+		return DOMTextEditUtils.creatTextDocumentEdit(document, textEdits);
 	}
 	
+	/**
+	 * @deprecated Use {@link org.eclipse.lemminx.commons.TextEditUtils#createWorkspaceEdit(List)}
+	 */
+	@Deprecated
 	public static WorkspaceEdit createWorkspaceEdit(List<Either<TextDocumentEdit, ResourceOperation>> documentChanges) {
-		return new WorkspaceEdit(documentChanges);
+		return org.eclipse.lemminx.commons.TextEditUtils.createWorkspaceEdit(documentChanges);
 	}
 }

@@ -17,11 +17,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.lemminx.commons.CodeActionFactory;
+import org.eclipse.lemminx.commons.DiagnosticUtils;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionParticipant;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionRequest;
 import org.eclipse.lemminx.settings.SharedSettings;
-import org.eclipse.lemminx.utils.MarkupContentFactory;
 import org.eclipse.lemminx.utils.StringUtils;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.Diagnostic;
@@ -41,7 +41,7 @@ public class TargetNamespace_1CodeAction implements ICodeActionParticipant {
 	public void doCodeAction(ICodeActionRequest request, List<CodeAction> codeActions, CancelChecker cancelChecker) {
 		Diagnostic diagnostic = request.getDiagnostic();
 		DOMDocument document = request.getDocument();
-		String message = MarkupContentFactory.getDiagnosticMessage(diagnostic);
+		String message = DiagnosticUtils.getDiagnosticMessage(diagnostic);
 		String namespace = extractNamespace(message);
 		if (StringUtils.isEmpty(namespace)) {
 			return;

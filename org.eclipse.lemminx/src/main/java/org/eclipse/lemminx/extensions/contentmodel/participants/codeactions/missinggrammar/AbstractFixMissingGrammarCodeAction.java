@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.eclipse.lemminx.commons.CodeActionFactory;
+import org.eclipse.lemminx.commons.DiagnosticUtils;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.extensions.generators.FileContentGeneratorManager;
 import org.eclipse.lemminx.extensions.generators.FileContentGeneratorSettings;
@@ -27,7 +28,6 @@ import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionParticipant
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionRequest;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionResolvesParticipant;
 import org.eclipse.lemminx.settings.SharedSettings;
-import org.eclipse.lemminx.utils.MarkupContentFactory;
 import org.eclipse.lemminx.utils.StringUtils;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionKind;
@@ -114,7 +114,7 @@ public abstract class AbstractFixMissingGrammarCodeAction implements ICodeAction
 	 * the root element of the document is not <xsd:schema>.
 	 */
 	private String getPathFromDiagnostic(Diagnostic diagnostic) {
-		String message = MarkupContentFactory.getDiagnosticMessage(diagnostic);
+		String message = DiagnosticUtils.getDiagnosticMessage(diagnostic);
 		int startIndex = message.indexOf(FILE_SCHEME);
 		if (startIndex != -1) {
 			int endIndex = message.lastIndexOf("'");
