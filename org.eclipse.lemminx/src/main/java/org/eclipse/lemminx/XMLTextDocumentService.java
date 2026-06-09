@@ -1,5 +1,5 @@
 /**
- *  Copyright (c) 2018 Angelo ZERR.
+ *  Copyright (c) 2018, 2026 Angelo ZERR.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v2.0
  *  which accompanies this distribution, and is available at
@@ -85,6 +85,10 @@ import org.eclipse.lsp4j.FoldingRange;
 import org.eclipse.lsp4j.FoldingRangeRequestParams;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.HoverParams;
+import org.eclipse.lsp4j.InlineCompletionContext;
+import org.eclipse.lsp4j.InlineCompletionItem;
+import org.eclipse.lsp4j.InlineCompletionList;
+import org.eclipse.lsp4j.InlineCompletionParams;
 import org.eclipse.lsp4j.LinkedEditingRangeParams;
 import org.eclipse.lsp4j.LinkedEditingRanges;
 import org.eclipse.lsp4j.Location;
@@ -272,6 +276,16 @@ public class XMLTextDocumentService implements TextDocumentService {
 		return computeDOMAsync(unresolved.getData(), (xmlDocument, cancelChecker) -> {
 			return getXMLLanguageService().resolveCompletionItem(unresolved, xmlDocument, sharedSettings,
 					cancelChecker);
+		});
+	}
+
+	@Override
+	public CompletableFuture<Either<List<InlineCompletionItem>, InlineCompletionList>> inlineCompletion(InlineCompletionParams params) {
+		return computeDOMAsync(params.getTextDocument(), (xmlDocument, cancelChecker) -> {
+			InlineCompletionContext context = params.getContext();
+			InlineCompletionList list = getXMLLanguageService().doInlineCompletion(xmlDocument, params.getPosition(), context,
+					sharedSettings, cancelChecker);
+			return Either.forRight(list);
 		});
 	}
 

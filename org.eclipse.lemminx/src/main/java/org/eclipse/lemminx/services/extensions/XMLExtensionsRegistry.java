@@ -1,5 +1,5 @@
 /**
- *  Copyright (c) 2018, 2023 Angelo ZERR
+ *  Copyright (c) 2018, 2026 Angelo ZERR
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v2.0
  *  which accompanies this distribution, and is available at
@@ -34,6 +34,7 @@ import org.eclipse.lemminx.services.extensions.completion.ICompletionParticipant
 import org.eclipse.lemminx.services.extensions.diagnostics.IDiagnosticsParticipant;
 import org.eclipse.lemminx.services.extensions.format.IFormatterParticipant;
 import org.eclipse.lemminx.services.extensions.hover.IHoverParticipant;
+import org.eclipse.lemminx.services.extensions.inlinecompletion.IInlineCompletionParticipant;
 import org.eclipse.lemminx.services.extensions.rename.IRenameParticipant;
 import org.eclipse.lemminx.services.extensions.save.ISaveContext;
 import org.eclipse.lemminx.services.extensions.save.ISaveContext.SaveContextType;
@@ -68,6 +69,7 @@ public class XMLExtensionsRegistry implements IComponentProvider {
 	private final List<ISymbolsProviderParticipant> symbolsProviderParticipants;
 	private final List<IWorkspaceServiceParticipant> workspaceServiceParticipants;
 	private final List<IDocumentLifecycleParticipant> documentLifecycleParticipants;
+	private final List<IInlineCompletionParticipant> inlineCompletionParticipants;
 	private IXMLDocumentProvider documentProvider;
 	private IXMLValidationService validationService;
 	private IXMLCommandService commandService;
@@ -104,6 +106,7 @@ public class XMLExtensionsRegistry implements IComponentProvider {
 		symbolsProviderParticipants = new ArrayList<>();
 		workspaceServiceParticipants = new ArrayList<>();
 		documentLifecycleParticipants = new ArrayList<>();
+		inlineCompletionParticipants = new ArrayList<>();
 		resolverExtensionManager = new URIResolverExtensionManager();
 		components = new HashMap<>();
 		telemetryManager = new TelemetryManager(null);
@@ -246,6 +249,16 @@ public class XMLExtensionsRegistry implements IComponentProvider {
 	public List<IDocumentLifecycleParticipant> getDocumentLifecycleParticipants() {
 		initializeIfNeeded();
 		return documentLifecycleParticipants;
+	}
+
+	/**
+	 * Return the registered inline completion participants.
+	 *
+	 * @return the registered inline completion participants.
+	 */
+	public List<IInlineCompletionParticipant> getInlineCompletionParticipants() {
+		initializeIfNeeded();
+		return inlineCompletionParticipants;
 	}
 
 	public void initializeIfNeeded() {
@@ -470,6 +483,24 @@ public class XMLExtensionsRegistry implements IComponentProvider {
 	public void unregisterDocumentLifecycleParticipant(IDocumentLifecycleParticipant documentLifecycleParticipant) {
 		documentLifecycleParticipants.remove(documentLifecycleParticipant);
 	}
+	/**
+	 * Register a new inline completion participant
+	 *
+	 * @param inlineCompletionParticipant the participant to register
+	 */
+	public void registerInlineCompletionParticipant(IInlineCompletionParticipant inlineCompletionParticipant) {
+		inlineCompletionParticipants.add(inlineCompletionParticipant);
+	}
+
+	/**
+	 * Unregister an inline completion participant.
+	 *
+	 * @param inlineCompletionParticipant the participant to unregister
+	 */
+	public void unregisterInlineCompletionParticipant(IInlineCompletionParticipant inlineCompletionParticipant) {
+		inlineCompletionParticipants.remove(inlineCompletionParticipant);
+	}
+
 
 	/**
 	 * Returns the XML Document provider and null otherwise.

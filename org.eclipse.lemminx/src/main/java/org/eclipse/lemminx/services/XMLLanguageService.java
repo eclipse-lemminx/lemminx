@@ -1,5 +1,5 @@
 /**
- *  Copyright (c) 2018, 2023 Angelo ZERR
+ *  Copyright (c) 2018, 2026 Angelo ZERR
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v2.0
  *  which accompanies this distribution, and is available at
@@ -47,6 +47,8 @@ import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.FoldingRange;
 import org.eclipse.lsp4j.Hover;
+import org.eclipse.lsp4j.InlineCompletionContext;
+import org.eclipse.lsp4j.InlineCompletionList;
 import org.eclipse.lsp4j.LinkedEditingRanges;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
@@ -95,6 +97,7 @@ public class XMLLanguageService extends XMLExtensionsRegistry implements IXMLFul
 	private final XMLSelectionRanges selectionRanges;
 	private final XMLLinkedEditing linkedEditing;
 	private final XMLDocumentColor documentColor;
+	private final XMLInlineCompletion inlineCompletion;
 
 	public XMLLanguageService() {
 		this.formatter = new XMLFormatter(this);
@@ -116,6 +119,7 @@ public class XMLLanguageService extends XMLExtensionsRegistry implements IXMLFul
 		this.rename = new XMLRename(this);
 		this.selectionRanges = new XMLSelectionRanges();
 		this.linkedEditing = new XMLLinkedEditing(this);
+		this.inlineCompletion = new XMLInlineCompletion(this);
 	}
 
 	@Override
@@ -194,6 +198,16 @@ public class XMLLanguageService extends XMLExtensionsRegistry implements IXMLFul
 			SharedSettings sharedSettings, CancelChecker cancelChecker) {
 		return completions.resolveCompletionItem(unresolved, xmlDocument, sharedSettings, cancelChecker);
 	}
+	public InlineCompletionList doInlineCompletion(DOMDocument xmlDocument, Position position,
+			InlineCompletionContext context, SharedSettings settings) {
+		return doInlineCompletion(xmlDocument, position, context, settings, NULL_CHECKER);
+	}
+
+	public InlineCompletionList doInlineCompletion(DOMDocument xmlDocument, Position position,
+			InlineCompletionContext context, SharedSettings settings, CancelChecker cancelChecker) {
+		return inlineCompletion.doInlineCompletion(xmlDocument, position, context, settings, cancelChecker);
+	}
+
 
 	public Hover doHover(DOMDocument xmlDocument, Position position, SharedSettings sharedSettings) {
 		return doHover(xmlDocument, position, sharedSettings, NULL_CHECKER);
