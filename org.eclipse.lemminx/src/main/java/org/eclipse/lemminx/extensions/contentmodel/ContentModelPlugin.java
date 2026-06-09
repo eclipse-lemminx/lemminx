@@ -32,6 +32,7 @@ import org.eclipse.lemminx.extensions.contentmodel.participants.ContentModelHove
 import org.eclipse.lemminx.extensions.contentmodel.participants.ContentModelSymbolsProviderParticipant;
 import org.eclipse.lemminx.extensions.contentmodel.participants.ContentModelTypeDefinitionParticipant;
 import org.eclipse.lemminx.extensions.contentmodel.participants.DocumentTelemetryParticipant;
+import org.eclipse.lemminx.extensions.contentmodel.participants.inlinecompletion.XMLCloseTagInlineCompletionParticipant;
 import org.eclipse.lemminx.extensions.contentmodel.participants.diagnostics.ContentModelDiagnosticsParticipant;
 import org.eclipse.lemminx.extensions.contentmodel.settings.ContentModelSettings;
 import org.eclipse.lemminx.extensions.contentmodel.settings.XMLDownloadExternalResourcesSettings;
@@ -89,6 +90,8 @@ public class ContentModelPlugin implements IXMLExtension {
 	private DocumentTelemetryParticipant documentTelemetryParticipant;
 
 	private ContentModelFormatterParticipant formatterParticipant;
+
+	private XMLCloseTagInlineCompletionParticipant inlineCompletionParticipant;
 
 	public ContentModelPlugin() {
 		completionParticipant = new ContentModelCompletionParticipant();
@@ -217,6 +220,8 @@ public class ContentModelPlugin implements IXMLExtension {
 		registry.registerDocumentLifecycleParticipant(documentTelemetryParticipant);
 		formatterParticipant = new ContentModelFormatterParticipant(contentModelManager);
 		registry.registerFormatterParticipant(formatterParticipant);
+		inlineCompletionParticipant = new XMLCloseTagInlineCompletionParticipant();
+		registry.registerInlineCompletionParticipant(inlineCompletionParticipant);
 
 		// Register custom commands to re-validate XML files
 		IXMLCommandService commandService = registry.getCommandService();
