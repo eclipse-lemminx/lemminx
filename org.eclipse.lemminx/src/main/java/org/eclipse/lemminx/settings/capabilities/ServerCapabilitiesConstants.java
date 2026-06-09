@@ -1,5 +1,5 @@
 /**
- *  Copyright (c) 2018 Red Hat, Inc. and others.
+ *  Copyright (c) 2018, 2026 Red Hat, Inc. and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v2.0
  *  which accompanies this distribution, and is available at
@@ -52,6 +52,7 @@ public class ServerCapabilitiesConstants {
 	public static final String TEXT_DOCUMENT_LINKED_EDITING_RANGE = "textDocument/linkedEditingRange";
 	public static final String TEXT_DOCUMENT_HIGHLIGHT = "textDocument/documentHighlight";
 	public static final String TEXT_DOCUMENT_SELECTION_RANGE = "textDocument/selectionRange";
+	public static final String TEXT_DOCUMENT_INLINE_COMPLETION = "textDocument/inlineCompletion";
 
 	public static final String WORKSPACE_CHANGE_FOLDERS = "workspace/didChangeWorkspaceFolders";
 	public static final String WORKSPACE_EXECUTE_COMMAND = "workspace/executeCommand";
@@ -82,6 +83,7 @@ public class ServerCapabilitiesConstants {
 	public static final String WORKSPACE_CHANGE_FOLDERS_ID = UUID.randomUUID().toString();
 	public static final String WORKSPACE_WATCHED_FILES_ID = UUID.randomUUID().toString();
 	public static final String LINKED_EDITING_RANGE_ID = UUID.randomUUID().toString();
+	public static final String INLINE_COMPLETION_ID = UUID.randomUUID().toString();
 
 	public static final CompletionOptions DEFAULT_COMPLETION_OPTIONS = new CompletionOptions(true,
 			Arrays.asList(".", ":", "<", "\"", "=", "/", "\\", "?", "\'", "&", "#"));
