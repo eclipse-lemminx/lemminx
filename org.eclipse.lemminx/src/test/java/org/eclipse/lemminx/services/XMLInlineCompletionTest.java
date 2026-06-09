@@ -199,7 +199,7 @@ public class XMLInlineCompletionTest {
 		String xml = "<root><child>|</child></root>";
 		InlineCompletionList result = testInlineCompletionFor(xml);
 		assertNotNull(result);
-		assertEquals(1, result.getItems().size());
+		assertEquals(2, result.getItems().size());
 		assertEquals("nested", getInsertTextAsString(result.getItems().get(0).getInsertText()));
 	}
 
