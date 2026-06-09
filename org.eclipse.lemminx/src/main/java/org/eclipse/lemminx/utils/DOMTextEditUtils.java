@@ -19,7 +19,7 @@ import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.VersionedTextDocumentIdentifier;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
-
+import org.eclipse.lemminx.commons.TextEditUtils;
 /**
  * Utilities for {@link TextEdit} specific to DOM documents.
  * 
@@ -39,7 +39,7 @@ public class DOMTextEditUtils {
 		VersionedTextDocumentIdentifier projectVersionedTextDocumentIdentifier = new VersionedTextDocumentIdentifier(
 				document.getDocumentURI(), document.getTextDocument().getVersion());
 		// Convert List<TextEdit> to List<Either<TextEdit, SnippetTextEdit>> for LSP4J 1.0.0
-		List<Either<TextEdit, SnippetTextEdit>> edits = org.eclipse.lemminx.commons.TextEditUtils.toEitherTextEdits(textEdits);
+		List<Either<TextEdit, SnippetTextEdit>> edits = TextEditUtils.toEitherTextEdits(textEdits);
 		return new TextDocumentEdit(projectVersionedTextDocumentIdentifier, edits);
 	}
 

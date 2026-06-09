@@ -17,6 +17,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.ResourceOperation;
 import org.eclipse.lsp4j.SnippetTextEdit;
 import org.eclipse.lsp4j.TextEdit;
@@ -72,9 +74,9 @@ public class TextEditUtils {
 
 		// Insert the expected content.
 		try {
-			org.eclipse.lsp4j.Position endPos = textDocument.positionAt(to);
-			org.eclipse.lsp4j.Position startPos = to == from ? endPos : textDocument.positionAt(from);
-			org.eclipse.lsp4j.Range range = new org.eclipse.lsp4j.Range(startPos, endPos);
+			Position endPos = textDocument.positionAt(to);
+			Position startPos = to == from ? endPos : textDocument.positionAt(from);
+			Range range = new Range(startPos, endPos);
 			return new TextEdit(range, expectedContent);
 		} catch (BadLocationException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage(), e);
