@@ -12,6 +12,7 @@
  */
 package org.eclipse.lemminx.services;
 
+import static org.eclipse.lemminx.utils.InlineCompletionTestUtils.getInsertTextAsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -230,17 +231,4 @@ public class XMLInlineCompletionTest {
 		return languageService.doInlineCompletion(document, position, context, settings, NULL_CHECKER);
 	}
 
-	/**
-		* Helper method to extract string from Either<String, StringValue>
-		*/
-	private String getInsertTextAsString(Either<String, org.eclipse.lsp4j.StringValue> insertText) {
-		if (insertText == null) {
-			return null;
-		}
-		if (insertText.isLeft()) {
-			return insertText.getLeft();
-		} else {
-			return insertText.getRight().getValue();
-		}
-	}
 }
