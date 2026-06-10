@@ -12,38 +12,23 @@
  */
 package org.eclipse.lemminx.services;
 
-import static org.eclipse.lemminx.utils.InlineCompletionTestUtils.getInsertTextAsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.util.List;
+import static org.eclipse.lemminx.XMLAssert.testInlineCompletionFor;
 
 import org.eclipse.lemminx.commons.BadLocationException;
-import org.eclipse.lemminx.dom.DOMDocument;
-import org.eclipse.lemminx.dom.DOMParser;
 import org.eclipse.lemminx.services.extensions.inlinecompletion.IInlineCompletionParticipant;
 import org.eclipse.lemminx.services.extensions.inlinecompletion.IInlineCompletionRequest;
 import org.eclipse.lemminx.services.extensions.inlinecompletion.IInlineCompletionResponse;
-import org.eclipse.lemminx.settings.SharedSettings;
-import org.eclipse.lsp4j.InlineCompletionContext;
 import org.eclipse.lsp4j.InlineCompletionItem;
-import org.eclipse.lsp4j.InlineCompletionList;
-import org.eclipse.lsp4j.InlineCompletionTriggerKind;
-import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
-import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 /**
- * XML inline completion service tests
+ * XML inline completion service tests with custom participants.
  */
 public class XMLInlineCompletionTest {
 
 	private XMLLanguageService languageService;
-	private static final CancelChecker NULL_CHECKER = () -> {
-	};
 
 	@BeforeEach
 	public void initializeLanguageService() {
@@ -53,10 +38,7 @@ public class XMLInlineCompletionTest {
 	@Test
 	public void testInlineCompletionWithNoParticipants() throws BadLocationException {
 		String xml = "<root>|</root>";
-		InlineCompletionList result = testInlineCompletionFor(xml);
-		assertNotNull(result);
-		assertNotNull(result.getItems());
-		assertEquals(0, result.getItems().size());
+		testInlineCompletionFor(languageService, xml, null, 0);
 	}
 
 	@Test
@@ -75,11 +57,7 @@ public class XMLInlineCompletionTest {
 		);
 
 		String xml = "<root>|</root>";
-		InlineCompletionList result = testInlineCompletionFor(xml);
-		assertNotNull(result);
-		assertNotNull(result.getItems());
-		assertEquals(1, result.getItems().size());
-		assertEquals("test", getInsertTextAsString(result.getItems().get(0).getInsertText()));
+		testInlineCompletionFor(languageService, xml, "test");
 	}
 
 	@Test
@@ -110,12 +88,7 @@ public class XMLInlineCompletionTest {
 		);
 
 		String xml = "<root>|</root>";
-		InlineCompletionList result = testInlineCompletionFor(xml);
-		assertNotNull(result);
-		assertNotNull(result.getItems());
-		assertEquals(2, result.getItems().size());
-		assertEquals("suggestion1", getInsertTextAsString(result.getItems().get(0).getInsertText()));
-		assertEquals("suggestion2", getInsertTextAsString(result.getItems().get(1).getInsertText()));
+		testInlineCompletionFor(languageService, xml, "suggestion1", "suggestion2");
 	}
 
 	@Test
@@ -126,10 +99,6 @@ public class XMLInlineCompletionTest {
 				@Override
 				public void onInlineCompletion(IInlineCompletionRequest request, IInlineCompletionResponse response,
 						CancelChecker cancelChecker) {
-					InlineCompletionContext context = request.getContext();
-					assertNotNull(context);
-					assertNotNull(context.getTriggerKind());
-					
 					InlineCompletionItem item = new InlineCompletionItem();
 					item.setInsertText("context-aware");
 					response.addInlineCompletionItem(item);
@@ -138,10 +107,7 @@ public class XMLInlineCompletionTest {
 		);
 
 		String xml = "<root>|</root>";
-		InlineCompletionList result = testInlineCompletionFor(xml);
-		assertNotNull(result);
-		assertEquals(1, result.getItems().size());
-		assertEquals("context-aware", getInsertTextAsString(result.getItems().get(0).getInsertText()));
+		testInlineCompletionFor(languageService, xml, "context-aware");
 	}
 
 	@Test
@@ -161,27 +127,17 @@ public class XMLInlineCompletionTest {
 
 		// Test at start of content
 		String xml1 = "<root>|</root>";
-		InlineCompletionList result1 = testInlineCompletionFor(xml1);
-		assertEquals(1, result1.getItems().size());
-		String insertText1 = getInsertTextAsString(result1.getItems().get(0).getInsertText());
-		assertTrue(insertText1.startsWith("offset:"));
+		testInlineCompletionFor(languageService, xml1, "offset:6");
 
 		// Test at end of content
 		String xml2 = "<root>content|</root>";
-		InlineCompletionList result2 = testInlineCompletionFor(xml2);
-		assertEquals(1, result2.getItems().size());
-		String insertText2 = getInsertTextAsString(result2.getItems().get(0).getInsertText());
-		assertTrue(insertText2.startsWith("offset:"));
+		testInlineCompletionFor(languageService, xml2, "offset:13");
 	}
 
 	@Test
 	public void testInlineCompletionWithEmptyDocument() throws BadLocationException {
 		String xml = "|";
-		InlineCompletionList result = testInlineCompletionFor(xml);
-		assertNotNull(result);
-		assertNotNull(result.getItems());
-		// Should return empty list with no participants
-		assertEquals(0, result.getItems().size());
+		testInlineCompletionFor(languageService, xml, null, 0);
 	}
 
 	@Test
@@ -199,36 +155,7 @@ public class XMLInlineCompletionTest {
 		);
 
 		String xml = "<root><child>|</child></root>";
-		InlineCompletionList result = testInlineCompletionFor(xml);
-		assertNotNull(result);
-		assertEquals(1, result.getItems().size());
-		assertEquals("nested", getInsertTextAsString(result.getItems().get(0).getInsertText()));
-	}
-
-	/**
-	 * Test inline completion for the given XML content.
-	 * The '|' character marks the cursor position.
-	 * 
-	 * @param xml the XML content with cursor position marked by '|'
-	 * @return the inline completion list
-	 * @throws BadLocationException if the position is invalid
-	 */
-	private InlineCompletionList testInlineCompletionFor(String xml) throws BadLocationException {
-		int offset = xml.indexOf('|');
-		if (offset == -1) {
-			throw new IllegalArgumentException("XML must contain '|' to mark cursor position");
-		}
-		
-		String xmlWithoutCursor = xml.substring(0, offset) + xml.substring(offset + 1);
-		DOMDocument document = DOMParser.getInstance().parse(xmlWithoutCursor, "test.xml", null);
-		Position position = document.positionAt(offset);
-		
-		InlineCompletionContext context = new InlineCompletionContext();
-		context.setTriggerKind(InlineCompletionTriggerKind.Invoked);
-		
-		SharedSettings settings = new SharedSettings();
-		
-		return languageService.doInlineCompletion(document, position, context, settings, NULL_CHECKER);
+		testInlineCompletionFor(languageService, xml, "nested");
 	}
 
 }

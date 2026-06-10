@@ -2133,20 +2133,41 @@ public class XMLAssert {
 
 	// ------------------- Inline Completion assert
 
+	// ------------------- Inline Completion assert
+
+	/**
+	 * Test inline completion with default language service, expecting specific insert texts
+	 */
 	public static void testInlineCompletionFor(String xml, String... expectedInsertTexts) throws BadLocationException {
-		testInlineCompletionFor(xml, null, expectedInsertTexts);
+		testInlineCompletionFor(new XMLLanguageService(), xml, null, null, expectedInsertTexts);
 	}
 
-	public static void testInlineCompletionFor(String xml, String fileURI, String... expectedInsertTexts)
-			throws BadLocationException {
-		testInlineCompletionFor(new XMLLanguageService(), xml, fileURI, expectedInsertTexts);
+	/**
+	 * Test inline completion with default language service, expecting a specific count
+	 */
+	public static void testInlineCompletionFor(String xml, int expectedCount) throws BadLocationException {
+		testInlineCompletionFor(new XMLLanguageService(), xml, null, expectedCount);
 	}
 
+	/**
+	 * Test inline completion with custom language service, expecting specific insert texts
+	 */
 	public static void testInlineCompletionFor(XMLLanguageService xmlLanguageService, String xml, String fileURI,
 			String... expectedInsertTexts) throws BadLocationException {
 		testInlineCompletionFor(xmlLanguageService, xml, fileURI, null, expectedInsertTexts);
 	}
 
+	/**
+	 * Test inline completion with custom language service, expecting a specific count
+	 */
+	public static void testInlineCompletionFor(XMLLanguageService xmlLanguageService, String xml, String fileURI,
+			int expectedCount) throws BadLocationException {
+		testInlineCompletionFor(xmlLanguageService, xml, fileURI, expectedCount, (String[]) null);
+	}
+
+	/**
+	 * Test inline completion with custom language service, expecting both count and insert texts
+	 */
 	public static void testInlineCompletionFor(XMLLanguageService xmlLanguageService, String xml, String fileURI,
 			Integer expectedCount, String... expectedInsertTexts) throws BadLocationException {
 		int offset = xml.indexOf('|');

@@ -12,61 +12,63 @@
  */
 package org.eclipse.lemminx.extensions.core;
 
-import org.eclipse.lemminx.XMLAssert;
+import static org.eclipse.lemminx.XMLAssert.testInlineCompletionFor;
+
 import org.eclipse.lemminx.commons.BadLocationException;
-import org.eclipse.lemminx.services.XMLLanguageService;
 import org.junit.jupiter.api.Test;
 
 /**
  * XML inline completion tests for closing tags.
+ *
+ * @see org.eclipse.lemminx.extensions.core.participants.inlinecompletion.XMLCloseTagInlineCompletionParticipant
  */
 public class XMLCloseTagInlineCompletionTest {
 
 	@Test
 	public void testCloseRootElement() throws BadLocationException {
 		String xml = "<root>|";
-		XMLAssert.testInlineCompletionFor(new XMLLanguageService(), xml, null, "</root>");
+		testInlineCompletionFor(xml, "</root>");
 	}
 
 	@Test
 	public void testCloseNestedElement() throws BadLocationException {
 		String xml = "<root><child>|</root>";
-		XMLAssert.testInlineCompletionFor(new XMLLanguageService(), xml, null, "</child>");
+		testInlineCompletionFor(xml, "</child>");
 	}
 
 	@Test
 	public void testCloseElementWithAttributes() throws BadLocationException {
 		String xml = "<root attr=\"value\">|";
-		XMLAssert.testInlineCompletionFor(new XMLLanguageService(), xml, null, "</root>");
+		testInlineCompletionFor(xml, "</root>");
 	}
 
 	@Test
 	public void testNoSuggestionForClosedElement() throws BadLocationException {
 		String xml = "<root>|</root>";
-		XMLAssert.testInlineCompletionFor(new XMLLanguageService(), xml, null);
+		testInlineCompletionFor(xml, 0);
 	}
 
 	@Test
 	public void testNoSuggestionForSelfClosedElement() throws BadLocationException {
 		String xml = "<root/>|";
-		XMLAssert.testInlineCompletionFor(new XMLLanguageService(), xml, null);
+		testInlineCompletionFor(xml, 0);
 	}
 
 	@Test
 	public void testCloseMultipleNestedElements() throws BadLocationException {
 		String xml = "<root><parent><child>|</root>";
-		XMLAssert.testInlineCompletionFor(new XMLLanguageService(), xml, null, "</child>");
+		testInlineCompletionFor(xml, "</child>");
 	}
 
 	@Test
 	public void testCloseAfterText() throws BadLocationException {
 		String xml = "<root>text|";
-		XMLAssert.testInlineCompletionFor(new XMLLanguageService(), xml, null, "</root>");
+		testInlineCompletionFor(xml, "</root>");
 	}
 
 	@Test
 	public void testCloseAfterWhitespace() throws BadLocationException {
 		String xml = "<root>  |";
-		XMLAssert.testInlineCompletionFor(new XMLLanguageService(), xml, null, "</root>");
+		testInlineCompletionFor(xml, "</root>");
 	}
 }
