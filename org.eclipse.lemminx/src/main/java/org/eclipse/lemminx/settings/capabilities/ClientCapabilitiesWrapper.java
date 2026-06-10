@@ -1,5 +1,5 @@
 /**
- *  Copyright (c) 2018 Red Hat, Inc. and others.
+ *  Copyright (c) 2018, 2026 Red Hat, Inc. and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v2.0
  *  which accompanies this distribution, and is available at
@@ -125,6 +125,10 @@ public class ClientCapabilitiesWrapper {
 
 	public boolean isLinkedEditingRangeDynamicRegistered() {
 		return v3Supported && isDynamicRegistrationSupported(getTextDocument().getLinkedEditingRange());
+	}
+
+	public boolean isInlineCompletionDynamicRegistered() {
+		return v3Supported && isDynamicRegistrationSupported(getTextDocument().getInlineCompletion());
 	}
 
 	private boolean isDynamicRegistrationSupported(DynamicRegistrationCapabilities capability) {

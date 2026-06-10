@@ -1,5 +1,5 @@
 /**
- *  Copyright (c) 2018 Angelo ZERR
+ *  Copyright (c) 2018, 2026 Angelo ZERR
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v2.0
  *  which accompanies this distribution, and is available at
@@ -411,7 +411,40 @@ public class XMLPositionUtility {
 	}
 
 	/**
-	 * Returns the range of the root start tag (excludes the '<') of the given
+		* Finds the nearest parent element that is not closed at the given offset.
+		*
+		* @param node   the starting node
+		* @param offset the current cursor offset
+		* @return the unclosed parent element, or null if none found
+		*/
+	public static DOMElement findUnclosedParentElement(DOMNode node, int offset) {
+		DOMNode current = node;
+
+		while (current != null) {
+			if (current.isElement()) {
+				DOMElement element = (DOMElement) current;
+				// Check if the element is not self-closed and not fully closed
+				if (!element.isSelfClosed() && !element.isClosed()) {
+					// Check if we're after the start tag but before any end tag
+					int startTagEnd = element.getStartTagCloseOffset();
+					int endTagStart = element.hasEndTag() ? element.getEndTagOpenOffset() : -1;
+
+					// If we're after the start tag close and either there's no end tag or we're
+					// before it
+					if (startTagEnd != -1 && offset > startTagEnd
+							&& (endTagStart == -1 || offset < endTagStart)) {
+						return element;
+					}
+				}
+			}
+			current = current.getParentNode();
+		}
+
+		return null;
+	}
+
+	/**
+		* Returns the range of the root start tag (excludes the '<') of the given
 	 * <code>document</code> and null otherwise.
 	 *
 	 * @param document the DOM document.

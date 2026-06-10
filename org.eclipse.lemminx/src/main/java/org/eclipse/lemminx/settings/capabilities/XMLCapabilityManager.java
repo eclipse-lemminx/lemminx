@@ -1,5 +1,5 @@
 /**
- *  Copyright (c) 2018 Red Hat, Inc. and others.
+ *  Copyright (c) 2018, 2026 Red Hat, Inc. and others.
  *  All rights reserved. This program and the accompanying materials
  *  are made available under the terms of the Eclipse Public License v2.0
  *  which accompanies this distribution, and is available at
@@ -28,6 +28,7 @@ import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConsta
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.FORMATTING_ID;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.FORMATTING_RANGE_ID;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.HOVER_ID;
+import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.INLINE_COMPLETION_ID;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.LINKED_EDITING_RANGE_ID;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.LINK_ID;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.REFERENCES_ID;
@@ -43,6 +44,7 @@ import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConsta
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_HIGHLIGHT;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_HOVER;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_LINK;
+import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_INLINE_COMPLETION;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_LINKED_EDITING_RANGE;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_REFERENCES;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_RENAME;
@@ -184,6 +186,9 @@ public class XMLCapabilityManager {
 		}
 		if (this.getClientCapabilities().isLinkedEditingRangeDynamicRegistered()) {
 			registerCapability(LINKED_EDITING_RANGE_ID, TEXT_DOCUMENT_LINKED_EDITING_RANGE);
+		}
+		if (this.getClientCapabilities().isInlineCompletionDynamicRegistered()) {
+			registerCapability(INLINE_COMPLETION_ID, TEXT_DOCUMENT_INLINE_COMPLETION);
 		}
 		if (this.getClientCapabilities().isDidChangeWatchedFilesRegistered()) {
 			registerWatchedFiles();
