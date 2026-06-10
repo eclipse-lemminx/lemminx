@@ -10,19 +10,18 @@
  *  Contributors:
  *  Red Hat Inc. - initial API and implementation
  */
-package org.eclipse.lemminx.extensions.contentmodel.participants.inlinecompletion;
+package org.eclipse.lemminx.extensions.core.participants.inlinecompletion;
 
 import static org.eclipse.lemminx.dom.parser.Constants._FSL;
 import static org.eclipse.lemminx.dom.parser.Constants._LAN;
 import static org.eclipse.lemminx.dom.parser.Constants._RAN;
-
-import java.util.List;
 
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMElement;
 import org.eclipse.lemminx.dom.DOMNode;
 import org.eclipse.lemminx.services.extensions.inlinecompletion.IInlineCompletionParticipant;
 import org.eclipse.lemminx.services.extensions.inlinecompletion.IInlineCompletionRequest;
+import org.eclipse.lemminx.services.extensions.inlinecompletion.IInlineCompletionResponse;
 import org.eclipse.lemminx.utils.XMLPositionUtility;
 import org.eclipse.lsp4j.InlineCompletionItem;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
@@ -37,7 +36,7 @@ import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 public class XMLCloseTagInlineCompletionParticipant implements IInlineCompletionParticipant {
 
 	@Override
-	public void onInlineCompletion(IInlineCompletionRequest request, List<InlineCompletionItem> list,
+	public void onInlineCompletion(IInlineCompletionRequest request, IInlineCompletionResponse response,
 			CancelChecker cancelChecker) {
 
 		DOMDocument document = request.getXMLDocument();
@@ -66,7 +65,7 @@ public class XMLCloseTagInlineCompletionParticipant implements IInlineCompletion
 
 						InlineCompletionItem item = new InlineCompletionItem();
 						item.setInsertText(closingTag);
-						list.add(item);
+						response.addInlineCompletionItem(item);
 					}
 				}
 			}

@@ -56,7 +56,7 @@ public class XMLInlineCompletion {
 	                                               InlineCompletionContext context,
 	                                               SharedSettings settings,
 	                                               CancelChecker cancelChecker) {
-		List<InlineCompletionItem> items = new ArrayList<>();
+		InlineCompletionResponse response = new InlineCompletionResponse();
 		
 		try {
 			InlineCompletionRequest request = new InlineCompletionRequest(document, position, context, settings,
@@ -66,7 +66,7 @@ public class XMLInlineCompletion {
 			for (IInlineCompletionParticipant participant : extensionsRegistry.getInlineCompletionParticipants()) {
 				try {
 					cancelChecker.checkCanceled();
-					participant.onInlineCompletion(request, items, cancelChecker);
+					participant.onInlineCompletion(request, response, cancelChecker);
 				} catch (CancellationException e) {
 					throw e;
 				} catch (Exception e) {
@@ -80,7 +80,7 @@ public class XMLInlineCompletion {
 		}
 		
 		InlineCompletionList result = new InlineCompletionList();
-		result.setItems(items);
+		result.setItems(response.getItems());
 		return result;
 	}
 }

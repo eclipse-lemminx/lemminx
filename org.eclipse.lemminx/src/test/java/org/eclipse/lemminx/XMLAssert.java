@@ -103,6 +103,10 @@ import org.eclipse.lsp4j.ResourceOperation;
 import org.eclipse.lsp4j.SelectionRange;
 import org.eclipse.lsp4j.SymbolInformation;
 import org.eclipse.lsp4j.SymbolKind;
+import org.eclipse.lsp4j.InlineCompletionContext;
+import org.eclipse.lsp4j.InlineCompletionItem;
+import org.eclipse.lsp4j.InlineCompletionList;
+import org.eclipse.lsp4j.InlineCompletionTriggerKind;
 import org.eclipse.lsp4j.SnippetTextEdit;
 import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
@@ -2125,5 +2129,72 @@ public class XMLAssert {
 
 	public static ColorPresentation colorPres(String label, TextEdit textEdit) {
 		return new ColorPresentation(label, textEdit);
+	}
+
+	// ------------------- Inline Completion assert
+
+	public static void testInlineCompletionFor(String xml, String... expectedInsertTexts) throws BadLocationException {
+		testInlineCompletionFor(xml, null, expectedInsertTexts);
+	}
+
+	public static void testInlineCompletionFor(String xml, String fileURI, String... expectedInsertTexts)
+			throws BadLocationException {
+		testInlineCompletionFor(new XMLLanguageService(), xml, fileURI, expectedInsertTexts);
+	}
+
+	public static void testInlineCompletionFor(XMLLanguageService xmlLanguageService, String xml, String fileURI,
+			String... expectedInsertTexts) throws BadLocationException {
+		testInlineCompletionFor(xmlLanguageService, xml, fileURI, null, expectedInsertTexts);
+	}
+
+	public static void testInlineCompletionFor(XMLLanguageService xmlLanguageService, String xml, String fileURI,
+			Integer expectedCount, String... expectedInsertTexts) throws BadLocationException {
+		int offset = xml.indexOf('|');
+		xml = xml.substring(0, offset) + xml.substring(offset + 1);
+
+		TextDocument document = new TextDocument(xml, fileURI != null ? fileURI : "test://test/test.xml");
+		Position position = document.positionAt(offset);
+		DOMDocument xmlDoc = DOMParser.getInstance().parse(document, xmlLanguageService.getResolverExtensionManager());
+		xmlLanguageService.setDocumentProvider((uri) -> xmlDoc);
+
+		InlineCompletionContext context = new InlineCompletionContext();
+		context.setTriggerKind(InlineCompletionTriggerKind.Invoked);
+
+		SharedSettings settings = new SharedSettings();
+		InlineCompletionList list = xmlLanguageService.doInlineCompletion(xmlDoc, position, context,
+				settings, NULL_CHECKER);
+
+		if (expectedCount != null) {
+			assertEquals(expectedCount.intValue(), list.getItems().size());
+		}
+		if (expectedInsertTexts != null && expectedInsertTexts.length > 0) {
+			for (String expectedText : expectedInsertTexts) {
+				assertInlineCompletion(list, expectedText);
+			}
+		}
+	}
+
+	public static void assertInlineCompletion(InlineCompletionList completions,
+			String expectedInsertText) {
+		List<InlineCompletionItem> matches = completions.getItems().stream()
+				.filter(item -> {
+					String insertText = getInlineCompletionInsertText(item);
+					return expectedInsertText.equals(insertText);
+				})
+				.collect(Collectors.toList());
+
+		assertTrue(matches.size() > 0,
+				"No inline completion item found with insert text: " + expectedInsertText);
+	}
+
+	private static String getInlineCompletionInsertText(InlineCompletionItem item) {
+		if (item.getInsertText() == null) {
+			return null;
+		}
+		if (item.getInsertText().isLeft()) {
+			return item.getInsertText().getLeft();
+		} else {
+			return item.getInsertText().getRight().getValue();
+		}
 	}
 }

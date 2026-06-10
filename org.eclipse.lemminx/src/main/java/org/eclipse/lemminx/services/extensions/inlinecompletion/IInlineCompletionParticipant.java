@@ -12,9 +12,6 @@
  */
 package org.eclipse.lemminx.services.extensions.inlinecompletion;
 
-import java.util.List;
-
-import org.eclipse.lsp4j.InlineCompletionItem;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
 /**
@@ -29,12 +26,12 @@ public interface IInlineCompletionParticipant {
 
 	/**
 	 * Called when inline completion is requested.
-	 * 
+	 *
 	 * @param request       the inline completion request
-	 * @param response      the list to add inline completion items to
+	 * @param response      the response to add inline completion items to
 	 * @param cancelChecker the cancel checker
 	 */
-	void onInlineCompletion(IInlineCompletionRequest request, 
-	                        List<InlineCompletionItem> response,
+	void onInlineCompletion(IInlineCompletionRequest request,
+	                        IInlineCompletionResponse response,
 	                        CancelChecker cancelChecker);
 }

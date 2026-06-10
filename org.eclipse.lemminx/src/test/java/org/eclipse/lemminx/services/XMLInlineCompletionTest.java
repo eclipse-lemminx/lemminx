@@ -23,6 +23,7 @@ import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMParser;
 import org.eclipse.lemminx.services.extensions.inlinecompletion.IInlineCompletionParticipant;
 import org.eclipse.lemminx.services.extensions.inlinecompletion.IInlineCompletionRequest;
+import org.eclipse.lemminx.services.extensions.inlinecompletion.IInlineCompletionResponse;
 import org.eclipse.lemminx.settings.SharedSettings;
 import org.eclipse.lsp4j.InlineCompletionContext;
 import org.eclipse.lsp4j.InlineCompletionItem;
@@ -63,11 +64,11 @@ public class XMLInlineCompletionTest {
 		languageService.registerInlineCompletionParticipant(
 			new IInlineCompletionParticipant() {
 				@Override
-				public void onInlineCompletion(IInlineCompletionRequest request, List<InlineCompletionItem> list,
+				public void onInlineCompletion(IInlineCompletionRequest request, IInlineCompletionResponse response,
 						CancelChecker cancelChecker) {
 					InlineCompletionItem item = new InlineCompletionItem();
 					item.setInsertText("test");
-					list.add(item);
+					response.addInlineCompletionItem(item);
 				}
 			}
 		);
@@ -86,11 +87,11 @@ public class XMLInlineCompletionTest {
 		languageService.registerInlineCompletionParticipant(
 			new IInlineCompletionParticipant() {
 				@Override
-				public void onInlineCompletion(IInlineCompletionRequest request, List<InlineCompletionItem> list,
+				public void onInlineCompletion(IInlineCompletionRequest request, IInlineCompletionResponse response,
 						CancelChecker cancelChecker) {
 					InlineCompletionItem item = new InlineCompletionItem();
 					item.setInsertText("suggestion1");
-					list.add(item);
+					response.addInlineCompletionItem(item);
 				}
 			}
 		);
@@ -98,11 +99,11 @@ public class XMLInlineCompletionTest {
 		languageService.registerInlineCompletionParticipant(
 			new IInlineCompletionParticipant() {
 				@Override
-				public void onInlineCompletion(IInlineCompletionRequest request, List<InlineCompletionItem> list,
+				public void onInlineCompletion(IInlineCompletionRequest request, IInlineCompletionResponse response,
 						CancelChecker cancelChecker) {
 					InlineCompletionItem item = new InlineCompletionItem();
 					item.setInsertText("suggestion2");
-					list.add(item);
+					response.addInlineCompletionItem(item);
 				}
 			}
 		);
@@ -122,7 +123,7 @@ public class XMLInlineCompletionTest {
 		languageService.registerInlineCompletionParticipant(
 			new IInlineCompletionParticipant() {
 				@Override
-				public void onInlineCompletion(IInlineCompletionRequest request, List<InlineCompletionItem> list,
+				public void onInlineCompletion(IInlineCompletionRequest request, IInlineCompletionResponse response,
 						CancelChecker cancelChecker) {
 					InlineCompletionContext context = request.getContext();
 					assertNotNull(context);
@@ -130,7 +131,7 @@ public class XMLInlineCompletionTest {
 					
 					InlineCompletionItem item = new InlineCompletionItem();
 					item.setInsertText("context-aware");
-					list.add(item);
+					response.addInlineCompletionItem(item);
 				}
 			}
 		);
@@ -147,12 +148,12 @@ public class XMLInlineCompletionTest {
 		languageService.registerInlineCompletionParticipant(
 			new IInlineCompletionParticipant() {
 				@Override
-				public void onInlineCompletion(IInlineCompletionRequest request, List<InlineCompletionItem> list,
+				public void onInlineCompletion(IInlineCompletionRequest request, IInlineCompletionResponse response,
 						CancelChecker cancelChecker) {
 					int offset = request.getOffset();
 					InlineCompletionItem item = new InlineCompletionItem();
 					item.setInsertText("offset:" + offset);
-					list.add(item);
+					response.addInlineCompletionItem(item);
 				}
 			}
 		);
@@ -187,11 +188,11 @@ public class XMLInlineCompletionTest {
 		languageService.registerInlineCompletionParticipant(
 			new IInlineCompletionParticipant() {
 				@Override
-				public void onInlineCompletion(IInlineCompletionRequest request, List<InlineCompletionItem> list,
+				public void onInlineCompletion(IInlineCompletionRequest request, IInlineCompletionResponse response,
 						CancelChecker cancelChecker) {
 					InlineCompletionItem item = new InlineCompletionItem();
 					item.setInsertText("nested");
-					list.add(item);
+					response.addInlineCompletionItem(item);
 				}
 			}
 		);

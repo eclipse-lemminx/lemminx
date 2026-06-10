@@ -1,5 +1,5 @@
 /*******************************************************************************
-* Copyright (c) 2019 Red Hat Inc. and others.
+* Copyright (c) 2019, 2026 Red Hat Inc. and others.
 * All rights reserved. This program and the accompanying materials
 * which accompanies this distribution, and is available at
 * http://www.eclipse.org/legal/epl-v20.html
@@ -200,5 +200,93 @@ public class XMLPositionUtilityTest {
 		}
 
 		assertEquals(expectedCursorText, actualOutputString);
+	}
+
+	@Test
+	public void testFindUnclosedParentElementSimple() {
+		String xml = "<root>|";
+		testFindUnclosedParentElement(xml, "root");
+	}
+
+	@Test
+	public void testFindUnclosedParentElementWithContent() {
+		String xml = "<root>content|";
+		testFindUnclosedParentElement(xml, "root");
+	}
+
+	@Test
+	public void testFindUnclosedParentElementNested() {
+		String xml = "<root><child>|</root>";
+		testFindUnclosedParentElement(xml, "child");
+	}
+
+	@Test
+	public void testFindUnclosedParentElementClosed() {
+		String xml = "<root></root>|";
+		testFindUnclosedParentElement(xml, null);
+	}
+
+	@Test
+	public void testFindUnclosedParentElementSelfClosed() {
+		String xml = "<root/>|";
+		testFindUnclosedParentElement(xml, null);
+	}
+
+	@Test
+	public void testFindUnclosedParentElementWithAttributes() {
+		String xml = "<root attr=\"value\">|";
+		testFindUnclosedParentElement(xml, "root");
+	}
+
+	@Test
+	public void testFindUnclosedParentElementBeforeStartTag() {
+		String xml = "|<root>";
+		testFindUnclosedParentElement(xml, null);
+	}
+
+	@Test
+	public void testFindUnclosedParentElementInStartTag() {
+		String xml = "<ro|ot>";
+		testFindUnclosedParentElement(xml, null);
+	}
+
+	@Test
+	public void testFindUnclosedParentElementMultipleNested() {
+		String xml = "<root><parent><child>|";
+		testFindUnclosedParentElement(xml, "child");
+	}
+
+	@Test
+	public void testFindUnclosedParentElementAfterClosedChild() {
+		String xml = "<root><child></child>|";
+		testFindUnclosedParentElement(xml, "root");
+	}
+
+	/**
+		* Test findUnclosedParentElement for the given XML content.
+		* The '|' character marks the cursor position.
+		*
+		* @param xml the XML content with cursor position marked by '|'
+		* @param expectedTagName the expected tag name of the unclosed parent element, or null if none expected
+		*/
+	private static void testFindUnclosedParentElement(String xml, String expectedTagName) {
+		int offset = xml.indexOf('|');
+		if (offset == -1) {
+			fail("XML must contain '|' to mark cursor position");
+		}
+		
+		String xmlWithoutCursor = xml.substring(0, offset) + xml.substring(offset + 1);
+		DOMDocument document = DOMParser.getInstance().parse(xmlWithoutCursor, "test.xml", null);
+		
+		var node = document.findNodeAt(offset);
+		var unclosedElement = XMLPositionUtility.findUnclosedParentElement(node, offset);
+		
+		if (expectedTagName == null) {
+			Assertions.assertNull(unclosedElement, "Expected no unclosed parent element");
+		} else {
+			Assertions.assertNotNull(unclosedElement, "Expected to find unclosed parent element");
+			Assertions.assertEquals(expectedTagName, unclosedElement.getTagName(),
+				"Expected unclosed parent element tag name to be '" + expectedTagName + "'");
+		}
 	}
 }
