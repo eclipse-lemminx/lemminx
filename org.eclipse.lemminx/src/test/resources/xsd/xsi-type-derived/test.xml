@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<m:Root xmlns:m="http://main"
+        xmlns:a="http://a"
+        xmlns:b="http://b"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://main main.xsd http://a a.xsd http://b b.xsd">
+    <m:Data xsi:type="a:ADerived">
+        <a:Title/>
+    </m:Data>
+    <m:Data xsi:type="b:BDerived">
+        <b:Title/>
+    </m:Data>
+</m:Root>

@@ -16,7 +16,9 @@ import static org.eclipse.lemminx.utils.MarkupContentFactory.createHover;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.lemminx.dom.DOMAttr;
 import org.eclipse.lemminx.dom.DOMElement;
@@ -49,7 +51,7 @@ public class ContentModelHoverParticipant extends HoverParticipantAdapter {
 		try {
 			ContentModelManager contentModelManager = hoverRequest.getComponent(ContentModelManager.class);
 			DOMElement element = (DOMElement) hoverRequest.getNode();
-			Collection<CMDocument> cmDocuments = contentModelManager.findCMDocument(element);
+			Collection<CMDocument> cmDocuments = collectCMDocuments(element, contentModelManager);
 			if (cmDocuments.isEmpty()) {
 				// no bound grammar -> no documentation
 				return null;
@@ -75,7 +77,7 @@ public class ContentModelHoverParticipant extends HoverParticipantAdapter {
 		DOMElement element = attribute.getOwnerElement();
 		try {
 			ContentModelManager contentModelManager = hoverRequest.getComponent(ContentModelManager.class);
-			Collection<CMDocument> cmDocuments = contentModelManager.findCMDocument(element);
+			Collection<CMDocument> cmDocuments = collectCMDocuments(element, contentModelManager);
 			if (cmDocuments.isEmpty()) {
 				// no bound grammar -> no documentation
 				return null;
@@ -113,7 +115,7 @@ public class ContentModelHoverParticipant extends HoverParticipantAdapter {
 		DOMElement element = attribute.getOwnerElement();
 		try {
 			ContentModelManager contentModelManager = hoverRequest.getComponent(ContentModelManager.class);
-			Collection<CMDocument> cmDocuments = contentModelManager.findCMDocument(element);
+			Collection<CMDocument> cmDocuments = collectCMDocuments(element, contentModelManager);
 			if (cmDocuments.isEmpty()) {
 				// no bound grammar -> no documentation
 				return null;
@@ -147,7 +149,7 @@ public class ContentModelHoverParticipant extends HoverParticipantAdapter {
 		}
 		try {
 			ContentModelManager contentModelManager = hoverRequest.getComponent(ContentModelManager.class);
-			Collection<CMDocument> cmDocuments = contentModelManager.findCMDocument(element);
+			Collection<CMDocument> cmDocuments = collectCMDocuments(element, contentModelManager);
 			if (cmDocuments.isEmpty()) {
 				// no bound grammar -> no documentation
 				return null;
@@ -183,6 +185,45 @@ public class ContentModelHoverParticipant extends HoverParticipantAdapter {
 		if (content != null && !StringUtils.isEmpty(content.getValue())) {
 			contents.add(content);
 		}
+	}
+
+	/**
+	 * Collect the content model documents which may declare the given element. When
+	 * the element is inside an ancestor with an xsi:type attribute, the documents
+	 * bound to the ancestor's namespace are also collected so that derived types
+	 * declared in other schemas can be resolved.
+	 *
+	 * @param element             the hovered XML element.
+	 * @param contentModelManager the content model manager.
+	 * @return the content model documents to search.
+	 */
+	private static Collection<CMDocument> collectCMDocuments(DOMElement element,
+			ContentModelManager contentModelManager) {
+		Set<CMDocument> documents = new LinkedHashSet<>(contentModelManager.findCMDocument(element));
+		DOMElement current = element;
+		while (current != null) {
+			DOMElement parent = current.getParentNode() instanceof DOMElement ? (DOMElement) current.getParentNode()
+					: null;
+			if (parent != null && hasXSIType(parent)) {
+				documents.addAll(contentModelManager.findCMDocument(parent));
+			}
+			current = parent;
+		}
+		return documents;
+	}
+
+	private static boolean hasXSIType(DOMElement element) {
+		org.w3c.dom.NamedNodeMap attrs = element.getAttributes();
+		if (attrs == null) {
+			return false;
+		}
+		for (int i = 0; i < attrs.getLength(); i++) {
+			org.w3c.dom.Node attr = attrs.item(i);
+			if ("type".equals(attr.getLocalName()) && XSISchemaModel.XSI_WEBSITE.equals(attr.getNamespaceURI())) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 }

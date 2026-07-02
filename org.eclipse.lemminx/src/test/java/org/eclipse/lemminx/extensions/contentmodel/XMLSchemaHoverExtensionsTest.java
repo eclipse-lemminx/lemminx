@@ -425,9 +425,64 @@ public class XMLSchemaHoverExtensionsTest extends AbstractCacheBasedTest {
 		}));
 	}
 
+	/**
+	 * See https://github.com/eclipse-lemminx/lemminx/issues/1787
+	 *
+	 * Hover documentation for child elements of xsi:type-derived complex types
+	 * across namespaces.
+	 *
+	 * @throws BadLocationException
+	 * @throws MalformedURIException
+	 */
+	@Test
+	public void testHoverXSITypeDerivedChildAcrossNamespaces() throws BadLocationException, MalformedURIException {
+		String aSchemaURI = getXMLSchemaFileURI("xsi-type-derived/a.xsd");
+		String bSchemaURI = getXMLSchemaFileURI("xsi-type-derived/b.xsd");
+
+		// Hover on <a:Title> should show documentation from a.xsd
+		String xmlA = "<?xml version=\"1.0\" encoding=\"UTF-8\"?\u003e\n" + //
+				"\u003cm:Root xmlns:m=\"http://main\"\n" + //
+				"        xmlns:a=\"http://a\"\n" + //
+				"        xmlns:b=\"http://b\"\n" + //
+				"        xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" + //
+				"        xsi:schemaLocation=\"http://main main.xsd http://a a.xsd http://b b.xsd\"\u003e\n" + //
+				"  \u003cm:Data xsi:type=\"a:ADerived\"\u003e\n" + //
+				"    \u003ca:Tit|le/\u003e\n" + //
+				"  \u003c/m:Data\u003e\n" + //
+				"\u003c/m:Root>";
+		assertHover(xmlA, "src/test/resources/xsd/xsi-type-derived/test.xml",
+				"Documentation for Title from namespace a" + //
+						System.lineSeparator() + //
+						System.lineSeparator() + "Source: [a.xsd](" + aSchemaURI + ")",
+				r(7, 5, 7, 12));
+
+		// Hover on <b:Title> should show documentation from b.xsd
+		String xmlB = "<?xml version=\"1.0\" encoding=\"UTF-8\"?\u003e\n" + //
+				"\u003cm:Root xmlns:m=\"http://main\"\n" + //
+				"        xmlns:a=\"http://a\"\n" + //
+				"        xmlns:b=\"http://b\"\n" + //
+				"        xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\n" + //
+				"        xsi:schemaLocation=\"http://main main.xsd http://a a.xsd http://b b.xsd\"\u003e\n" + //
+				"  \u003cm:Data xsi:type=\"b:BDerived\"\u003e\n" + //
+				"    \u003cb:Tit|le/\u003e\n" + //
+				"  \u003c/m:Data\u003e\n" + //
+				"\u003c/m:Root>";
+		assertHover(xmlB, "src/test/resources/xsd/xsi-type-derived/test.xml",
+				"Documentation for Title from namespace b" + //
+						System.lineSeparator() + //
+						System.lineSeparator() + "Source: [b.xsd](" + bSchemaURI + ")",
+				r(7, 5, 7, 12));
+	}
+
 	private static void assertHover(String value, String expectedHoverLabel, Range expectedHoverRange)
 			throws BadLocationException {
 		XMLAssert.assertHover(new XMLLanguageService(), value, "src/test/resources/catalogs/catalog.xml", null,
+				expectedHoverLabel, expectedHoverRange);
+	}
+
+	private static void assertHover(String value, String fileURI, String expectedHoverLabel, Range expectedHoverRange)
+			throws BadLocationException {
+		XMLAssert.assertHover(new XMLLanguageService(), value, null, fileURI,
 				expectedHoverLabel, expectedHoverRange);
 	}
 

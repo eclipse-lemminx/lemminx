@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://main"
+           xmlns:tns="http://main"
+           xmlns:base="http://base"
+           elementFormDefault="qualified">
+
+    <xs:import namespace="http://base" schemaLocation="base.xsd"/>
+
+    <xs:element name="Root" type="tns:RootType"/>
+
+    <xs:complexType name="RootType">
+        <xs:sequence>
+            <xs:element name="Data" type="base:DataType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+</xs:schema>

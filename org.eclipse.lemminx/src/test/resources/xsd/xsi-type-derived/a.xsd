@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://a"
+           xmlns:base="http://base"
+           elementFormDefault="qualified">
+
+    <xs:import namespace="http://base" schemaLocation="base.xsd"/>
+
+    <xs:complexType name="ADerived">
+        <xs:complexContent>
+            <xs:extension base="base:DataType">
+                <xs:sequence>
+                    <xs:element name="Title">
+                        <xs:annotation>
+                            <xs:documentation>Documentation for Title from namespace a</xs:documentation>
+                        </xs:annotation>
+                    </xs:element>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+</xs:schema>
