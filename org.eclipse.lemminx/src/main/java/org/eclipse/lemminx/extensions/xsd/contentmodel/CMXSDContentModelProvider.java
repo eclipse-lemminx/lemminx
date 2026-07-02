@@ -26,6 +26,7 @@ import org.eclipse.lemminx.dom.NoNamespaceSchemaLocation;
 import org.eclipse.lemminx.dom.SchemaLocation;
 import org.eclipse.lemminx.dom.SchemaLocationHint;
 import org.eclipse.lemminx.extensions.contentmodel.model.CMDocument;
+import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelProvider;
 import org.eclipse.lemminx.extensions.xerces.AbstractLSPErrorReporter;
 import org.eclipse.lemminx.extensions.xerces.LSPXMLEntityManager;
@@ -48,9 +49,20 @@ public class CMXSDContentModelProvider implements ContentModelProvider {
 
 	private static final String XSI_NO_NAMESPACE_SCHEMA_LOCATION_BINDING_KIND = "xsi:noNamespaceSchemaLocation";
 	private final URIResolverExtensionManager resolverExtensionManager;
+	private ContentModelManager contentModelManager;
 
 	public CMXSDContentModelProvider(URIResolverExtensionManager resolverExtensionManager) {
 		this.resolverExtensionManager = resolverExtensionManager;
+	}
+
+	/**
+	 * Sets the content model manager used to resolve cross-schema type
+	 * definitions (ex: xsi:type from a different namespace).
+	 *
+	 * @param contentModelManager the content model manager.
+	 */
+	public void setContentModelManager(ContentModelManager contentModelManager) {
+		this.contentModelManager = contentModelManager;
 	}
 
 	@Override
@@ -110,7 +122,7 @@ public class CMXSDContentModelProvider implements ContentModelProvider {
 		XSModel model = loader.loadURI(key);
 		if (model != null) {
 			// XML Schema can be loaded
-			return new CMXSDDocument(model, loader);
+			return new CMXSDDocument(model, loader, contentModelManager);
 		}
 		return null;
 	}

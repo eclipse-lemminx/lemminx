@@ -14,7 +14,6 @@ package org.eclipse.lemminx.extensions.xsd;
 
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
-import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelProvider;
 import org.eclipse.lemminx.extensions.xsd.contentmodel.CMXSDContentModelProvider;
 import org.eclipse.lemminx.extensions.xsd.participants.XSDCodeLensParticipant;
 import org.eclipse.lemminx.extensions.xsd.participants.XSDCompletionParticipant;
@@ -87,8 +86,9 @@ public class XSDPlugin implements IXMLExtension {
 		uiResolver = new XSDURIResolverExtension(registry.getDocumentProvider());
 		registry.getResolverExtensionManager().registerResolver(uiResolver);
 		// register XSD content model provider
-		ContentModelProvider modelProvider = new CMXSDContentModelProvider(registry.getResolverExtensionManager());
+		CMXSDContentModelProvider modelProvider = new CMXSDContentModelProvider(registry.getResolverExtensionManager());
 		contentModelManager = registry.getComponent(ContentModelManager.class);
+		modelProvider.setContentModelManager(contentModelManager);
 		contentModelManager.registerModelProvider(modelProvider);
 		// register completion, diagnostic participant
 		registry.registerCompletionParticipant(completionParticipant);
