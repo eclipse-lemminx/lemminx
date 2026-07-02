@@ -83,6 +83,9 @@ public class XMLCatalogURIResolverExtension implements URIResolverExtension {
 	}
 
 	private boolean hasDTDorXMLSchema(String uri) {
+		if (extensionsRegistry.getDocumentProvider() == null) {
+			return false;
+		}
 		DOMDocument document = extensionsRegistry.getDocumentProvider().getDocument(uri);
 		if (document == null) {
 			return false;
