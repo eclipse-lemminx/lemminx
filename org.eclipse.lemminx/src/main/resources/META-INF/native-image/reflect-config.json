@@ -1365,8 +1365,16 @@
             "parameterTypes": []
         }]
     },
-	{
-		"name": "org.eclipse.lsp4j.FoldingRangeProviderOptions",
+    {
+        "name": "org.eclipse.lsp4j.FoldingRangeWorkspaceCapabilities",
+        "allDeclaredFields": true,
+        "methods": [{
+            "name": "<init>",
+            "parameterTypes": []
+        }]
+    },
+ {
+  "name": "org.eclipse.lsp4j.FoldingRangeProviderOptions",
 		"allDeclaredFields": true,
 		"methods": [{
 			"name": "<init>",
@@ -2286,6 +2294,13 @@
 	},
 	{
 		"name": "org.eclipse.lsp4j.adapters.SemanticTokensFullDeltaResponseAdapter",
+		"methods": [{
+			"name": "<init>",
+			"parameterTypes": []
+		}]
+	},
+	{
+		"name": "org.eclipse.lsp4j.adapters.TextEditListAdapter",
 		"methods": [{
 			"name": "<init>",
 			"parameterTypes": []
