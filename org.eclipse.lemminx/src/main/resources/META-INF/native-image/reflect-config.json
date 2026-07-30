@@ -1471,7 +1471,61 @@
             "parameterTypes": []
         }]
     },
-            {
+    {
+        "name": "org.eclipse.lsp4j.InlineCompletionCapabilities",
+        "allDeclaredFields": true,
+        "methods": [{
+            "name": "<init>",
+            "parameterTypes": []
+        }]
+    },
+    {
+        "name": "org.eclipse.lsp4j.InlineCompletionContext",
+        "allDeclaredFields": true,
+        "methods": [{
+            "name": "<init>",
+            "parameterTypes": []
+        }]
+    },
+    {
+        "name": "org.eclipse.lsp4j.InlineCompletionItem",
+        "allDeclaredFields": true,
+        "methods": [{
+            "name": "<init>",
+            "parameterTypes": []
+        }]
+    },
+    {
+        "name": "org.eclipse.lsp4j.InlineCompletionList",
+        "allDeclaredFields": true,
+        "methods": [{
+            "name": "<init>",
+            "parameterTypes": []
+        }]
+    },
+    {
+        "name": "org.eclipse.lsp4j.InlineCompletionParams",
+        "allDeclaredFields": true,
+        "methods": [{
+            "name": "<init>",
+            "parameterTypes": []
+        }]
+    },
+    {
+        "name": "org.eclipse.lsp4j.InlineCompletionRegistrationOptions",
+        "allDeclaredFields": true,
+        "methods": [{
+            "name": "<init>",
+            "parameterTypes": []
+        }]
+    },
+    {
+        "name": "org.eclipse.lsp4j.InlineCompletionTriggerKind",
+        "fields": [{
+            "name": "value"
+        }]
+    },
+    {
         "name": "org.eclipse.lsp4j.InlineValueCapabilities",
         "allDeclaredFields": true,
         "methods": [{
