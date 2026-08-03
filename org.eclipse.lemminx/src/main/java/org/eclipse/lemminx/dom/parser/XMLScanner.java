@@ -271,10 +271,7 @@ public class XMLScanner implements Scanner {
 					return finishToken(offset, TokenType.PIName);
 				}
 			}
-			stream.advanceUntilCharsOrNewTag(END_PROLOG_PATTERN); // ?>
-			if (stream.peekChar() == _LAN) {
-				state = ScannerState.WithinContent; // TODO: check if EOF causes issues
-			}
+			stream.advanceUntilChars(END_PROLOG_PATTERN); // ?>
 			return internalScan();
 
 		case WithinPI:
@@ -286,14 +283,7 @@ public class XMLScanner implements Scanner {
 				state = getWithinContentState();
 				return finishToken(offset, TokenType.PIEnd);
 			}
-			if (stream.advanceUntilCharsOrNewTag(END_PROLOG_PATTERN)) { // ?>
-				if (stream.peekChar() == _LAN) {
-					state = getWithinContentState();
-				}
-				if (getTokenTextFromOffset(offset).length() == 0) {
-					return finishToken(offset, TokenType.PIEnd);
-				}
-			}
+			stream.advanceUntilChars(END_PROLOG_PATTERN); // ?>
 			return finishToken(offset, TokenType.PIContent);
 
 		case WithinContent:
