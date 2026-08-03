@@ -802,6 +802,22 @@ public class XMLScannerTest {
 	}
 
 	@Test
+	public void testPIWithBracketsInContent() {
+		scanner = XMLScanner.createScanner("<a><?form <varGrp/>?></a>");
+		assertOffsetAndToken(0, TokenType.StartTagOpen);
+		assertOffsetAndToken(1, TokenType.StartTag);
+		assertOffsetAndToken(2, TokenType.StartTagClose);
+		assertOffsetAndToken(3, TokenType.StartPrologOrPI);
+		assertOffsetAndToken(5, TokenType.PIName, "form");
+		assertOffsetAndToken(9, TokenType.Whitespace);
+		assertOffsetAndToken(10, TokenType.PIContent);
+		assertOffsetAndToken(19, TokenType.PIEnd);
+		assertOffsetAndToken(21, TokenType.EndTagOpen);
+		assertOffsetAndToken(23, TokenType.EndTag);
+		assertOffsetAndToken(24, TokenType.EndTagClose);
+	}
+
+	@Test
 	public void testMissingClosingBracket() {
 		scanner = XMLScanner.createScanner("<a</a>");
 		assertOffsetAndToken(0, TokenType.StartTagOpen);
