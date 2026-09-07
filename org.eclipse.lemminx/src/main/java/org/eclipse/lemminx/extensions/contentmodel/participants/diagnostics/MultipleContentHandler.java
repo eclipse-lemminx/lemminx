@@ -11,9 +11,6 @@
 *******************************************************************************/
 package org.eclipse.lemminx.extensions.contentmodel.participants.diagnostics;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
-
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.Locator;
@@ -21,99 +18,116 @@ import org.xml.sax.SAXException;
 
 /**
  * Multiple SAX {@link ContentHandler}.
- * 
+ *
  * @author Angelo ZERR
  *
  */
 public class MultipleContentHandler implements ContentHandler {
 
-	private final Set<ContentHandler> handlers;
+	private ContentHandler[] handlers = new ContentHandler[0];
 
 	public MultipleContentHandler() {
-		this.handlers = new LinkedHashSet<>();
 	}
 
 	@Override
 	public void setDocumentLocator(Locator locator) {
-		for (ContentHandler contentHandler : handlers) {
-			contentHandler.setDocumentLocator(locator);
+		ContentHandler[] h = handlers;
+		for (int i = 0; i < h.length; i++) {
+			h[i].setDocumentLocator(locator);
 		}
 	}
 
 	@Override
 	public void startDocument() throws SAXException {
-		for (ContentHandler contentHandler : handlers) {
-			contentHandler.startDocument();
+		ContentHandler[] h = handlers;
+		for (int i = 0; i < h.length; i++) {
+			h[i].startDocument();
 		}
 	}
 
 	@Override
 	public void endDocument() throws SAXException {
-		for (ContentHandler contentHandler : handlers) {
-			contentHandler.endDocument();
+		ContentHandler[] h = handlers;
+		for (int i = 0; i < h.length; i++) {
+			h[i].endDocument();
 		}
 	}
 
 	@Override
 	public void startPrefixMapping(String prefix, String uri) throws SAXException {
-		for (ContentHandler contentHandler : handlers) {
-			contentHandler.startPrefixMapping(prefix, uri);
+		ContentHandler[] h = handlers;
+		for (int i = 0; i < h.length; i++) {
+			h[i].startPrefixMapping(prefix, uri);
 		}
 	}
 
 	@Override
 	public void endPrefixMapping(String prefix) throws SAXException {
-		for (ContentHandler contentHandler : handlers) {
-			contentHandler.endPrefixMapping(prefix);
+		ContentHandler[] h = handlers;
+		for (int i = 0; i < h.length; i++) {
+			h[i].endPrefixMapping(prefix);
 		}
 	}
 
 	@Override
 	public void startElement(String uri, String localName, String qName, Attributes atts) throws SAXException {
-		for (ContentHandler contentHandler : handlers) {
-			contentHandler.startElement(uri, localName, qName, atts);
+		ContentHandler[] h = handlers;
+		for (int i = 0; i < h.length; i++) {
+			h[i].startElement(uri, localName, qName, atts);
 		}
 	}
 
 	@Override
 	public void endElement(String uri, String localName, String qName) throws SAXException {
-		for (ContentHandler contentHandler : handlers) {
-			contentHandler.endElement(uri, localName, qName);
+		ContentHandler[] h = handlers;
+		for (int i = 0; i < h.length; i++) {
+			h[i].endElement(uri, localName, qName);
 		}
 	}
 
 	@Override
 	public void characters(char[] ch, int start, int length) throws SAXException {
-		for (ContentHandler contentHandler : handlers) {
-			contentHandler.characters(ch, start, length);
+		ContentHandler[] h = handlers;
+		for (int i = 0; i < h.length; i++) {
+			h[i].characters(ch, start, length);
 		}
 	}
 
 	@Override
 	public void ignorableWhitespace(char[] ch, int start, int length) throws SAXException {
-		for (ContentHandler contentHandler : handlers) {
-			contentHandler.ignorableWhitespace(ch, start, length);
+		ContentHandler[] h = handlers;
+		for (int i = 0; i < h.length; i++) {
+			h[i].ignorableWhitespace(ch, start, length);
 		}
 	}
 
 	@Override
 	public void processingInstruction(String target, String data) throws SAXException {
-		for (ContentHandler contentHandler : handlers) {
-			contentHandler.processingInstruction(target, data);
+		ContentHandler[] h = handlers;
+		for (int i = 0; i < h.length; i++) {
+			h[i].processingInstruction(target, data);
 		}
 	}
 
 	@Override
 	public void skippedEntity(String name) throws SAXException {
-		for (ContentHandler contentHandler : handlers) {
-			contentHandler.skippedEntity(name);
+		ContentHandler[] h = handlers;
+		for (int i = 0; i < h.length; i++) {
+			h[i].skippedEntity(name);
 		}
 	}
 
 	public void addContentHandler(ContentHandler contentHandler) {
-		if (!handlers.contains(contentHandler)) {
-			handlers.add(contentHandler);
+		ContentHandler[] old = handlers;
+		for (int i = 0; i < old.length; i++) {
+			if (old[i] == contentHandler) {
+				return;
+			}
 		}
+		ContentHandler[] newHandlers = new ContentHandler[old.length + 1];
+		System.arraycopy(old, 0, newHandlers, 0, old.length);
+		newHandlers[old.length] = contentHandler;
+		handlers = newHandlers;
 	}
 
 }
