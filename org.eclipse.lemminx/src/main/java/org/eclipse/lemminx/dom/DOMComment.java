@@ -18,8 +18,6 @@ package org.eclipse.lemminx.dom;
  */
 public class DOMComment extends DOMCharacterData implements org.w3c.dom.Comment {
 
-	boolean commentSameLineEndTag;
-
 	int startContent;
 
 	int endContent;
@@ -29,7 +27,11 @@ public class DOMComment extends DOMCharacterData implements org.w3c.dom.Comment 
 	}
 
 	public boolean isCommentSameLineEndTag() {
-		return commentSameLineEndTag;
+		return getFlag(FLAG_COMMENT_SAME_LINE);
+	}
+
+	void setCommentSameLineEndTag(boolean value) {
+		setFlag(FLAG_COMMENT_SAME_LINE, value);
 	}
 
 	@Override

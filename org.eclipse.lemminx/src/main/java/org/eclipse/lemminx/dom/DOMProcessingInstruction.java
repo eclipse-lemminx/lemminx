@@ -12,7 +12,10 @@
  */
 package org.eclipse.lemminx.dom;
 
+import java.util.List;
+
 import org.w3c.dom.DOMException;
+import org.w3c.dom.NamedNodeMap;
 
 /**
  * A processing instruction node.
@@ -20,10 +23,9 @@ import org.w3c.dom.DOMException;
  */
 public class DOMProcessingInstruction extends DOMCharacterData implements org.w3c.dom.ProcessingInstruction {
 
-	boolean startTagClose;
+	private XMLNamedNodeMap<DOMAttr> attributeNodes;
+
 	String target;
-	boolean prolog = false;
-	boolean processingInstruction = false;
 	int startContent;
 	int endContent;
 	int endTagOpenOffset = NULL_VALUE;
@@ -32,12 +34,51 @@ public class DOMProcessingInstruction extends DOMCharacterData implements org.w3
 		super(start, end);
 	}
 
+	@Override
+	public boolean hasAttributes() {
+		return attributeNodes != null && !attributeNodes.isEmpty();
+	}
+
+	@Override
+	public List<DOMAttr> getAttributeNodes() {
+		return attributeNodes;
+	}
+
+	@Override
+	public NamedNodeMap getAttributes() {
+		return attributeNodes;
+	}
+
+	@Override
+	public void setAttributeNode(DOMAttr attr) {
+		if (attributeNodes == null) {
+			attributeNodes = new XMLNamedNodeMap<>();
+		}
+		attributeNodes.add(attr);
+	}
+
 	public boolean isProlog() {
-		return prolog;
+		return getFlag(FLAG_PROLOG);
+	}
+
+	void setProlog(boolean value) {
+		setFlag(FLAG_PROLOG, value);
 	}
 
 	public boolean isProcessingInstruction() {
-		return processingInstruction;
+		return getFlag(FLAG_PROCESSING_INSTRUCTION);
+	}
+
+	void setProcessingInstruction(boolean value) {
+		setFlag(FLAG_PROCESSING_INSTRUCTION, value);
+	}
+
+	public boolean isStartTagClose() {
+		return getFlag(FLAG_START_TAG_CLOSE);
+	}
+
+	void setStartTagClose(boolean value) {
+		setFlag(FLAG_START_TAG_CLOSE, value);
 	}
 
 	public int getStartContent() {

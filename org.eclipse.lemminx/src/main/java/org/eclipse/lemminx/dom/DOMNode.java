@@ -60,13 +60,15 @@ public abstract class DOMNode implements Node, DOMRange {
 	 */
 	public static final short DTD_DECL_NODE = 105;
 
-	// Memory optimization: Use byte flags instead of multiple boolean fields
-	// This saves 7 bytes per node (boolean with padding = 8 bytes, byte = 1 byte)
 	private byte flags = 0;
-	private static final byte FLAG_CLOSED = 0x01;
-	// Reserved for future flags: 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80
+	static final byte FLAG_CLOSED = 0x01;
+	static final byte FLAG_SELF_CLOSED = 0x02;           // DOMElement
+	static final byte FLAG_START_TAG_CLOSE = 0x04;       // DOMProcessingInstruction
+	static final byte FLAG_PROLOG = 0x08;                // DOMProcessingInstruction
+	static final byte FLAG_PROCESSING_INSTRUCTION = 0x10;// DOMProcessingInstruction
+	static final byte FLAG_WHITESPACE = 0x20;            // DOMCharacterData
+	static final byte FLAG_COMMENT_SAME_LINE = 0x40;     // DOMComment
 
-	private XMLNamedNodeMap<DOMAttr> attributeNodes;
 	private XMLNodeList<DOMNode> children;
 
 	final int start; // |<root> </root>
@@ -403,7 +405,7 @@ public abstract class DOMNode implements Node, DOMRange {
 
 	/**
 	 * Returns the attribute that matches the given name.
-	 * 
+	 *
 	 * If there is no namespace, set prefix to null.
 	 */
 	public DOMAttr getAttributeNode(String prefix, String suffix) {
@@ -417,7 +419,7 @@ public abstract class DOMNode implements Node, DOMRange {
 		if (!hasAttributes()) {
 			return null;
 		}
-		for (DOMAttr attr : attributeNodes) {
+		for (DOMAttr attr : getAttributeNodes()) {
 			if (name.equals(attr.getName())) {
 				return attr;
 			}
@@ -450,7 +452,7 @@ public abstract class DOMNode implements Node, DOMRange {
 	/**
 	 * Returns the attribute at the given index, the order is how the attributes
 	 * appear in the document.
-	 * 
+	 *
 	 * @param index Starting at 0, index of attribute you want
 	 * @return
 	 */
@@ -458,11 +460,11 @@ public abstract class DOMNode implements Node, DOMRange {
 		if (!hasAttributes()) {
 			return null;
 		}
-
-		if (index > attributeNodes.getLength() - 1) {
+		List<DOMAttr> attrs = getAttributeNodes();
+		if (index > attrs.size() - 1) {
 			return null;
 		}
-		return attributeNodes.get(index);
+		return attrs.get(index);
 	}
 
 	public boolean hasAttribute(String name) {
@@ -471,12 +473,12 @@ public abstract class DOMNode implements Node, DOMRange {
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see org.w3c.dom.Node#hasAttributes()
 	 */
 	@Override
 	public boolean hasAttributes() {
-		return attributeNodes != null && attributeNodes.size() != 0;
+		return false;
 	}
 
 	public void setAttribute(String name, String value) {
@@ -489,14 +491,10 @@ public abstract class DOMNode implements Node, DOMRange {
 	}
 
 	public void setAttributeNode(DOMAttr attr) {
-		if (attributeNodes == null) {
-			attributeNodes = new XMLNamedNodeMap<>();
-		}
-		attributeNodes.add(attr);
 	}
 
 	public List<DOMAttr> getAttributeNodes() {
-		return attributeNodes;
+		return null;
 	}
 
 	/**
@@ -557,20 +555,24 @@ public abstract class DOMNode implements Node, DOMRange {
 		return getChildren().get(index);
 	}
 
-	public boolean isClosed() {
-		return (flags & FLAG_CLOSED) != 0;
+	boolean getFlag(byte flag) {
+		return (flags & flag) != 0;
 	}
 
-	/**
-	 * Sets the closed flag for this node.
-	 * Package-private to allow DOMParser to set it.
-	 */
-	void setClosed(boolean closed) {
-		if (closed) {
-			flags |= FLAG_CLOSED;
+	void setFlag(byte flag, boolean value) {
+		if (value) {
+			flags |= flag;
 		} else {
-			flags &= ~FLAG_CLOSED;
+			flags &= ~flag;
 		}
+	}
+
+	public boolean isClosed() {
+		return getFlag(FLAG_CLOSED);
+	}
+
+	void setClosed(boolean closed) {
+		setFlag(FLAG_CLOSED, closed);
 	}
 
 	public DOMElement getParentElement() {
@@ -710,7 +712,7 @@ public abstract class DOMNode implements Node, DOMRange {
 	 */
 	@Override
 	public NamedNodeMap getAttributes() {
-		return attributeNodes;
+		return null;
 	}
 
 	/*

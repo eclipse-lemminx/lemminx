@@ -153,7 +153,7 @@ public class DOMParser {
 
 				case StartTag: {
 					DOMElement element = (DOMElement) curr;
-					element.tag = scanner.getTokenText();
+					element.tag = xmlDocument.internTag(scanner.getTokenText());
 					curr.end = scanner.getTokenEnd();
 					break;
 				}
@@ -172,7 +172,7 @@ public class DOMParser {
 					} else if (curr.isProcessingInstruction() || curr.isProlog()) {
 						DOMProcessingInstruction element = (DOMProcessingInstruction) curr;
 						curr.end = scanner.getTokenEnd(); // might be later set to end tag position
-						element.startTagClose = true;
+						element.setStartTagClose(true);
 						if (element.getTarget() != null && isEmptyElement(element.getTarget()) && curr.parent != null) {
 							curr.setClosed(true);
 							curr = curr.parent;
@@ -193,7 +193,7 @@ public class DOMParser {
 
 				case EndTag:
 					// end tag (ex: </root>)
-					String closeTag = scanner.getTokenText();
+					String closeTag = xmlDocument.internTag(scanner.getTokenText());
 					DOMNode current = curr;
 
 					/**
@@ -226,7 +226,7 @@ public class DOMParser {
 				case StartTagSelfClose:
 					if (curr.parent != null) {
 						curr.setClosed(true);
-						((DOMElement) curr).selfClosed = true;
+						((DOMElement) curr).setSelfClosed(true);
 						curr.end = scanner.getTokenEnd();
 						lastClosed = curr;
 						curr = curr.parent;
@@ -305,15 +305,15 @@ public class DOMParser {
 
 				case PIName: {
 					DOMProcessingInstruction processingInstruction = ((DOMProcessingInstruction) curr);
-					processingInstruction.target = scanner.getTokenText();
-					processingInstruction.processingInstruction = true;
+					processingInstruction.target = xmlDocument.internTag(scanner.getTokenText());
+					processingInstruction.setProcessingInstruction(true);
 					break;
 				}
 
 				case PrologName: {
 					DOMProcessingInstruction processingInstruction = ((DOMProcessingInstruction) curr);
-					processingInstruction.target = scanner.getTokenText();
-					processingInstruction.prolog = true;
+					processingInstruction.target = xmlDocument.internTag(scanner.getTokenText());
+					processingInstruction.setProlog(true);
 					break;
 				}
 
@@ -349,7 +349,7 @@ public class DOMParser {
 						int endLine = document.positionAt(lastClosed.end).getLine();
 						int startLine = document.positionAt(curr.start).getLine();
 						if (endLine == startLine && lastClosed.end <= curr.start) {
-							comment.commentSameLineEndTag = true;
+							comment.setCommentSameLineEndTag(true);
 						}
 					} catch (BadLocationException e) {
 						LOGGER.log(Level.SEVERE, "XMLParser StartCommentTag bad offset in document", e);

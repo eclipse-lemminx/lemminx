@@ -26,8 +26,6 @@ import org.w3c.dom.DOMException;
  */
 public abstract class DOMCharacterData extends DOMNode implements org.w3c.dom.CharacterData {
 
-	private boolean isWhitespace;
-
 	private String delimiter;
 
 	public DOMCharacterData(int start, int end) {
@@ -150,20 +148,12 @@ public abstract class DOMCharacterData extends DOMNode implements org.w3c.dom.Ch
 		return getData();
 	}
 
-	/**
-	 * @return the isWhitespace
-	 */
 	public boolean isWhitespace() {
-		return isWhitespace;
+		return getFlag(FLAG_WHITESPACE);
 	}
 
-	/**
-	 * Set true if this node's data is all whitespace
-	 * 
-	 * @param isWhitespace
-	 */
-	public void setWhitespace(boolean isWhitespace) {
-		this.isWhitespace = isWhitespace;
+	public void setWhitespace(boolean whitespace) {
+		setFlag(FLAG_WHITESPACE, whitespace);
 	}
 
 	/*

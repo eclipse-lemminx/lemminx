@@ -21,6 +21,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -65,6 +66,13 @@ public class DOMDocument extends DOMNode implements Document {
 	private String schemaPrefix;
 	private CancelChecker cancelChecker;
 	private String externalGrammarFromNamespaceURI;
+
+	/**
+	 * Pool used by {@link #internTag(String)} to deduplicate tag name strings
+	 * during parsing, avoiding millions of identical String instances for
+	 * documents with many repeated element names.
+	 */
+	private Map<String, String> tagPool;
 
 	public DOMDocument(TextDocument textDocument, URIResolverExtensionManager resolverExtensionManager) {
 		super(0, textDocument.getTextSequence().length());
@@ -487,6 +495,24 @@ public class DOMDocument extends DOMNode implements Document {
 
 	private static String getPrefixedName(String prefix, String localName) {
 		return prefix != null && prefix.length() > 0 ? prefix + ":" + localName : localName; //$NON-NLS-1$
+	}
+
+	/**
+	 * Returns a canonical instance of the given tag name, so that all elements
+	 * sharing the same tag name share a single String object.
+	 *
+	 * @param tag the tag name to intern.
+	 * @return the interned tag name, or {@code null} if {@code tag} is {@code null}.
+	 */
+	String internTag(String tag) {
+		if (tag == null) {
+			return null;
+		}
+		if (tagPool == null) {
+			tagPool = new HashMap<>();
+		}
+		String existing = tagPool.putIfAbsent(tag, tag);
+		return existing != null ? existing : tag;
 	}
 
 	public DOMElement createElement(int start, int end) {

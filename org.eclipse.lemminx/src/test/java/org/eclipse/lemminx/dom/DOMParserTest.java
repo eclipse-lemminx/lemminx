@@ -15,6 +15,7 @@ package org.eclipse.lemminx.dom;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.ByteArrayInputStream;
@@ -978,7 +979,7 @@ public class DOMParserTest {
 	private static DOMProcessingInstruction createPrologNode(String tag, int start, int end, boolean closed) {
 		DOMProcessingInstruction n = (DOMProcessingInstruction) createNode(DOMNode.PROCESSING_INSTRUCTION_NODE, tag,
 				start, null, end, closed);
-		n.prolog = true;
+		n.setProlog(true);
 		return n;
 	}
 
@@ -986,7 +987,7 @@ public class DOMParserTest {
 		MockProcessingInstruction n = (MockProcessingInstruction) createNode(DOMNode.PROCESSING_INSTRUCTION_NODE, tag,
 				start, null, end, closed);
 		n.content = content;
-		n.processingInstruction = true;
+		n.setProcessingInstruction(true);
 		return n;
 	}
 
@@ -1350,6 +1351,51 @@ public class DOMParserTest {
 
 	public void insertIntoAttributes(DOMNode n, String key, String value) {
 		n.setAttribute(key, value);
+	}
+
+	@Test
+	public void testTagInterning() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root><item>a</item><item>b</item><item>c</item></root>", "", null);
+		DOMElement root = document.getDocumentElement();
+		List<DOMNode> children = root.getChildren();
+		DOMElement item1 = (DOMElement) children.get(0);
+		DOMElement item2 = (DOMElement) children.get(1);
+		DOMElement item3 = (DOMElement) children.get(2);
+		assertEquals("item", item1.getTagName());
+		assertSame(item1.getTagName(), item2.getTagName());
+		assertSame(item1.getTagName(), item3.getTagName());
+	}
+
+	@Test
+	public void testAttributeNodesOnElement() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root attr1=\"v1\" attr2=\"v2\">text</root>", "", null);
+		DOMElement root = document.getDocumentElement();
+		assertTrue(root.hasAttributes());
+		assertEquals(2, root.getAttributeNodes().size());
+		assertEquals("v1", root.getAttribute("attr1"));
+		assertEquals("v2", root.getAttribute("attr2"));
+	}
+
+	@Test
+	public void testAttributeNodesOnProlog() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<?xml version=\"1.0\" encoding=\"UTF-8\"?><root/>", "", null);
+		DOMNode prolog = document.getProlog();
+		assertNotNull(prolog);
+		assertTrue(prolog.hasAttributes());
+		assertEquals("1.0", prolog.getAttribute("version"));
+		assertEquals("UTF-8", prolog.getAttribute("encoding"));
+	}
+
+	@Test
+	public void testNoAttributesOnTextNode() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root>hello</root>", "", null);
+		DOMNode text = document.getDocumentElement().getFirstChild();
+		assertTrue(text.isText());
+		assertFalse(text.hasAttributes());
 	}
 
 	public DOMDocument getXMLDocument(String input) {
