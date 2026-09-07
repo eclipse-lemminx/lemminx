@@ -38,6 +38,7 @@ import org.eclipse.lemminx.commons.ModelValidatorDelayer;
 import org.eclipse.lemminx.commons.TextDocument;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMParser;
+import org.eclipse.lemminx.dom.green.GreenDocument;
 import org.eclipse.lemminx.extensions.contentmodel.settings.XMLValidationRootSettings;
 import org.eclipse.lemminx.services.DocumentSymbolsResult;
 import org.eclipse.lemminx.services.SymbolInformationResult;
@@ -202,8 +203,25 @@ public class XMLTextDocumentService implements TextDocumentService {
 		this.xmlLanguageServer = xmlLanguageServer;
 		DOMParser parser = DOMParser.getInstance();
 		this.documents = new ModelTextDocuments<DOMDocument>((document, cancelChecker) -> {
+			if (document instanceof ModelTextDocument) {
+				@SuppressWarnings("unchecked")
+				ModelTextDocument<DOMDocument> mtd = (ModelTextDocument<DOMDocument>) document;
+				Object prevData = mtd.getPreviousIncrementalData();
+				ModelTextDocument.EditInfo editInfo = mtd.getPendingEdit();
+				if (prevData instanceof GreenDocument && editInfo != null) {
+					DOMDocument result = parser.parseIncremental(document,
+							(GreenDocument) prevData,
+							editInfo.getStartOffset(),
+							editInfo.getDeleteLength(),
+							editInfo.getInsertLength(),
+							getXMLLanguageService().getResolverExtensionManager(),
+							true, cancelChecker);
+					mtd.clearPreviousIncrementalData();
+					return result;
+				}
+			}
 			return parser.parse(document, getXMLLanguageService().getResolverExtensionManager(), true, cancelChecker);
-		});
+		}, DOMDocument::getGreenDocument);
 		this.sharedSettings = new SharedSettings();
 		this.limitExceededWarner = null;
 		this.xmlValidatorDelayer = new ModelValidatorDelayer<DOMDocument>((document) -> {

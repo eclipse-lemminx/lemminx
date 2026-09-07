@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 
 import org.eclipse.lemminx.commons.BadLocationException;
 import org.eclipse.lemminx.commons.TextDocument;
+import org.eclipse.lemminx.dom.green.GreenDocument;
 import org.eclipse.lemminx.dom.parser.Constants;
 import org.eclipse.lemminx.uriresolver.URIResolverExtensionManager;
 import org.eclipse.lemminx.utils.DOMUtils;
@@ -65,12 +66,24 @@ public class DOMDocument extends DOMNode implements Document {
 	private String schemaPrefix;
 	private CancelChecker cancelChecker;
 	private String externalGrammarFromNamespaceURI;
+	private volatile GreenDocument greenDocument;
+	DOMNode[] children;
 
 	public DOMDocument(TextDocument textDocument, URIResolverExtensionManager resolverExtensionManager) {
-		super(0, textDocument.getText().length());
+		super(0, textDocument.getTextSequence().length());
 		this.textDocument = textDocument;
 		this.resolverExtensionManager = resolverExtensionManager;
 		resetGrammar();
+	}
+
+	@Override
+	DOMNode[] getChildrenArray() {
+		return children;
+	}
+
+	@Override
+	void setChildrenArray(DOMNode[] c) {
+		this.children = c;
 	}
 
 	public void setCancelChecker(CancelChecker cancelChecker) {
@@ -79,6 +92,14 @@ public class DOMDocument extends DOMNode implements Document {
 
 	public CancelChecker getCancelChecker() {
 		return cancelChecker;
+	}
+
+	public GreenDocument getGreenDocument() {
+		return greenDocument;
+	}
+
+	public void setGreenDocument(GreenDocument greenDocument) {
+		this.greenDocument = greenDocument;
 	}
 
 	public List<DOMNode> getRoots() {
@@ -132,12 +153,24 @@ public class DOMDocument extends DOMNode implements Document {
 	}
 
 	/**
-	 * Returns the text content of the XML document.
-	 * 
-	 * @return the text content of the XML document.
+	 * Returns the text content as a {@link String}. Prefer
+	 * {@link #getTextSequence()} which avoids costly string materialization.
+	 *
+	 * @deprecated Use {@link #getTextSequence()} instead to avoid allocating
+	 *             a full String copy of the document text.
 	 */
+	@Deprecated
 	public String getText() {
 		return textDocument.getText();
+	}
+
+	/**
+	 * Returns the text content as a {@link CharSequence}, avoiding the
+	 * allocation of a full {@link String} copy when the document is backed
+	 * by a {@link StringBuilder}.
+	 */
+	public CharSequence getTextSequence() {
+		return textDocument.getTextSequence();
 	}
 
 	public TextDocument getTextDocument() {
@@ -892,7 +925,7 @@ public class DOMDocument extends DOMNode implements Document {
 	}
 
 	public Range getTrimmedRange(int start, int end) {
-		String text = getText();
+		CharSequence text = getTextSequence();
 		char c = text.charAt(start);
 		while (Character.isWhitespace(c)) {
 			start++;

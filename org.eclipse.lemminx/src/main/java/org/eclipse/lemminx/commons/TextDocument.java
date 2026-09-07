@@ -39,6 +39,10 @@ public class TextDocument extends TextDocumentItem {
 
 	private boolean incremental;
 
+	private StringBuilder textBuffer;
+
+	private String cachedText;
+
 	public TextDocument(TextDocumentItem document) {
 		this(document.getText(), document.getUri());
 		super.setVersion(document.getVersion());
@@ -48,6 +52,46 @@ public class TextDocument extends TextDocumentItem {
 	public TextDocument(String text, String uri) {
 		super.setUri(uri);
 		super.setText(text);
+	}
+
+	/**
+	 * Returns the text content as a {@link String}. Prefer
+	 * {@link #getTextSequence()} which avoids costly string materialization.
+	 *
+	 * @deprecated Use {@link #getTextSequence()} instead to avoid allocating
+	 *             a full String copy of the document text.
+	 */
+	@Deprecated
+	@Override
+	public String getText() {
+		synchronized (lock) {
+			if (cachedText != null) {
+				return cachedText;
+			}
+			if (textBuffer != null) {
+				cachedText = textBuffer.toString();
+				return cachedText;
+			}
+		}
+		return super.getText();
+	}
+
+	public CharSequence getTextSequence() {
+		synchronized (lock) {
+			if (textBuffer != null) {
+				return textBuffer;
+			}
+		}
+		return getText();
+	}
+
+	@Override
+	public void setText(String text) {
+		synchronized (lock) {
+			super.setText(text);
+			textBuffer = null;
+			cachedText = null;
+		}
 	}
 
 	public void setIncremental(boolean incremental) {
@@ -74,7 +118,7 @@ public class TextDocument extends TextDocumentItem {
 	public String lineText(int lineNumber) throws BadLocationException {
 		ILineTracker lineTracker = getLineTracker();
 		Line line = lineTracker.getLineInformation(lineNumber);
-		String text = super.getText();
+		String text = getText();
 		return text.substring(line.offset, line.offset + line.length);
 	}
 
@@ -115,7 +159,7 @@ public class TextDocument extends TextDocumentItem {
 			Position pos = positionAt(textOffset);
 			ILineTracker lineTracker = getLineTracker();
 			Line line = lineTracker.getLineInformation(pos.getLine());
-			String text = super.getText();
+			String text = getText();
 			String lineText = text.substring(line.offset, textOffset);
 			int position = lineText.length();
 			Matcher m = wordDefinition.matcher(lineText);
@@ -148,8 +192,8 @@ public class TextDocument extends TextDocumentItem {
 		if (lineTracker != null) {
 			return lineTracker;
 		}
-		ILineTracker lineTracker = isIncremental() ? new TreeLineTracker(new ListLineTracker()) : new ListLineTracker();
-		lineTracker.set(super.getText());
+		ILineTracker lineTracker = isIncremental() ? new ArrayLineTracker() : new ListLineTracker();
+		lineTracker.set(getTextSequence());
 		return lineTracker;
 	}
 
@@ -168,10 +212,15 @@ public class TextDocument extends TextDocumentItem {
 			try {
 				long start = System.currentTimeMillis();
 				synchronized (lock) {
-					// Initialize buffer and line tracker from the current text document
-					StringBuilder buffer = new StringBuilder(getText());
+					if (textBuffer == null) {
+						String currentText = getText();
+						int len = currentText.length();
+						textBuffer = new StringBuilder(len + Math.max(1024, len >> 3));
+						textBuffer.append(currentText);
+						cachedText = null;
+						super.setText("");
+					}
 
-					// Loop for each changes and update the buffer
 					for (int i = 0; i < changes.size(); i++) {
 
 						TextDocumentContentChangeEvent changeEvent = changes.get(i);
@@ -182,17 +231,15 @@ public class TextDocument extends TextDocumentItem {
 							Integer rangeLength = changeEvent.getRangeLength();
 							length = rangeLength != null ? rangeLength.intValue() : offsetAt(range.getEnd()) - offsetAt(range.getStart());
 						} else {
-							// range is optional and if not given, the whole file content is replaced
-							length = buffer.length();
+							length = textBuffer.length();
 							range = new Range(positionAt(0), positionAt(length));
 						}
 						String text = changeEvent.getText();
 						int startOffset = offsetAt(range.getStart());
-						buffer.replace(startOffset, startOffset + length, text);
+						textBuffer.replace(startOffset, startOffset + length, text);
 						lineTracker.replace(startOffset, length, text);
 					}
-					// Update the new text content from the updated buffer
-					setText(buffer.toString());
+					cachedText = null;
 				}
 				LOGGER.fine("Text document content updated in " + (System.currentTimeMillis() - start) + "ms");
 			} catch (BadLocationException e) {

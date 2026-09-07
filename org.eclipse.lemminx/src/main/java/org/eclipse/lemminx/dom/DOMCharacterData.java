@@ -26,10 +26,6 @@ import org.w3c.dom.DOMException;
  */
 public abstract class DOMCharacterData extends DOMNode implements org.w3c.dom.CharacterData {
 
-	private boolean isWhitespace;
-
-	private String delimiter;
-
 	public DOMCharacterData(int start, int end) {
 		super(start, end);
 	}
@@ -39,16 +35,14 @@ public abstract class DOMCharacterData extends DOMNode implements org.w3c.dom.Ch
 	}
 
 	public String getDelimiter() {
-		if (delimiter != null) {
-			return delimiter;
-		}
 		try {
-			delimiter = getOwnerDocument().getTextDocument().lineDelimiter(0);
-			return delimiter;
+			String d = getOwnerDocument().getTextDocument().lineDelimiter(0);
+			if (d != null) {
+				return d;
+			}
 		} catch (BadLocationException e) {
-			delimiter = lineSeparator();
-			return delimiter;
 		}
+		return lineSeparator();
 	}
 
 	/**
@@ -137,7 +131,7 @@ public abstract class DOMCharacterData extends DOMNode implements org.w3c.dom.Ch
 	public String getData() {
 		// No caching - extract directly from document to save memory
 		// The document text is already in memory, so this is just a substring operation
-		return getOwnerDocument().getText().substring(getStartContent(), getEndContent());
+		return getOwnerDocument().getTextSequence().subSequence(getStartContent(), getEndContent()).toString();
 	}
 
 	/*
@@ -150,20 +144,12 @@ public abstract class DOMCharacterData extends DOMNode implements org.w3c.dom.Ch
 		return getData();
 	}
 
-	/**
-	 * @return the isWhitespace
-	 */
 	public boolean isWhitespace() {
-		return isWhitespace;
+		return hasFlag(FLAG_WHITESPACE);
 	}
 
-	/**
-	 * Set true if this node's data is all whitespace
-	 * 
-	 * @param isWhitespace
-	 */
 	public void setWhitespace(boolean isWhitespace) {
-		this.isWhitespace = isWhitespace;
+		setFlag(FLAG_WHITESPACE, isWhitespace);
 	}
 
 	/*

@@ -16,6 +16,7 @@ package org.eclipse.lemminx.dom;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.lemminx.dom.green.GreenNode;
 import org.w3c.dom.Node;
 
 /**
@@ -30,15 +31,46 @@ public class DTDDeclNode extends DOMNode {
 	 * ELEMENT, ATTLIST, ENTITY, or NOTATION
 	 */
 
-	public DTDDeclParameter unrecognized; // holds all content after parsing goes wrong in a DTD declaration (ENTITY,
-											// ATTLIST, ...).
-	public DTDDeclParameter declType; // represents the actual name of the decl eg: ENTITY, ATTLIST, ...
+	public DTDDeclParameter unrecognized;
+	public DTDDeclParameter declType;
+
+	DOMNode[] children;
+
+	private volatile GreenNode lazyGreenNode;
 
 	private List<DTDDeclParameter> parameters;
 	private DTDDeclParameter name;
 
 	public DTDDeclNode(int start, int end) {
 		super(start, end);
+	}
+
+	@Override
+	DOMNode[] getChildrenArray() {
+		return children;
+	}
+
+	@Override
+	void setChildrenArray(DOMNode[] c) {
+		this.children = c;
+	}
+
+	@Override
+	void ensureChildren() {
+		if (lazyGreenNode != null) {
+			synchronized (this) {
+				if (lazyGreenNode != null) {
+					GreenNode green = lazyGreenNode;
+					lazyGreenNode = null;
+					RedTreeBuilder.expandLazy(this, green, start);
+				}
+			}
+		}
+	}
+
+	@Override
+	void setLazy(GreenNode green, int absStart) {
+		this.lazyGreenNode = green;
 	}
 
 	public String getName() {

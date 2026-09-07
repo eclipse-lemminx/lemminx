@@ -12,9 +12,12 @@
  */
 package org.eclipse.lemminx.dom;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import org.w3c.dom.DOMException;
 import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.Node;
 
 /**
  * A doctype node.
@@ -26,7 +29,7 @@ public class DOMDocumentType extends DTDDeclNode implements org.w3c.dom.Document
 		PUBLIC, SYSTEM, INVALID
 	}
 
-	private XMLNamedNodeMap<DTDEntityDecl> entitiesNodes;
+	private List<DTDEntityDecl> entitiesList;
 
 	DTDDeclParameter kind; // SYSTEM || PUBLIC
 	DTDDeclParameter publicId;
@@ -47,7 +50,7 @@ public class DOMDocumentType extends DTDDeclNode implements org.w3c.dom.Document
 	@Override
 	public String getTextContent() {
 		if (content == null) {
-			content = getOwnerDocument().getText().substring(getStart(), getEnd());
+			content = getOwnerDocument().getTextSequence().subSequence(getStart(), getEnd()).toString();
 		}
 		return content;
 	}
@@ -104,16 +107,32 @@ public class DOMDocumentType extends DTDDeclNode implements org.w3c.dom.Document
 	 */
 	@Override
 	public NamedNodeMap getEntities() {
-		if (entitiesNodes == null) {
-			entitiesNodes = new XMLNamedNodeMap<>();
+		if (entitiesList == null) {
+			entitiesList = new ArrayList<>();
 			List<DOMNode> children = super.getChildren();
 			for (DOMNode child : children) {
 				if (child.getNodeType() == DOMNode.ENTITY_NODE) {
-					entitiesNodes.add((DTDEntityDecl) child);
+					entitiesList.add((DTDEntityDecl) child);
 				}
 			}
 		}
-		return entitiesNodes;
+		return new EntityNamedNodeMap(entitiesList);
+	}
+
+	private static final class EntityNamedNodeMap implements NamedNodeMap {
+		private final List<DTDEntityDecl> entities;
+		EntityNamedNodeMap(List<DTDEntityDecl> entities) { this.entities = entities; }
+		@Override public int getLength() { return entities.size(); }
+		@Override public Node item(int index) { return index >= 0 && index < entities.size() ? entities.get(index) : null; }
+		@Override public Node getNamedItem(String name) {
+			for (DTDEntityDecl e : entities) { if (name.equals(e.getNodeName())) return e; }
+			return null;
+		}
+		@Override public Node getNamedItemNS(String ns, String local) throws DOMException { throw new UnsupportedOperationException(); }
+		@Override public Node removeNamedItem(String n) throws DOMException { throw new UnsupportedOperationException(); }
+		@Override public Node removeNamedItemNS(String ns, String local) throws DOMException { throw new UnsupportedOperationException(); }
+		@Override public Node setNamedItem(Node n) throws DOMException { throw new UnsupportedOperationException(); }
+		@Override public Node setNamedItemNS(Node n) throws DOMException { throw new UnsupportedOperationException(); }
 	}
 
 	/*

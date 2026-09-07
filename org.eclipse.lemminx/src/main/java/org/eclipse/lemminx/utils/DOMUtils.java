@@ -11,12 +11,12 @@
 *******************************************************************************/
 package org.eclipse.lemminx.utils;
 
-import java.io.StringReader;
 import java.net.URL;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParserFactory;
 
+import org.eclipse.lemminx.commons.CharSequenceReader;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMElement;
 import org.eclipse.lemminx.dom.DOMNode;
@@ -281,10 +281,10 @@ public class DOMUtils {
 	}
 
 	public static InputSource createInputSource(DOMDocument document) {
-		String content = document.getText();
+		CharSequence content = document.getTextSequence();
 		String uri = document.getDocumentURI();
 		InputSource inputSource = new InputSource();
-		inputSource.setCharacterStream(new StringReader(content));
+		inputSource.setCharacterStream(new CharSequenceReader(content));
 		inputSource.setSystemId(uri);
 		return inputSource;
 	}

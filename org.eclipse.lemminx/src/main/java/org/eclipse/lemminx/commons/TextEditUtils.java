@@ -64,7 +64,7 @@ public class TextEditUtils {
 	 *         given range (from, to) of the given text document and null otherwise.
 	 */
 	public static TextEdit createTextEditIfNeeded(int from, int to, String expectedContent, TextDocument textDocument) {
-		String text = textDocument.getText();
+		CharSequence text = textDocument.getTextSequence();
 
 		// Check if content from the range [from, to] is the same than expected content
 		if (isMatchExpectedContent(from, to, expectedContent, text)) {
@@ -96,7 +96,7 @@ public class TextEditUtils {
 	 * @return true if the given content from the range [from, to] of the given text
 	 *         is the same than expected content and false otherwise.
 	 */
-	private static boolean isMatchExpectedContent(int from, int to, String expectedContent, String text) {
+	private static boolean isMatchExpectedContent(int from, int to, String expectedContent, CharSequence text) {
 		if (expectedContent.length() == to - from) {
 			int j = 0;
 			for (int i = from; i < to; i++) {
@@ -113,7 +113,7 @@ public class TextEditUtils {
 	}
 
 	public static String applyEdits(TextDocument document, List<? extends TextEdit> edits) throws BadLocationException {
-		String text = document.getText();
+		CharSequence text = document.getTextSequence();
 		Collections.sort(edits /* .map(getWellformedEdit) */, (a, b) -> {
 			int diff = a.getRange().getStart().getLine() - b.getRange().getStart().getLine();
 			if (diff == 0) {
@@ -155,7 +155,7 @@ public class TextEditUtils {
 	 * @return the offset of the first whitespace that's found in the given range
 	 *         [leftLimit,to] from the left of the to, and leftLimit otherwise.
 	 */
-	public static int adjustOffsetWithLeftWhitespaces(int leftLimit, int to, String text) {
+	public static int adjustOffsetWithLeftWhitespaces(int leftLimit, int to, CharSequence text) {
 		if (to == 0) {
 			return -1;
 		}

@@ -28,7 +28,7 @@ public class DOMCDATAFormatter {
 
 	public void formatCDATASection(DOMCDATASection cDATANode, XMLFormattingConstraints parentConstraints,
 			List<TextEdit> edits) {
-		String text = formatterDocument.getText();
+		CharSequence text = formatterDocument.getTextSequence();
 		int start = cDATANode.getStart();
 		int leftWhitespaceOffset = start > 0 ? start - 1 : 0;
 
@@ -37,12 +37,16 @@ public class DOMCDATAFormatter {
 		}
 
 		if (isJoinCDATALines()) {
+			int cDATAStartContent = cDATANode.getStartContent();
+			int cDATAEndContent = cDATANode.getEndContent();
+			if (cDATAStartContent < 0 || cDATAEndContent < 0) {
+				// Empty CDATA section (e.g. <![CDATA[]]>), nothing to format
+				return;
+			}
 			int availableLineWidth = parentConstraints.getAvailableLineWidth();
 			int spaceStart = -1;
 			int spaceEnd = -1;
 			int contentEnd = -1;
-			int cDATAStartContent = cDATANode.getStartContent();
-			int cDATAEndContent = cDATANode.getEndContent();
 
 			for (int i = cDATAStartContent; i <= cDATAEndContent; i++) {
 				char c = text.charAt(i);

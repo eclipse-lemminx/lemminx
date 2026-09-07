@@ -32,32 +32,23 @@ public class DOMAttr extends DOMNode implements org.w3c.dom.Attr {
 	// For 546K attributes, this eliminates 1,092,576 objects (AttrName + AttrValue)
 	// Saves ~35 MB of heap memory
 
-	private String name; // Only cached if set programmatically (rare)
-
-	// Attribute name offsets (instead of AttrName object)
-	private int nameStart = NULL_VALUE;
-	private int nameEnd = NULL_VALUE;
+	private String name;
 
 	private int delimiter;
 
-	// Attribute value offsets (instead of AttrValue object)
-	private String value; // Only cached if set programmatically (rare)
+	private String value;
 	private int valueStart = NULL_VALUE;
 	private int valueEnd = NULL_VALUE;
-
-	private final DOMNode ownerElement;
 
 	public DOMAttr(String name, DOMNode ownerElement) {
 		this(name, NULL_VALUE, NULL_VALUE, ownerElement);
 	}
 
-	public DOMAttr(String name, int start, int end, DOMNode ownerElement) {
-		super(NULL_VALUE, NULL_VALUE);
+	public DOMAttr(String name, int nameStart, int nameEnd, DOMNode ownerElement) {
+		super(nameStart, nameEnd);
 		this.name = name;
 		this.delimiter = NULL_VALUE;
-		this.nameStart = start;
-		this.nameEnd = end;
-		this.ownerElement = ownerElement;
+		this.parent = ownerElement;
 	}
 
 	/*
@@ -87,12 +78,9 @@ public class DOMAttr extends DOMNode implements org.w3c.dom.Attr {
 	 */
 	@Override
 	public String getName() {
-		// Memory optimization: Extract name from document instead of caching
-		if (nameStart != NULL_VALUE && nameEnd != NULL_VALUE) {
-			// Name is in the document, extract it
-			return getOwnerDocument().getText().substring(nameStart, nameEnd);
+		if (start != NULL_VALUE && end != NULL_VALUE) {
+			return getOwnerDocument().getTextSequence().subSequence(start, end).toString();
 		}
-		// Name was set programmatically or doesn't exist
 		return name;
 	}
 
@@ -117,12 +105,12 @@ public class DOMAttr extends DOMNode implements org.w3c.dom.Attr {
 	 * @see org.w3c.dom.Attr#getOwnerElement()
 	 */
 	public DOMElement getOwnerElement() {
-		return ownerElement.isElement() ? (DOMElement) ownerElement : null;
+		return parent != null && parent.isElement() ? (DOMElement) parent : null;
 	}
 
 	@Override
 	public DOMDocument getOwnerDocument() {
-		return ownerElement != null ? ownerElement.getOwnerDocument() : null;
+		return parent != null ? parent.getOwnerDocument() : null;
 	}
 
 	/*
@@ -188,19 +176,18 @@ public class DOMAttr extends DOMNode implements org.w3c.dom.Attr {
 	}
 
 	public DOMRange getNodeAttrName() {
-		// Return a DOMRange implementation for the name
-		if (nameStart == NULL_VALUE) {
+		if (start == NULL_VALUE) {
 			return null;
 		}
 		return new DOMRange() {
 			@Override
 			public int getStart() {
-				return nameStart;
+				return start;
 			}
 
 			@Override
 			public int getEnd() {
-				return nameEnd;
+				return end;
 			}
 
 			@Override
@@ -228,7 +215,7 @@ public class DOMAttr extends DOMNode implements org.w3c.dom.Attr {
 	public String getOriginalValue() {
 		// Memory optimization: Extract from document instead of caching
 		if (valueStart != NULL_VALUE && delimiter < valueStart) {
-			return getOwnerDocument().getText().substring(valueStart, valueEnd);
+			return getOwnerDocument().getTextSequence().subSequence(valueStart, valueEnd).toString();
 		}
 		return value;
 	}
@@ -294,12 +281,11 @@ public class DOMAttr extends DOMNode implements org.w3c.dom.Attr {
 	 */
 	@Override
 	public String getNamespaceURI() {
-		if (ownerElement == null || ownerElement.getNodeType() != Node.ELEMENT_NODE) {
+		if (parent == null || parent.getNodeType() != Node.ELEMENT_NODE) {
 			return null;
 		}
 		String prefix = getPrefix();
-		// Try to get xmlns attribute from the element
-		return ((DOMElement) ownerElement).getNamespaceURI(prefix);
+		return ((DOMElement) parent).getNamespaceURI(prefix);
 	}
 
 	/**
@@ -400,22 +386,14 @@ public class DOMAttr extends DOMNode implements org.w3c.dom.Attr {
 	}
 
 	@Override
-	public int getStart() {
-		return nameStart;
-	}
-
-	@Override
 	public int getEnd() {
 		if (valueStart != NULL_VALUE) {
-			// <foo attr="value"| >
 			return valueEnd;
 		}
 		if (hasDelimiter()) {
-			// <foo attr=| >
 			return delimiter + 1;
 		}
-		// <foo attr| >
-		return nameEnd;
+		return end;
 	}
 
 	@Override

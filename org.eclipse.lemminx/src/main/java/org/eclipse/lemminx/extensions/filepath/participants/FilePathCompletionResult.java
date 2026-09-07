@@ -88,7 +88,7 @@ public class FilePathCompletionResult {
 	 *                         otherwise.
 	 * @return the file path completion result.
 	 */
-	public static FilePathCompletionResult create(String content, String fileUri, int startNodeOffset,
+	public static FilePathCompletionResult create(CharSequence content, String fileUri, int startNodeOffset,
 			int endNodeOffset, int completionOffset, Character separator) {
 		boolean isMultiFilePath = separator != null;
 		Predicate<Character> isStartValidChar = isStartValidCharForSimplePath;
@@ -118,10 +118,10 @@ public class FilePathCompletionResult {
 		return new FilePathCompletionResult(startPathOffset, endPathOffset, baseDir);
 	}
 
-	private static Path getBaseDir(String content, String fileUri, int start, int end) {
+	private static Path getBaseDir(CharSequence content, String fileUri, int start, int end) {
 		if (end > start) {
 			// ex : <a href="path/to/file.xml" />
-			String basePath = content.substring(start, end);
+			String basePath = content.subSequence(start, end).toString();
 			if (!hasPathBeginning(basePath)) {
 				// Try to returns the absolute path
 				// Ex basePath=

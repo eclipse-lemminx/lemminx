@@ -49,9 +49,9 @@ public class XMLCloseTagInlineCompletionParticipant implements IInlineCompletion
 		}
 
 		// Check if the cursor is at a position where we should suggest a closing tag
-		String text = document.getText();
+		CharSequence text = document.getTextSequence();
 		if (offset > 0 && offset <= text.length()) {
-			int charBefore = text.codePointAt(offset - 1);
+			int charBefore = Character.codePointAt(text, offset - 1);
 
 			// Suggest closing tag after '>' or after content
 			if (charBefore == _RAN || Character.isLetterOrDigit(charBefore) || Character.isWhitespace(charBefore)) {

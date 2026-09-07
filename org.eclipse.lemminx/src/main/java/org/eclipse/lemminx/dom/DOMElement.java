@@ -16,13 +16,17 @@ import static org.eclipse.lemminx.dom.DOMAttr.XMLNS_ATTR;
 import static org.eclipse.lemminx.dom.DOMAttr.XMLNS_NO_DEFAULT_ATTR;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
+import org.eclipse.lemminx.dom.green.GreenElement;
+import org.eclipse.lemminx.dom.green.GreenNode;
 import org.eclipse.lemminx.utils.StringUtils;
 import org.w3c.dom.DOMException;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.TypeInfo;
 
@@ -32,19 +36,78 @@ import org.w3c.dom.TypeInfo;
  */
 public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 
-	String tag;
-	boolean selfClosed;
+	GreenElement greenElement;
+	DOMAttr[] attributeNodes;
+	DOMNode[] children;
 
-	// DomElement.start == startTagOpenOffset
-	int startTagOpenOffset = NULL_VALUE; // |<root>
-	int startTagCloseOffset = NULL_VALUE; // <root |>
-
-	int endTagOpenOffset = NULL_VALUE; // <root> |</root >
-	int endTagCloseOffset = NULL_VALUE;// <root> </root |>
-	// DomElement.end = <root> </root>| , is always scanner.getTokenEnd()
+	private volatile GreenNode lazyGreenNode;
 
 	public DOMElement(int start, int end) {
 		super(start, end);
+	}
+
+	@Override
+	DOMNode[] getChildrenArray() {
+		return children;
+	}
+
+	@Override
+	void setChildrenArray(DOMNode[] c) {
+		this.children = c;
+	}
+
+	@Override
+	void ensureChildren() {
+		if (lazyGreenNode != null) {
+			synchronized (this) {
+				if (lazyGreenNode != null) {
+					GreenNode green = lazyGreenNode;
+					lazyGreenNode = null;
+					RedTreeBuilder.expandLazy(this, green, start);
+				}
+			}
+		}
+	}
+
+	@Override
+	void setLazy(GreenNode green, int absStart) {
+		this.lazyGreenNode = green;
+	}
+
+	@Override
+	public boolean hasAttributes() {
+		return attributeNodes != null && attributeNodes.length > 0;
+	}
+
+	@Override
+	public void setAttributeNode(DOMAttr attr) {
+		if (attributeNodes == null) {
+			attributeNodes = new DOMAttr[] { attr };
+		} else {
+			attributeNodes = Arrays.copyOf(attributeNodes, attributeNodes.length + 1);
+			attributeNodes[attributeNodes.length - 1] = attr;
+		}
+	}
+
+	@Override
+	public List<DOMAttr> getAttributeNodes() {
+		return attributeNodes != null ? Arrays.asList(attributeNodes) : null;
+	}
+
+	@Override
+	public DOMAttr getAttributeAtIndex(int index) {
+		if (!hasAttributes()) {
+			return null;
+		}
+		if (index < 0 || index >= attributeNodes.length) {
+			return null;
+		}
+		return attributeNodes[index];
+	}
+
+	@Override
+	public NamedNodeMap getAttributes() {
+		return attributeNodes != null ? new AttrNamedNodeMap(attributeNodes) : null;
 	}
 
 	/*
@@ -74,7 +137,7 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 */
 	@Override
 	public String getTagName() {
-		return tag;
+		return greenElement != null ? greenElement.tag() : null;
 	}
 
 	/**
@@ -85,7 +148,7 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 *         or '</').
 	 */
 	public boolean hasTagName() {
-		return tag != null;
+		return greenElement != null && greenElement.tag() != null;
 	}
 
 	/*
@@ -235,7 +298,11 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	}
 
 	public boolean isSelfClosed() {
-		return selfClosed;
+		return hasFlag(FLAG_SELF_CLOSED);
+	}
+
+	void setSelfClosed(boolean selfClosed) {
+		setFlag(FLAG_SELF_CLOSED, selfClosed);
 	}
 
 	/**
@@ -249,7 +316,7 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 * position after the character you want to start at.
 	 */
 	public Integer endsWith(char c, int startOffset) {
-		String text = this.getOwnerDocument().getText();
+		CharSequence text = this.getOwnerDocument().getTextSequence();
 		if (startOffset > text.length() || startOffset < 0) {
 			return null;
 		}
@@ -277,15 +344,17 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 *         otherwise.
 	 */
 	public boolean isSameTag(String tag) {
-		return Objects.equals(this.tag, tag);
+		return Objects.equals(getTagName(), tag);
 	}
 
 	public boolean isInStartTag(int offset) {
-		if (startTagOpenOffset == NULL_VALUE || startTagCloseOffset == NULL_VALUE) {
+		int stoOffset = getStartTagOpenOffset();
+		int stcOffset = getStartTagCloseOffset();
+		if (stoOffset == NULL_VALUE || stcOffset == NULL_VALUE) {
 			// case <|
 			return true;
 		}
-		if (offset > startTagOpenOffset && offset <= startTagCloseOffset) {
+		if (offset > stoOffset && offset <= stcOffset) {
 			// case <bean | >
 			return true;
 		}
@@ -297,11 +366,12 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	}
 
 	public boolean isInEndTag(int offset, boolean afterBackSlash) {
-		if (endTagOpenOffset == NULL_VALUE) {
+		int etoOffset = getEndTagOpenOffset();
+		if (etoOffset == NULL_VALUE) {
 			// case >|
 			return false;
 		}
-		if (offset > endTagOpenOffset + (afterBackSlash ? 1 : 0) && offset < getEnd()) {
+		if (offset > etoOffset + (afterBackSlash ? 1 : 0) && offset < getEnd()) {
 			// case </bean | >
 			return true;
 		}
@@ -309,7 +379,7 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	}
 
 	public boolean isInInsideStartEndTag(int offset) {
-		return offset > startTagCloseOffset && offset <= endTagOpenOffset;
+		return offset > getStartTagCloseOffset() && offset <= getEndTagOpenOffset();
 	}
 
 	/**
@@ -320,7 +390,15 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 *         doesn't exist.
 	 */
 	public int getStartTagOpenOffset() {
-		return startTagOpenOffset;
+		if (greenElement == null) {
+			return NULL_VALUE;
+		}
+		int eto = greenElement.endTagOpenRel();
+		if (eto != GreenElement.NULL_VALUE && eto == 0
+				&& greenElement.startTagCloseRel() == GreenElement.NULL_VALUE) {
+			return NULL_VALUE;
+		}
+		return start;
 	}
 
 	/**
@@ -331,7 +409,9 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 *         doesn't exist.
 	 */
 	public int getStartTagCloseOffset() {
-		return startTagCloseOffset;
+		if (greenElement == null) return NULL_VALUE;
+		int rel = greenElement.startTagCloseRel();
+		return rel != GreenElement.NULL_VALUE ? start + rel : NULL_VALUE;
 	}
 
 	/**
@@ -342,7 +422,9 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 *         exist.
 	 */
 	public int getEndTagOpenOffset() {
-		return endTagOpenOffset;
+		if (greenElement == null) return NULL_VALUE;
+		int rel = greenElement.endTagOpenRel();
+		return rel != GreenElement.NULL_VALUE ? start + rel : NULL_VALUE;
 	}
 
 	/**
@@ -353,7 +435,9 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 *         exist.
 	 */
 	public int getEndTagCloseOffset() {
-		return endTagCloseOffset;
+		if (greenElement == null) return NULL_VALUE;
+		int rel = greenElement.endTagCloseRel();
+		return rel != GreenElement.NULL_VALUE ? start + rel : NULL_VALUE;
 	}
 
 	/**
@@ -458,7 +542,7 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 *          with an angle bracket
 	 */
 	public int getUnclosedStartTagCloseOffset() {
-		String documentText = getOwnerDocument().getText();
+		CharSequence documentText = getOwnerDocument().getTextSequence();
 		int i = getStart() + 1;
 		for (; i < documentText.length() && documentText.charAt(i) != '/' && documentText.charAt(i) != '<'; i++) {
 		}
@@ -624,7 +708,9 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 *         otherwise.
 	 */
 	public DOMText findTextAt(int offset) {
-		if (offset > startTagCloseOffset && startTagCloseOffset == endTagOpenOffset - 1) {
+		int stcOffset = getStartTagCloseOffset();
+		int etoOffset = getEndTagOpenOffset();
+		if (offset > stcOffset && stcOffset == etoOffset - 1) {
 			// <foo>|</foo>
 			// In this case, DOM text doesn't exists, create an empty DOM text
 			DOMText text = new DOMText(offset, offset);

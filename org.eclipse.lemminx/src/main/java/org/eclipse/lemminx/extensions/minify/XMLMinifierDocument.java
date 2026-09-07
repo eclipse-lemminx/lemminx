@@ -81,7 +81,7 @@ public class XMLMinifierDocument {
 
 	public List<? extends TextEdit> minify(DOMDocument document, int start, int end) {
 		// Pre-allocate list capacity based on document size
-		int estimatedCapacity = Math.min(textDocument.getText().length() / 100, 10000);
+		int estimatedCapacity = Math.min(textDocument.getTextSequence().length() / 100, 10000);
 		List<TextEdit> edits = new ArrayList<>(estimatedCapacity);
 
 		// Get initial document region
@@ -302,7 +302,7 @@ public class XMLMinifierDocument {
 
 			if (afterElementName < beforeFirstAttr) {
 				int length = beforeFirstAttr - afterElementName;
-				if (StringUtils.isWhitespace(textDocument.getText(), afterElementName, beforeFirstAttr) && length > 1) {
+				if (StringUtils.isWhitespace(textDocument.getTextSequence(), afterElementName, beforeFirstAttr) && length > 1) {
 					// Replace multiple spaces with single space
 					try {
 						Range range = new Range(textDocument.positionAt(afterElementName),
@@ -325,7 +325,7 @@ public class XMLMinifierDocument {
 
 			if (afterAttr < beforeNextAttr) {
 				int length = beforeNextAttr - afterAttr;
-				if (StringUtils.isWhitespace(textDocument.getText(), afterAttr, beforeNextAttr) && length > 1) {
+				if (StringUtils.isWhitespace(textDocument.getTextSequence(), afterAttr, beforeNextAttr) && length > 1) {
 					// Replace multiple spaces with single space
 					try {
 						Range range = new Range(textDocument.positionAt(afterAttr),
@@ -383,7 +383,7 @@ public class XMLMinifierDocument {
 		if (start >= end) {
 			return;
 		}
-		if (StringUtils.isWhitespace(textDocument.getText(), start, end)) {
+		if (StringUtils.isWhitespace(textDocument.getTextSequence(), start, end)) {
 			// Only whitespace, remove it
 			removeContent(edits, start, end);
 		}

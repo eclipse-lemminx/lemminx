@@ -12,7 +12,11 @@
  */
 package org.eclipse.lemminx.dom;
 
+import java.util.Arrays;
+import java.util.List;
+
 import org.w3c.dom.DOMException;
+import org.w3c.dom.NamedNodeMap;
 
 /**
  * A processing instruction node.
@@ -20,6 +24,7 @@ import org.w3c.dom.DOMException;
  */
 public class DOMProcessingInstruction extends DOMCharacterData implements org.w3c.dom.ProcessingInstruction {
 
+	DOMAttr[] attributeNodes;
 	boolean startTagClose;
 	String target;
 	boolean prolog = false;
@@ -30,6 +35,42 @@ public class DOMProcessingInstruction extends DOMCharacterData implements org.w3
 
 	public DOMProcessingInstruction(int start, int end) {
 		super(start, end);
+	}
+
+	@Override
+	public boolean hasAttributes() {
+		return attributeNodes != null && attributeNodes.length > 0;
+	}
+
+	@Override
+	public void setAttributeNode(DOMAttr attr) {
+		if (attributeNodes == null) {
+			attributeNodes = new DOMAttr[] { attr };
+		} else {
+			attributeNodes = Arrays.copyOf(attributeNodes, attributeNodes.length + 1);
+			attributeNodes[attributeNodes.length - 1] = attr;
+		}
+	}
+
+	@Override
+	public List<DOMAttr> getAttributeNodes() {
+		return attributeNodes != null ? Arrays.asList(attributeNodes) : null;
+	}
+
+	@Override
+	public DOMAttr getAttributeAtIndex(int index) {
+		if (!hasAttributes()) {
+			return null;
+		}
+		if (index < 0 || index >= attributeNodes.length) {
+			return null;
+		}
+		return attributeNodes[index];
+	}
+
+	@Override
+	public NamedNodeMap getAttributes() {
+		return attributeNodes != null ? new AttrNamedNodeMap(attributeNodes) : null;
 	}
 
 	public boolean isProlog() {

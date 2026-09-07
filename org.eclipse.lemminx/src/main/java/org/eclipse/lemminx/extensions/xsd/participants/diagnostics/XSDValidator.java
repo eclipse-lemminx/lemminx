@@ -14,8 +14,9 @@ package org.eclipse.lemminx.extensions.xsd.participants.diagnostics;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
 import java.util.HashMap;
+
+import org.eclipse.lemminx.commons.CharSequenceReader;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CancellationException;
@@ -101,9 +102,9 @@ public class XSDValidator {
 				grammarPreparser.setEntityResolver(entityResolver);
 			}
 
-			String content = document.getText();
+			CharSequence content = document.getTextSequence();
 			String uri = document.getDocumentURI();
-			Reader inputStream = new StringReader(content);
+			Reader inputStream = new CharSequenceReader(content);
 			XMLInputSource source = new XMLInputSource(null, uri, uri, inputStream, null);
 
 			grammarPreparser.getLoader(XMLGrammarDescription.XML_SCHEMA);

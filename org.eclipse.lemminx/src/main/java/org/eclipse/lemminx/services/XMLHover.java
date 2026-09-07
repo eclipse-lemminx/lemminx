@@ -129,7 +129,7 @@ class XMLHover {
 	}
 
 	private Range getTagNameRange(TokenType tokenType, int startOffset, int offset, DOMDocument document) {
-		Scanner scanner = XMLScanner.createScanner(document.getText(), startOffset);
+		Scanner scanner = XMLScanner.createScanner(document.getTextSequence(), startOffset);
 		TokenType token = scanner.scan();
 		while (token != TokenType.EOS
 				&& (scanner.getTokenEnd() < offset || scanner.getTokenEnd() == offset && token != tokenType)) {

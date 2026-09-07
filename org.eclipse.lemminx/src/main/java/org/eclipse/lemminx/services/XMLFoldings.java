@@ -21,8 +21,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.eclipse.lemminx.commons.BadLocationException;
 import org.eclipse.lemminx.commons.TextDocument;
@@ -43,7 +41,6 @@ class XMLFoldings {
 	private static Logger LOGGER = Logger.getLogger(XMLFoldings.class.getName());
 	private final XMLExtensionsRegistry extensionsRegistry;
 
-	private static final Pattern REGION_PATTERN = Pattern.compile("\\s*#(region\\b)|(endregion\\b)");
 
 	public XMLFoldings(XMLExtensionsRegistry extensionsRegistry) {
 		this.extensionsRegistry = extensionsRegistry;
@@ -63,10 +60,11 @@ class XMLFoldings {
 
 	public List<FoldingRange> getFoldingRanges(TextDocument document, XMLFoldingSettings context,
 			CancelChecker cancelChecker) {
-		Scanner scanner = XMLScanner.createScanner(document.getText());
+		CharSequence text = document.getTextSequence();
+		Scanner scanner = XMLScanner.createScanner(text);
 		TokenType token = scanner.scan();
 		// Pre-allocate capacity based on document size (estimate: 1 folding per 500 chars)
-		int estimatedCapacity = Math.min(document.getText().length() / 500, 1000);
+		int estimatedCapacity = Math.min(text.length() / 500, 1000);
 		List<FoldingRange> ranges = new ArrayList<>(estimatedCapacity);
 
 		// Pre-allocate stack capacity (estimate: max nesting depth of 50)
@@ -124,10 +122,9 @@ class XMLFoldings {
 				}
 				case Comment: {
 					int startLine = document.positionAt(scanner.getTokenOffset()).getLine();
-					String text = scanner.getTokenText();
-					Matcher m = REGION_PATTERN.matcher(text);
-					if (m.find()) {
-						if ("#region".equals(m.group().trim())) { // start pattern match
+					int regionKind = findRegionMarker(text, scanner.getTokenOffset(), scanner.getTokenOffset() + scanner.getTokenLength());
+					if (regionKind != 0) {
+						if (regionKind == 1) { // #region
 							stack.add(new TagInfo(startLine, "")); // empty tagName marks region
 						} else {
 							int i = stack.size() - 1;
@@ -189,6 +186,40 @@ class XMLFoldings {
 			LOGGER.log(Level.SEVERE, "Foldings received a StackOverflowError while scanning the document", e);
 		}
 		return ranges;
+	}
+
+	private static final char[] REGION = "#region".toCharArray();
+	private static final char[] ENDREGION = "#endregion".toCharArray();
+
+	/**
+	 * @return 1 for #region, 2 for #endregion, 0 if neither.
+	 */
+	private static int findRegionMarker(CharSequence text, int from, int to) {
+		int i = from;
+		while (i < to && Character.isWhitespace(text.charAt(i))) {
+			i++;
+		}
+		if (i < to && text.charAt(i) == '#') {
+			if (matches(text, i, to, REGION)) {
+				return 1;
+			}
+			if (matches(text, i, to, ENDREGION)) {
+				return 2;
+			}
+		}
+		return 0;
+	}
+
+	private static boolean matches(CharSequence text, int offset, int limit, char[] word) {
+		if (offset + word.length > limit) {
+			return false;
+		}
+		for (int i = 0; i < word.length; i++) {
+			if (text.charAt(offset + i) != word[i]) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	private static boolean isIncludeClosingTagInFold(XMLFoldingSettings settings) {

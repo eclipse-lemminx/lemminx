@@ -231,6 +231,12 @@ public abstract class AbstractElementCompletionItem<S, G> extends CompletionItem
 		}
 		DOMElement element = (DOMElement) node;
 		if (element.getEnd() <= offset) {
+			// When the cursor is at the exact end of an incomplete start tag
+			// (e.g., <f| or <|), the cursor is still inside the start tag context,
+			// not in a text node context. The '<' is already present in the document.
+			if (element.getEnd() == offset && element.hasStartTag() && !element.isStartTagClosed() && !element.isSelfClosed()) {
+				return false;
+			}
 			// <foo></foo> |
 			return true;
 		}
@@ -292,6 +298,12 @@ public abstract class AbstractElementCompletionItem<S, G> extends CompletionItem
 			DOMElement element = (DOMElement) node;
 			int endElementOffset = node.getEnd() - 1;
 			endElement = element.hasEndTag() ? element : element.getOrphanEndElement(endElementOffset, tagName, true);
+			if (endElement == null && !element.hasEndTag()) {
+				// The orphan end tag might be a sibling rather than a child
+				// (e.g., <f|</buz> where </buz> is a sibling of <f>).
+				// Search using the cursor offset which reaches beyond the element.
+				endElement = element.getOrphanEndElement(offset, tagName, true);
+			}
 		}
 		if (endElement != null && !tagName.equals(endElement.getTagName())) {
 			Range range = XMLPositionUtility.selectEndTagName(endElement);

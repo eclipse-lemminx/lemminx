@@ -61,7 +61,7 @@ public class TextEditUtils {
 	 * @deprecated Use {@link org.eclipse.lemminx.commons.TextEditUtils#adjustOffsetWithLeftWhitespaces(int, int, String)}
 	 */
 	@Deprecated
-	public static int adjustOffsetWithLeftWhitespaces(int leftLimit, int to, String text) {
+	public static int adjustOffsetWithLeftWhitespaces(int leftLimit, int to, CharSequence text) {
 		return org.eclipse.lemminx.commons.TextEditUtils.adjustOffsetWithLeftWhitespaces(leftLimit, to, text);
 	}
 

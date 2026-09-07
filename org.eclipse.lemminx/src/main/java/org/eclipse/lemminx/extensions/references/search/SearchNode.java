@@ -99,7 +99,7 @@ public class SearchNode implements DOMRange {
 		if (forcedPrefix != null) {
 			value.append(forcedPrefix);
 		}
-		String text = getOwnerDocument().getText();
+		CharSequence text = getOwnerDocument().getTextSequence();
 		for (int i = getStart(); i < getEnd(); i++) {
 			value.append(text.charAt(i));
 		}
@@ -122,7 +122,7 @@ public class SearchNode implements DOMRange {
 	public boolean matchesValue(SearchNode searchNode) {
 		int fromStart = getStart();
 		int fromEnd = getEnd();
-		String fromText = getOwnerDocument().getText();
+		CharSequence fromText = getOwnerDocument().getTextSequence();
 		if (direction == Direction.FROM) {
 			int adjust = adjustWithPrefix(this);
 			if (adjust == -1) {
@@ -132,7 +132,7 @@ public class SearchNode implements DOMRange {
 		}
 		int toStart = searchNode.getStart();
 		int toEnd = searchNode.getEnd();
-		String toText = searchNode.getOwnerDocument().getText();
+		CharSequence toText = searchNode.getOwnerDocument().getTextSequence();
 		if (direction == Direction.TO) {
 			int adjust = adjustWithPrefix(searchNode);
 			if (adjust == -1) {
@@ -270,7 +270,7 @@ public class SearchNode implements DOMRange {
 		if (prefix.length() > (end - start)) {
 			return false;
 		}
-		String text = node.getOwnerDocument().getText();
+		CharSequence text = node.getOwnerDocument().getTextSequence();
 		for (int i = 0; i < prefix.length(); i++) {
 			if (text.charAt(start + i) != prefix.charAt(i)) {
 				return false;
@@ -282,8 +282,8 @@ public class SearchNode implements DOMRange {
 	@Override
 	public String toString() {
 		StringBuilder result = new StringBuilder();
-		String text = node.getOwnerDocument().getText();
-		result.append(text.substring(start, end));
+		CharSequence text = node.getOwnerDocument().getTextSequence();
+		result.append(text.subSequence(start, end));
 		result.append(direction == Direction.FROM ? " -->" : " <--");
 		return result.toString();
 	}

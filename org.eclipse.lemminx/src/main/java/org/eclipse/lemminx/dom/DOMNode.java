@@ -13,11 +13,13 @@
 package org.eclipse.lemminx.dom;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
+import java.util.function.Predicate;
 
+import org.eclipse.lemminx.dom.green.GreenNode;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -60,22 +62,16 @@ public abstract class DOMNode implements Node, DOMRange {
 	 */
 	public static final short DTD_DECL_NODE = 105;
 
-	// Memory optimization: Use byte flags instead of multiple boolean fields
-	// This saves 7 bytes per node (boolean with padding = 8 bytes, byte = 1 byte)
 	private byte flags = 0;
 	private static final byte FLAG_CLOSED = 0x01;
-	// Reserved for future flags: 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80
-
-	private XMLNamedNodeMap<DOMAttr> attributeNodes;
-	private XMLNodeList<DOMNode> children;
+	static final byte FLAG_SELF_CLOSED = 0x02;
+	static final byte FLAG_WHITESPACE = 0x04;
 
 	final int start; // |<root> </root>
 	int end; // <root> </root>|
 
 	DOMNode parent;
-	
-	// Cache the index in parent's children list to avoid O(n) indexOf() calls
-	// This is set to -1 when not cached, and updated when needed
+
 	int cachedIndexInParent = -1;
 
 	private static final NodeList EMPTY_CHILDREN = new NodeList() {
@@ -91,114 +87,48 @@ public abstract class DOMNode implements Node, DOMRange {
 		}
 	};
 
-	static class XMLNodeList<T extends DOMNode> extends ArrayList<T> implements NodeList {
-
-		private static final long serialVersionUID = 1L;
-		
-		// Pre-allocate capacity to reduce ArrayList resizing overhead
-		// Most elements have 2-5 children, so start with capacity of 4
-		private static final int INITIAL_CAPACITY = 4;
-
-		XMLNodeList() {
-			super(INITIAL_CAPACITY);
-		}
-
+	private static final class ArrayNodeList implements NodeList {
+		private final DOMNode[] nodes;
+		ArrayNodeList(DOMNode[] nodes) { this.nodes = nodes; }
 		@Override
-		public int getLength() {
-			return super.size();
-		}
-
+		public int getLength() { return nodes.length; }
 		@Override
-		public DOMNode item(int index) {
-			return super.get(index);
+		public Node item(int index) {
+			return index >= 0 && index < nodes.length ? nodes[index] : null;
 		}
-		
-		@Override
-		public boolean add(T node) {
-			boolean result = super.add(node);
-			// Invalidate cached indices for all nodes after this one
-			invalidateCachedIndices(size() - 1);
-			return result;
-		}
-		
-		@Override
-		public void add(int index, T node) {
-			super.add(index, node);
-			// Invalidate cached indices for all nodes from this index onwards
-			invalidateCachedIndices(index);
-		}
-		
-		@Override
-		public T remove(int index) {
-			T removed = super.remove(index);
-			// Invalidate cached indices for all nodes from this index onwards
-			invalidateCachedIndices(index);
-			return removed;
-		}
-		
-		private void invalidateCachedIndices(int fromIndex) {
-			for (int i = fromIndex; i < size(); i++) {
-				get(i).cachedIndexInParent = -1;
-			}
-		}
-
 	}
 
-	static class XMLNamedNodeMap<T extends DOMNode> extends ArrayList<T> implements NamedNodeMap {
-
-		private static final long serialVersionUID = 1L;
-
-		@Override
-		public int getLength() {
-			return super.size();
-		}
-
-		@Override
-		public T getNamedItem(String name) {
-			for (T node : this) {
-				if (name.equals(node.getNodeName())) {
-					return node;
-				}
-			}
+	static final class AttrNamedNodeMap implements NamedNodeMap {
+		private final DOMAttr[] attrs;
+		AttrNamedNodeMap(DOMAttr[] attrs) { this.attrs = attrs; }
+		@Override public int getLength() { return attrs.length; }
+		@Override public Node item(int index) { return index >= 0 && index < attrs.length ? attrs[index] : null; }
+		@Override public Node getNamedItem(String name) {
+			for (DOMAttr a : attrs) { if (name.equals(a.getNodeName())) return a; }
 			return null;
 		}
-
-		@Override
-		public T getNamedItemNS(String name, String arg1) throws DOMException {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public T item(int index) {
-			return super.get(index);
-		}
-
-		@Override
-		public T removeNamedItem(String arg0) throws DOMException {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public T removeNamedItemNS(String arg0, String arg1) throws DOMException {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public T setNamedItem(org.w3c.dom.Node arg0) throws DOMException {
-			throw new UnsupportedOperationException();
-		}
-
-		@Override
-		public T setNamedItemNS(org.w3c.dom.Node arg0) throws DOMException {
-			throw new UnsupportedOperationException();
-		}
-
+		@Override public Node getNamedItemNS(String ns, String local) throws DOMException { throw new UnsupportedOperationException(); }
+		@Override public Node removeNamedItem(String n) throws DOMException { throw new UnsupportedOperationException(); }
+		@Override public Node removeNamedItemNS(String ns, String local) throws DOMException { throw new UnsupportedOperationException(); }
+		@Override public Node setNamedItem(Node n) throws DOMException { throw new UnsupportedOperationException(); }
+		@Override public Node setNamedItemNS(Node n) throws DOMException { throw new UnsupportedOperationException(); }
 	}
 
 	public DOMNode(int start, int end) {
 		this.start = start;
 		this.end = end;
-		// flags is already initialized to 0, so FLAG_CLOSED is not set
+	}
+
+	protected final boolean hasFlag(byte flag) {
+		return (flags & flag) != 0;
+	}
+
+	protected final void setFlag(byte flag, boolean value) {
+		if (value) {
+			flags |= flag;
+		} else {
+			flags &= ~flag;
+		}
 	}
 
 	/**
@@ -236,17 +166,19 @@ public abstract class DOMNode implements Node, DOMRange {
 		result.append(getNodeName());
 		result.append(", closed: ");
 		result.append(isClosed());
-		if (children != null && children.size() > 0) {
+		ensureChildren();
+		DOMNode[] arr = getChildrenArray();
+		if (arr != null && arr.length > 0) {
 			result.append(", \n");
 			for (int i = 0; i < indent + 1; i++) {
 				result.append("\t");
 			}
 			result.append("children:[");
-			for (int i = 0; i < children.size(); i++) {
-				DOMNode node = children.get(i);
+			for (int i = 0; i < arr.length; i++) {
+				DOMNode node = arr[i];
 				result.append("\n");
 				result.append(node.toString(indent + 2));
-				if (i < children.size() - 1) {
+				if (i < arr.length - 1) {
 					result.append(",");
 				}
 			}
@@ -381,14 +313,14 @@ public abstract class DOMNode implements Node, DOMRange {
 	 * @returns the least x for which p(x) is true or array.length if no element
 	 *          full fills the given function.
 	 */
-	private static <T> int findFirst(List<T> array, Function<T, Boolean> p) {
+	private static <T> int findFirst(List<T> array, Predicate<T> p) {
 		int low = 0, high = array.size();
 		if (high == 0) {
-			return 0; // no children
+			return 0;
 		}
 		while (low < high) {
-			int mid = (int) Math.floor((low + high) / 2);
-			if (p.apply(array.get(mid))) {
+			int mid = (low + high) >>> 1;
+			if (p.test(array.get(mid))) {
 				high = mid;
 			} else {
 				low = mid + 1;
@@ -407,6 +339,9 @@ public abstract class DOMNode implements Node, DOMRange {
 	 * If there is no namespace, set prefix to null.
 	 */
 	public DOMAttr getAttributeNode(String prefix, String suffix) {
+		if (!hasAttributes()) {
+			return null;
+		}
 		StringBuilder sb = new StringBuilder();
 		if (prefix != null) {
 			sb.append(prefix);
@@ -414,10 +349,7 @@ public abstract class DOMNode implements Node, DOMRange {
 		}
 		sb.append(suffix);
 		String name = sb.toString();
-		if (!hasAttributes()) {
-			return null;
-		}
-		for (DOMAttr attr : attributeNodes) {
+		for (DOMAttr attr : getAttributeNodes()) {
 			if (name.equals(attr.getName())) {
 				return attr;
 			}
@@ -455,14 +387,7 @@ public abstract class DOMNode implements Node, DOMRange {
 	 * @return
 	 */
 	public DOMAttr getAttributeAtIndex(int index) {
-		if (!hasAttributes()) {
-			return null;
-		}
-
-		if (index > attributeNodes.getLength() - 1) {
-			return null;
-		}
-		return attributeNodes.get(index);
+		return null;
 	}
 
 	public boolean hasAttribute(String name) {
@@ -476,7 +401,7 @@ public abstract class DOMNode implements Node, DOMRange {
 	 */
 	@Override
 	public boolean hasAttributes() {
-		return attributeNodes != null && attributeNodes.size() != 0;
+		return false;
 	}
 
 	public void setAttribute(String name, String value) {
@@ -489,14 +414,10 @@ public abstract class DOMNode implements Node, DOMRange {
 	}
 
 	public void setAttributeNode(DOMAttr attr) {
-		if (attributeNodes == null) {
-			attributeNodes = new XMLNamedNodeMap<>();
-		}
-		attributeNodes.add(attr);
 	}
 
 	public List<DOMAttr> getAttributeNodes() {
-		return attributeNodes;
+		return null;
 	}
 
 	/**
@@ -520,16 +441,31 @@ public abstract class DOMNode implements Node, DOMRange {
 		return result;
 	}
 
+	DOMNode[] getChildrenArray() {
+		return null;
+	}
+
+	void setChildrenArray(DOMNode[] c) {
+	}
+
+	void ensureChildren() {
+	}
+
+	void setLazy(GreenNode green, int absStart) {
+	}
+
 	/**
 	 * Returns the node children.
-	 * 
+	 *
 	 * @return the node children.
 	 */
 	public List<DOMNode> getChildren() {
-		if (children == null) {
+		ensureChildren();
+		DOMNode[] arr = getChildrenArray();
+		if (arr == null || arr.length == 0) {
 			return Collections.emptyList();
 		}
-		return children;
+		return Arrays.asList(arr);
 	}
 
 	/**
@@ -539,12 +475,18 @@ public abstract class DOMNode implements Node, DOMRange {
 	 */
 	public void addChild(DOMNode child) {
 		child.parent = this;
-		if (children == null) {
-			children = new XMLNodeList<>();
+		DOMNode[] arr = getChildrenArray();
+		if (arr == null) {
+			arr = new DOMNode[] { child };
+		} else {
+			arr = Arrays.copyOf(arr, arr.length + 1);
+			arr[arr.length - 1] = child;
 		}
-		// Cache the index when adding
-		child.cachedIndexInParent = children.size();
-		children.add(child);
+		setChildrenArray(arr);
+		child.cachedIndexInParent = arr.length - 1;
+	}
+
+	void compactChildren() {
 	}
 
 	/**
@@ -558,19 +500,11 @@ public abstract class DOMNode implements Node, DOMRange {
 	}
 
 	public boolean isClosed() {
-		return (flags & FLAG_CLOSED) != 0;
+		return hasFlag(FLAG_CLOSED);
 	}
 
-	/**
-	 * Sets the closed flag for this node.
-	 * Package-private to allow DOMParser to set it.
-	 */
 	void setClosed(boolean closed) {
-		if (closed) {
-			flags |= FLAG_CLOSED;
-		} else {
-			flags &= ~FLAG_CLOSED;
-		}
+		setFlag(FLAG_CLOSED, closed);
 	}
 
 	public DOMElement getParentElement() {
@@ -690,7 +624,9 @@ public abstract class DOMNode implements Node, DOMRange {
 	 */
 	@Override
 	public DOMNode getFirstChild() {
-		return this.children != null && children.size() > 0 ? this.children.get(0) : null;
+		ensureChildren();
+		DOMNode[] arr = getChildrenArray();
+		return arr != null && arr.length > 0 ? arr[0] : null;
 	}
 
 	/*
@@ -700,7 +636,9 @@ public abstract class DOMNode implements Node, DOMRange {
 	 */
 	@Override
 	public DOMNode getLastChild() {
-		return this.children != null && this.children.size() > 0 ? this.children.get(this.children.size() - 1) : null;
+		ensureChildren();
+		DOMNode[] arr = getChildrenArray();
+		return arr != null && arr.length > 0 ? arr[arr.length - 1] : null;
 	}
 
 	/*
@@ -710,7 +648,7 @@ public abstract class DOMNode implements Node, DOMRange {
 	 */
 	@Override
 	public NamedNodeMap getAttributes() {
-		return attributeNodes;
+		return null;
 	}
 
 	/*
@@ -720,7 +658,9 @@ public abstract class DOMNode implements Node, DOMRange {
 	 */
 	@Override
 	public NodeList getChildNodes() {
-		return children != null ? children : EMPTY_CHILDREN;
+		ensureChildren();
+		DOMNode[] arr = getChildrenArray();
+		return arr != null && arr.length > 0 ? new ArrayNodeList(arr) : EMPTY_CHILDREN;
 	}
 
 	/*
@@ -790,15 +730,11 @@ public abstract class DOMNode implements Node, DOMRange {
 			return null;
 		}
 		List<DOMNode> children = parentNode.getChildren();
-		
-		// Use cached index if available to avoid O(n) indexOf() call
 		int currentIndex = cachedIndexInParent;
 		if (currentIndex == -1) {
-			// Cache miss - compute and cache the index
 			currentIndex = children.indexOf(this);
 			cachedIndexInParent = currentIndex;
 		}
-		
 		int nextIndex = currentIndex + 1;
 		return nextIndex < children.size() ? children.get(nextIndex) : null;
 	}
@@ -825,15 +761,11 @@ public abstract class DOMNode implements Node, DOMRange {
 			return null;
 		}
 		List<DOMNode> children = parentNode.getChildren();
-		
-		// Use cached index if available to avoid O(n) indexOf() call
 		int currentIndex = cachedIndexInParent;
 		if (currentIndex == -1) {
-			// Cache miss - compute and cache the index
 			currentIndex = children.indexOf(this);
 			cachedIndexInParent = currentIndex;
 		}
-		
 		int previousIndex = currentIndex - 1;
 		return previousIndex >= 0 ? children.get(previousIndex) : null;
 	}
@@ -921,9 +853,11 @@ public abstract class DOMNode implements Node, DOMRange {
 			return null;
 		// concatenation of the textContent attribute value of every child node
 		default:
-			if (this.children != null && children.size() > 0) {
+			ensureChildren();
+			DOMNode[] arr = getChildrenArray();
+			if (arr != null && arr.length > 0) {
 				final StringBuilder builder = new StringBuilder();
-				for (DOMNode child : children) {
+				for (DOMNode child : arr) {
 					short nodeType = child.getNodeType();
 					if (nodeType == Node.COMMENT_NODE || nodeType == Node.PROCESSING_INSTRUCTION_NODE) {
 						// excluding COMMENT_NODE and PROCESSING_INSTRUCTION_NODE nodes.
@@ -953,7 +887,9 @@ public abstract class DOMNode implements Node, DOMRange {
 	 */
 	@Override
 	public boolean hasChildNodes() {
-		return children != null && !children.isEmpty();
+		ensureChildren();
+		DOMNode[] arr = getChildrenArray();
+		return arr != null && arr.length > 0;
 	}
 
 	@Override

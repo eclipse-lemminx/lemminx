@@ -113,6 +113,7 @@ public class DTDAttlistDecl extends DTDDeclNode {
 	}
 
 	public List<DTDAttlistDecl> getInternalChildren() {
+		getChildren();
 		return internalChildren;
 	}
 

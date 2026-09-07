@@ -240,7 +240,7 @@ public class ContentModelCompletionParticipant extends CompletionParticipantAdap
 						CompletionItem item = new CompletionItem(tagName);
 						item.setKind(CompletionItemKind.Property);
 						item.setFilterText(request.getFilterForStartTagName(tagName));
-						String xml = elt.getOwnerDocument().getText().substring(elt.getStart(), elt.getEnd());
+						String xml = elt.getOwnerDocument().getTextSequence().subSequence(elt.getStart(), elt.getEnd()).toString();
 						item.setTextEdit(Either.forLeft(new TextEdit(request.getReplaceRange(), xml)));
 						response.addCompletionItem(item);
 						tags.add(item.getLabel());
@@ -456,7 +456,7 @@ public class ContentModelCompletionParticipant extends CompletionParticipantAdap
 							end = document.positionAt(endOffset);
 						}
 						int completionOffset = request.getOffset();
-						String tokenStart = StringUtils.getWhitespaces(document.getText(), startOffset,
+						String tokenStart = StringUtils.getWhitespaces(document.getTextSequence(), startOffset,
 								completionOffset);
 						Range fullRange = new Range(start, end);
 						values.forEach(value -> {

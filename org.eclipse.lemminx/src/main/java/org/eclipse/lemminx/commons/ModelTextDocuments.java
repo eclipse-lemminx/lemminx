@@ -32,13 +32,21 @@ public class ModelTextDocuments<T> extends TextDocuments<ModelTextDocument<T>> {
 
 	private final BiFunction<TextDocument, CancelChecker, T> parse;
 
+	private final Function<T, Object> incrementalDataExtractor;
+
 	public ModelTextDocuments(BiFunction<TextDocument, CancelChecker, T> parse) {
+		this(parse, null);
+	}
+
+	public ModelTextDocuments(BiFunction<TextDocument, CancelChecker, T> parse,
+			Function<T, Object> incrementalDataExtractor) {
 		this.parse = parse;
+		this.incrementalDataExtractor = incrementalDataExtractor;
 	}
 
 	@Override
 	public ModelTextDocument<T> createDocument(TextDocumentItem document) {
-		ModelTextDocument<T> doc = new ModelTextDocument<T>(document, parse);
+		ModelTextDocument<T> doc = new ModelTextDocument<T>(document, parse, incrementalDataExtractor);
 		doc.setIncremental(isIncremental());
 		return doc;
 	}

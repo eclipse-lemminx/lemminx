@@ -1416,10 +1416,10 @@ public class TreeLineTracker implements ILineTracker {
 	}
 
 	@Override
-	public final void set(String text) {
+	public final void set(CharSequence text) {
 		fRoot = new Node(0, NO_DELIM);
 		try {
-			replace(0, 0, text);
+			replace(0, 0, text.toString());
 		} catch (BadLocationException x) {
 			throw new InternalError();
 		}
