@@ -136,7 +136,7 @@ public class DOMDocTypeFormatter {
 		int nodeDeclStart = nodeDecl.getStart();
 		int indentLevel = parentConstraints.getIndentLevel();
 		int preservedNewLines = getPreservedNewlines();
-		int currentNewLineCount = XMLFormatterDocument.getExistingNewLineCount(formatterDocument.getText(),
+		int currentNewLineCount = XMLFormatterDocument.getExistingNewLineCount(formatterDocument.getTextSequence(),
 				nodeDeclStart, formatterDocument.getLineDelimiter());
 		if (currentNewLineCount > preservedNewLines) {
 			// Reduce to number of new lines to the new line number specified by
@@ -287,8 +287,8 @@ public class DOMDocTypeFormatter {
 	private void replaceQuoteWithPreferred(DTDDeclNode nodeDecl, DTDDeclParameter parameter, List<TextEdit> edits) {
 		int paramStart = parameter.getStart();
 		int paramEnd = parameter.getEnd();
-		if (StringUtils.isQuote(nodeDecl.getOwnerDocument().getText().charAt(paramStart))
-				&& StringUtils.isQuote(nodeDecl.getOwnerDocument().getText().charAt(paramEnd - 1))) {
+		if (StringUtils.isQuote(nodeDecl.getOwnerDocument().getTextSequence().charAt(paramStart))
+				&& StringUtils.isQuote(nodeDecl.getOwnerDocument().getTextSequence().charAt(paramEnd - 1))) {
 			if (getEnforceQuoteStyle() == EnforceQuoteStyle.preferred) {
 				formatterDocument.replaceQuoteWithPreferred(paramStart, paramStart + 1, edits);
 				formatterDocument.replaceQuoteWithPreferred(paramEnd - 1, paramEnd, edits);

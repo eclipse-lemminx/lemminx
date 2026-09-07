@@ -69,7 +69,7 @@ public class DOMParser {
 			boolean ignoreWhitespaceContent, CancelChecker monitor) {
 		boolean isDTD = DOMUtils.isDTD(document.getUri());
 		boolean inDTDInternalSubset = false;
-		String text = document.getText();
+		CharSequence text = document.getTextSequence();
 		Scanner scanner = XMLScanner.createScanner(text, 0, isDTD);
 		DOMDocument xmlDocument = new DOMDocument(document, resolverExtensionManager);
 		xmlDocument.setCancelChecker(monitor);

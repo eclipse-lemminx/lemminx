@@ -67,7 +67,7 @@ public class SearchNodeFactory {
 		}
 
 		if (multiple) {
-			String text = node.getOwnerDocument().getText();
+			CharSequence text = node.getOwnerDocument().getTextSequence();
 			List<SearchNode> searchNodes = new ArrayList<>();
 			int itemStart = -1;
 			for (int j = startNode; j < endNode; j++) {
@@ -124,7 +124,7 @@ public class SearchNodeFactory {
 			return null;
 		}
 		if (multiple) {
-			String text = node.getOwnerDocument().getText();
+			CharSequence text = node.getOwnerDocument().getTextSequence();
 			if (offset != startNode) {
 				int left = StringUtils.findStartWord(text, offset, startNode, NAME_PREDICATE);
 				if (left != -1) {

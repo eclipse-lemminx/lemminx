@@ -14,6 +14,7 @@ import java.util.List;
 import org.eclipse.lemminx.commons.BadLocationException;
 import org.eclipse.lemminx.commons.CodeActionFactory;
 import org.eclipse.lemminx.dom.DOMDocument;
+import org.eclipse.lemminx.utils.StringUtils;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionParticipant;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionRequest;
 import org.eclipse.lsp4j.CodeAction;
@@ -35,8 +36,8 @@ public class FixMissingSpaceCodeAction implements ICodeActionParticipant {
 		try {
 			int startOffset = document.offsetAt(diagnosticRange.getStart());
 			int endOffset = document.offsetAt(diagnosticRange.getEnd());
-			String text = document.getText();
-			String value = text.substring(startOffset, endOffset);
+			CharSequence text = document.getTextSequence();
+			String value = StringUtils.getString(text, startOffset, endOffset);
 			codeActions.add(CodeActionFactory.insert("Add space after '" + value + "'", diagnosticRange.getEnd(), " ",
 					document.getTextDocument(), diagnostic));
 		} catch (BadLocationException | IndexOutOfBoundsException e) {

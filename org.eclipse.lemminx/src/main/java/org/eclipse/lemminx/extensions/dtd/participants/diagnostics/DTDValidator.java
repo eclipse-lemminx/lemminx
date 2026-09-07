@@ -14,7 +14,7 @@ package org.eclipse.lemminx.extensions.dtd.participants.diagnostics;
 
 import java.io.IOException;
 import java.io.Reader;
-import java.io.StringReader;
+import org.eclipse.lemminx.commons.CharSequenceReader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.CancellationException;
@@ -52,10 +52,9 @@ public class DTDValidator {
 					validationSettings);
 
 			XMLDTDLoader loader = new LSPXML11DTDProcessor(entityManager, reporterForXML, entityResolver);
-			String content = document.getText();
 			String uri = document.getDocumentURI();
 
-			Reader inputStream = new StringReader(content);
+			Reader inputStream = new CharSequenceReader(document.getTextSequence());
 			XMLInputSource source = new XMLInputSource(null, uri, uri, inputStream, null);
 			loader.loadGrammar(source);
 		} catch (IOException | CancellationException exception) {

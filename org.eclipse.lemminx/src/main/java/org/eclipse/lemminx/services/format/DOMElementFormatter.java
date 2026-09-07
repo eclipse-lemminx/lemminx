@@ -105,7 +105,7 @@ public class DOMElementFormatter {
 			// after formatting: <a>\n <b> </b> example text </a>
 			int parentStartCloseOffset = element.getParentElement() != null ? element.getParentElement().getStartTagCloseOffset() + 1 : 0;
 			if ((parentStartCloseOffset != startTagOpenOffset
-					&& StringUtils.isWhitespace(formatterDocument.getText(), parentStartCloseOffset,
+					&& StringUtils.isWhitespace(formatterDocument.getTextSequence(), parentStartCloseOffset,
 							startTagOpenOffset))) {
 				replaceLeftSpacesWithIndentationPreservedNewLines(parentStartCloseOffset, startTagOpenOffset,
 						indentLevel, edits);
@@ -321,7 +321,7 @@ public class DOMElementFormatter {
 			DOMNode lastChild = element.getLastChild();
 			if (lastChild != null
 					&& (lastChild.isElement() || lastChild.isComment())
-					&& Character.isWhitespace(formatterDocument.getText().charAt(endTagOpenOffset - 1))) {
+					&& Character.isWhitespace(formatterDocument.getTextSequence().charAt(endTagOpenOffset - 1))) {
 				replaceLeftSpacesWithIndentationPreservedNewLines(startTagCloseOffset, endTagOpenOffset,
 						indentLevel, edits);
 				width += indentLevel * getTabSize();

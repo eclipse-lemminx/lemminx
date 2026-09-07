@@ -14,9 +14,17 @@ package org.eclipse.lemminx.commons;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
 
 import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.Range;
+import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -265,6 +273,86 @@ public class TextDocumentTest {
 			ex = e;
 		}
 		assertNotNull(ex);
+	}
+
+	// CharSequence / StringBuilder tests
+
+	@Test
+	public void testGetTextSequenceReturnsContent() {
+		TextDocument document = new TextDocument("hello world", "test.xml");
+		CharSequence seq = document.getTextSequence();
+		assertEquals("hello world", seq.toString());
+		assertEquals(11, seq.length());
+		assertEquals('h', seq.charAt(0));
+		assertEquals('d', seq.charAt(10));
+	}
+
+	@Test
+	public void testGetTextSequenceReturnsSameInstance() {
+		TextDocument document = new TextDocument("abc", "test.xml");
+		CharSequence seq1 = document.getTextSequence();
+		CharSequence seq2 = document.getTextSequence();
+		assertSame(seq1, seq2);
+	}
+
+	@Test
+	public void testGetTextSequenceReflectsIncrementalUpdate() throws BadLocationException {
+		TextDocument document = new TextDocument("<root></root>", "test.xml");
+		document.setIncremental(true);
+
+		TextDocumentContentChangeEvent change = new TextDocumentContentChangeEvent(
+				new Range(new Position(0, 6), new Position(0, 6)), " attr=\"v\"");
+		document.update(Collections.singletonList(change));
+
+		assertEquals("<root> attr=\"v\"</root>", document.getTextSequence().toString());
+	}
+
+	@Test
+	public void testGetTextLazySyncAfterIncrementalUpdate() throws BadLocationException {
+		TextDocument document = new TextDocument("<a/>", "test.xml");
+		document.setIncremental(true);
+
+		TextDocumentContentChangeEvent change = new TextDocumentContentChangeEvent(
+				new Range(new Position(0, 2), new Position(0, 2)), " x=\"1\"");
+		document.update(Collections.singletonList(change));
+
+		assertEquals("<a x=\"1\"/>", document.getTextSequence().toString());
+		@SuppressWarnings("deprecation")
+		String text = document.getText();
+		assertEquals("<a x=\"1\"/>", text);
+	}
+
+	@Test
+	public void testCharSequenceReaderReadsContent() throws IOException {
+		CharSequence source = new StringBuilder("hello");
+		CharSequenceReader reader = new CharSequenceReader(source);
+		char[] buf = new char[10];
+		int read = reader.read(buf, 0, 10);
+		assertEquals(5, read);
+		assertEquals("hello", new String(buf, 0, read));
+		assertEquals(-1, reader.read(buf, 0, 10));
+		reader.close();
+	}
+
+	@Test
+	public void testCharSequenceReaderChunkedRead() throws IOException {
+		CharSequence source = new StringBuilder("abcdef");
+		CharSequenceReader reader = new CharSequenceReader(source);
+		char[] buf = new char[3];
+		assertEquals(3, reader.read(buf, 0, 3));
+		assertEquals("abc", new String(buf));
+		assertEquals(3, reader.read(buf, 0, 3));
+		assertEquals("def", new String(buf));
+		assertEquals(-1, reader.read(buf, 0, 3));
+		reader.close();
+	}
+
+	@Test
+	public void testCharSequenceReaderEmpty() throws IOException {
+		CharSequenceReader reader = new CharSequenceReader("");
+		char[] buf = new char[5];
+		assertEquals(-1, reader.read(buf, 0, 5));
+		reader.close();
 	}
 
 }

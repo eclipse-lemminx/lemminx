@@ -249,7 +249,7 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 * position after the character you want to start at.
 	 */
 	public Integer endsWith(char c, int startOffset) {
-		String text = this.getOwnerDocument().getText();
+		CharSequence text = this.getOwnerDocument().getTextSequence();
 		if (startOffset > text.length() || startOffset < 0) {
 			return null;
 		}
@@ -458,7 +458,7 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 *          with an angle bracket
 	 */
 	public int getUnclosedStartTagCloseOffset() {
-		String documentText = getOwnerDocument().getText();
+		CharSequence documentText = getOwnerDocument().getTextSequence();
 		int i = getStart() + 1;
 		for (; i < documentText.length() && documentText.charAt(i) != '/' && documentText.charAt(i) != '<'; i++) {
 		}

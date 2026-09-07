@@ -225,7 +225,7 @@ public class EntityNotDeclaredCodeAction implements ICodeActionParticipant {
 	 */
 	private static String getEntityName(Diagnostic diagnostic, DOMDocument doc) throws BadLocationException {
 		Range range = diagnostic.getRange();
-		String name = doc.getText().substring(doc.offsetAt(range.getStart()), doc.offsetAt(range.getEnd()));
+		String name = doc.getText(doc.offsetAt(range.getStart()), doc.offsetAt(range.getEnd()));
 		String removedAmpAndSemiColon = name.substring(1, name.length() - 1);
 		String message = DiagnosticUtils.getDiagnosticMessage(diagnostic);
 		if (!message.contains("\"" + removedAmpAndSemiColon + "\"")) {

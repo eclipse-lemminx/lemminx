@@ -28,6 +28,8 @@ import static org.eclipse.lemminx.dom.parser.Constants._TAB;
 import static org.eclipse.lemminx.dom.parser.Constants._WSP;
 
 import java.util.HashMap;
+
+import org.eclipse.lemminx.utils.StringUtils;
 import java.util.Map;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
@@ -43,12 +45,12 @@ public class MultiLineStream {
 		return ch == _WSP || ch == _TAB || ch == _NWL || ch == _LFD || ch == _CAR;
 	};
 
-	private final String source;
+	private final CharSequence source;
 	private final int len;
 	private int position;
 	private final Map<Pattern, Matcher> regexpCache;
 
-	public MultiLineStream(String source, int position) {
+	public MultiLineStream(CharSequence source, int position) {
 		this.source = source;
 		this.len = source.length();
 		this.position = position;
@@ -59,8 +61,21 @@ public class MultiLineStream {
 		return this.len <= this.position;
 	}
 
-	public String getSource() {
+	public CharSequence getSource() {
 		return this.source;
+	}
+
+	/**
+	 * Returns a {@link String} from the source between the given
+	 * <code>start</code> and <code>end</code> offsets.
+	 *
+	 * @param start the start offset.
+	 * @param end   the end offset.
+	 * @return a {@link String} from the source between the given
+	 *         <code>start</code> and <code>end</code> offsets.
+	 */
+	public String getText(int start, int end) {
+		return StringUtils.getString(source, start, end);
 	}
 
 	public int pos() {
@@ -103,7 +118,7 @@ public class MultiLineStream {
 		if (pos >= len) {
 			return -1;
 		}
-		return this.source.codePointAt(pos);
+		return Character.codePointAt(this.source, pos);
 	}
 
 	/**
@@ -115,7 +130,7 @@ public class MultiLineStream {
 		if (offset >= len || offset < 0) {
 			return -1;
 		}
-		return this.source.codePointAt(offset);
+		return Character.codePointAt(this.source, offset);
 	}
 
 	public boolean advanceIfChar(int ch) {

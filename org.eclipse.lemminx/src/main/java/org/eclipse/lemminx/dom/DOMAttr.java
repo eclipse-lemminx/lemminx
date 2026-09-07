@@ -90,7 +90,7 @@ public class DOMAttr extends DOMNode implements org.w3c.dom.Attr {
 		// Memory optimization: Extract name from document instead of caching
 		if (nameStart != NULL_VALUE && nameEnd != NULL_VALUE) {
 			// Name is in the document, extract it
-			return getOwnerDocument().getText().substring(nameStart, nameEnd);
+			return getOwnerDocument().getText(nameStart, nameEnd);
 		}
 		// Name was set programmatically or doesn't exist
 		return name;
@@ -228,7 +228,7 @@ public class DOMAttr extends DOMNode implements org.w3c.dom.Attr {
 	public String getOriginalValue() {
 		// Memory optimization: Extract from document instead of caching
 		if (valueStart != NULL_VALUE && delimiter < valueStart) {
-			return getOwnerDocument().getText().substring(valueStart, valueEnd);
+			return getOwnerDocument().getText(valueStart, valueEnd);
 		}
 		return value;
 	}

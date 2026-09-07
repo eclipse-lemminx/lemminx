@@ -63,10 +63,10 @@ class XMLFoldings {
 
 	public List<FoldingRange> getFoldingRanges(TextDocument document, XMLFoldingSettings context,
 			CancelChecker cancelChecker) {
-		Scanner scanner = XMLScanner.createScanner(document.getText());
+		Scanner scanner = XMLScanner.createScanner(document.getTextSequence());
 		TokenType token = scanner.scan();
 		// Pre-allocate capacity based on document size (estimate: 1 folding per 500 chars)
-		int estimatedCapacity = Math.min(document.getText().length() / 500, 1000);
+		int estimatedCapacity = Math.min(document.getTextSequence().length() / 500, 1000);
 		List<FoldingRange> ranges = new ArrayList<>(estimatedCapacity);
 
 		// Pre-allocate stack capacity (estimate: max nesting depth of 50)

@@ -17,6 +17,7 @@ import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.eclipse.lemminx.utils.StringUtils;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
@@ -39,6 +40,9 @@ public class TextDocument extends TextDocumentItem {
 
 	private boolean incremental;
 
+	private CharSequence textSequence;
+	private boolean textDirty;
+
 	public TextDocument(TextDocumentItem document) {
 		this(document.getText(), document.getUri());
 		super.setVersion(document.getVersion());
@@ -47,12 +51,68 @@ public class TextDocument extends TextDocumentItem {
 
 	public TextDocument(String text, String uri) {
 		super.setUri(uri);
-		super.setText(text);
+		setText(text);
+	}
+
+	@Override
+	public void setText(String text) {
+		this.textSequence = text;
+		this.textDirty = true;
+	}
+
+	/**
+	 * Returns the text content as a {@link String}. Prefer
+	 * {@link #getTextSequence()} which avoids costly string materialization when
+	 * the document is backed by a {@link StringBuilder}.
+	 *
+	 * @deprecated Use {@link #getTextSequence()} instead to avoid allocating a full
+	 *             String copy of the document text.
+	 */
+	@Deprecated
+	@Override
+	public String getText() {
+		if (textDirty) {
+			super.setText(textSequence.toString());
+			textDirty = false;
+		}
+		return super.getText();
+	}
+
+	/**
+	 * Returns the text content as a {@link CharSequence}, avoiding the allocation
+	 * of a full {@link String} copy when the document is backed by a
+	 * {@link StringBuilder}.
+	 * <p>
+	 * <b>Thread-safety contract:</b> The returned {@link CharSequence} references
+	 * the live internal buffer and is valid until the next call to
+	 * {@link #update(List)}. Callers must not retain or read the returned sequence
+	 * across an update. In practice, the LSP protocol guarantees that
+	 * {@code textDocument/didChange} (which calls {@link #update(List)}) cancels
+	 * any in-progress parse via {@code CancelChecker} before modifying the buffer,
+	 * so concurrent reads cannot occur.
+	 * </p>
+	 *
+	 * @return the text content as a {@link CharSequence}.
+	 */
+	public CharSequence getTextSequence() {
+		return textSequence;
+	}
+
+	/**
+	 * Returns a {@link String} from the text content between the given
+	 * <code>start</code> and <code>end</code> offsets.
+	 *
+	 * @param start the start offset.
+	 * @param end   the end offset.
+	 * @return a {@link String} from the text content between the given
+	 *         <code>start</code> and <code>end</code> offsets.
+	 */
+	public String getText(int start, int end) {
+		return StringUtils.getString(textSequence, start, end);
 	}
 
 	public void setIncremental(boolean incremental) {
 		this.incremental = incremental;
-		// reset line tracker
 		lineTracker = null;
 		getLineTracker();
 	}
@@ -74,8 +134,7 @@ public class TextDocument extends TextDocumentItem {
 	public String lineText(int lineNumber) throws BadLocationException {
 		ILineTracker lineTracker = getLineTracker();
 		Line line = lineTracker.getLineInformation(lineNumber);
-		String text = super.getText();
-		return text.substring(line.offset, line.offset + line.length);
+		return StringUtils.getString(textSequence, line.offset, line.offset + line.length);
 	}
 
 	public int lineOffsetAt(int position) throws BadLocationException {
@@ -115,8 +174,7 @@ public class TextDocument extends TextDocumentItem {
 			Position pos = positionAt(textOffset);
 			ILineTracker lineTracker = getLineTracker();
 			Line line = lineTracker.getLineInformation(pos.getLine());
-			String text = super.getText();
-			String lineText = text.substring(line.offset, textOffset);
+			String lineText = StringUtils.getString(textSequence, line.offset, textOffset);
 			int position = lineText.length();
 			Matcher m = wordDefinition.matcher(lineText);
 			int currentPosition = 0;
@@ -149,7 +207,7 @@ public class TextDocument extends TextDocumentItem {
 			return lineTracker;
 		}
 		ILineTracker lineTracker = isIncremental() ? new TreeLineTracker(new ListLineTracker()) : new ListLineTracker();
-		lineTracker.set(super.getText());
+		lineTracker.set(textSequence);
 		return lineTracker;
 	}
 
@@ -168,10 +226,16 @@ public class TextDocument extends TextDocumentItem {
 			try {
 				long start = System.currentTimeMillis();
 				synchronized (lock) {
-					// Initialize buffer and line tracker from the current text document
-					StringBuilder buffer = new StringBuilder(getText());
-
-					// Loop for each changes and update the buffer
+					// Lazy conversion to StringBuilder for in-place editing via
+					// buffer.replace() — avoids creating a new String on every keystroke.
+					// Done here (first keystroke) instead of in setIncremental() so that
+					// the humongous allocation triggers G1GC, which collects the old DOM
+					// tree (nulled by cancelModel()) before re-parse — avoiding a
+					// transient memory peak that could cause OOM.
+					if (!(textSequence instanceof StringBuilder)) {
+						textSequence = new StringBuilder(textSequence);
+					}
+					StringBuilder buffer = (StringBuilder) textSequence;
 					for (int i = 0; i < changes.size(); i++) {
 
 						TextDocumentContentChangeEvent changeEvent = changes.get(i);
@@ -180,7 +244,8 @@ public class TextDocument extends TextDocumentItem {
 
 						if (range != null) {
 							Integer rangeLength = changeEvent.getRangeLength();
-							length = rangeLength != null ? rangeLength.intValue() : offsetAt(range.getEnd()) - offsetAt(range.getStart());
+							length = rangeLength != null ? rangeLength.intValue()
+									: offsetAt(range.getEnd()) - offsetAt(range.getStart());
 						} else {
 							// range is optional and if not given, the whole file content is replaced
 							length = buffer.length();
@@ -191,8 +256,7 @@ public class TextDocument extends TextDocumentItem {
 						buffer.replace(startOffset, startOffset + length, text);
 						lineTracker.replace(startOffset, length, text);
 					}
-					// Update the new text content from the updated buffer
-					setText(buffer.toString());
+					textDirty = true;
 				}
 				LOGGER.fine("Text document content updated in " + (System.currentTimeMillis() - start) + "ms");
 			} catch (BadLocationException e) {

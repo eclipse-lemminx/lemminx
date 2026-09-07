@@ -11,7 +11,7 @@
 *******************************************************************************/
 package org.eclipse.lemminx.utils;
 
-import java.io.StringReader;
+import org.eclipse.lemminx.commons.CharSequenceReader;
 import java.net.URL;
 
 import javax.xml.parsers.ParserConfigurationException;
@@ -281,10 +281,9 @@ public class DOMUtils {
 	}
 
 	public static InputSource createInputSource(DOMDocument document) {
-		String content = document.getText();
 		String uri = document.getDocumentURI();
 		InputSource inputSource = new InputSource();
-		inputSource.setCharacterStream(new StringReader(content));
+		inputSource.setCharacterStream(new CharSequenceReader(document.getTextSequence()));
 		inputSource.setSystemId(uri);
 		return inputSource;
 	}

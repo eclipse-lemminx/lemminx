@@ -142,7 +142,7 @@ public interface ILineTracker {
 	 *
 	 * @param text the new tracked text
 	 */
-	void set(String text);
+	void set(CharSequence text);
 
 	Position getPositionAt(int position) throws BadLocationException;
 

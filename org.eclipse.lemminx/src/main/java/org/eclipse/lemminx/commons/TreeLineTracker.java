@@ -1179,7 +1179,7 @@ public class TreeLineTracker implements ILineTracker {
 	 * @param offset the offset in the given text
 	 * @return the information of the first found delimiter or <code>null</code>
 	 */
-	protected DelimiterInfo nextDelimiterInfo(String text, int offset) {
+	protected DelimiterInfo nextDelimiterInfo(CharSequence text, int offset) {
 		char ch;
 		int length = text.length();
 		for (int i = offset; i < length; i++) {
@@ -1416,10 +1416,10 @@ public class TreeLineTracker implements ILineTracker {
 	}
 
 	@Override
-	public final void set(String text) {
+	public final void set(CharSequence text) {
 		fRoot = new Node(0, NO_DELIM);
 		try {
-			replace(0, 0, text);
+			replace(0, 0, text.toString());
 		} catch (BadLocationException x) {
 			throw new InternalError();
 		}

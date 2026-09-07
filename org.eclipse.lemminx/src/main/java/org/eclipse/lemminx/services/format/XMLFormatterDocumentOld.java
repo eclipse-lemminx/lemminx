@@ -33,6 +33,7 @@ import org.eclipse.lemminx.dom.DTDDeclNode;
 import org.eclipse.lemminx.dom.DTDDeclParameter;
 import org.eclipse.lemminx.services.extensions.format.IFormatterParticipant;
 import org.eclipse.lemminx.settings.SharedSettings;
+import org.eclipse.lemminx.utils.StringUtils;
 import org.eclipse.lemminx.settings.XMLFormattingOptions.EmptyElements;
 import org.eclipse.lemminx.settings.XMLFormattingOptions.SplitAttributes;
 import org.eclipse.lemminx.utils.XMLBuilder;
@@ -84,8 +85,7 @@ public class XMLFormatterDocumentOld {
 	 * @throws BadLocationException
 	 */
 	public List<? extends TextEdit> format() throws BadLocationException {
-		this.fullDomDocument = DOMParser.getInstance().parse(textDocument.getText(), textDocument.getUri(), null,
-				false);
+		this.fullDomDocument = DOMParser.getInstance().parse(textDocument, null, false);
 
 		if (isRangeFormatting()) {
 			setupRangeFormatting(range);
@@ -115,8 +115,8 @@ public class XMLFormatterDocumentOld {
 		this.startOffset = this.textDocument.offsetAt(startPosition);
 		this.endOffset = this.textDocument.offsetAt(endPosition);
 
-		String fullText = this.textDocument.getText();
-		String rangeText = fullText.substring(this.startOffset, this.endOffset);
+		CharSequence fullText = this.textDocument.getTextSequence();
+		String rangeText = StringUtils.getString(fullText, this.startOffset, this.endOffset);
 
 		withinDTDContent = this.fullDomDocument.isWithinInternalDTD(startOffset);
 		String uri = this.textDocument.getUri();
@@ -127,7 +127,7 @@ public class XMLFormatterDocumentOld {
 
 		if (containsTextWithinStartTag()) {
 			adjustOffsetToStartTag();
-			rangeText = fullText.substring(this.startOffset, this.endOffset);
+			rangeText = StringUtils.getString(fullText, this.startOffset, this.endOffset);
 			this.rangeDomDocument = DOMParser.getInstance().parse(rangeText, uri, null, false);
 		}
 
@@ -167,7 +167,7 @@ public class XMLFormatterDocumentOld {
 
 	private void setupFullFormatting(Range range) throws BadLocationException {
 		this.startOffset = 0;
-		this.endOffset = textDocument.getText().length();
+		this.endOffset = textDocument.getTextSequence().length();
 		this.rangeDomDocument = this.fullDomDocument;
 
 		Position startPosition = textDocument.positionAt(startOffset);
@@ -751,7 +751,7 @@ public class XMLFormatterDocumentOld {
 		List<TextEdit> edits = new ArrayList<>();
 
 		// check if format range reaches the end of the document
-		if (this.endOffset == this.textDocument.getText().length()) {
+		if (this.endOffset == this.textDocument.getTextSequence().length()) {
 
 			if (this.sharedSettings.getFormattingSettings().isTrimFinalNewlines()) {
 				this.xmlBuilder.trimFinalNewlines();

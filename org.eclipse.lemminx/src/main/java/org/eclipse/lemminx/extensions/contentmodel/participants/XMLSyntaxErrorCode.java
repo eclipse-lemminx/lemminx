@@ -39,6 +39,7 @@ import org.eclipse.lemminx.extensions.contentmodel.participants.codeactions.nogr
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionParticipant;
 import org.eclipse.lemminx.services.extensions.diagnostics.IXMLErrorCode;
 import org.eclipse.lemminx.settings.SharedSettings;
+import org.eclipse.lemminx.utils.StringUtils;
 import org.eclipse.lemminx.utils.XMLPositionUtility;
 import org.eclipse.lemminx.utils.XMLPositionUtility.EntityReferenceRange;
 import org.eclipse.lsp4j.Range;
@@ -191,7 +192,7 @@ public enum XMLSyntaxErrorCode implements IXMLErrorCode {
 			 *
 			 * <a> <a> </a> </b
 			 */
-			int endOffset = removeLeftSpaces(offset, document.getText());
+			int endOffset = removeLeftSpaces(offset, document.getTextSequence());
 			return XMLPositionUtility.selectEndTagName(endOffset, document);
 		}
 		case CustomETag:
@@ -257,8 +258,8 @@ public enum XMLSyntaxErrorCode implements IXMLErrorCode {
 			int startOffset = offset + 1;
 			int endOffset = 0;
 			int errorOffset = offset + 1;
-			String text = document.getText();
-			int startPrologOffset = text.indexOf("<");
+			CharSequence text = document.getTextSequence();
+			int startPrologOffset = StringUtils.indexOf(text, '<', 0);
 			if (errorOffset < startPrologOffset) {
 				// Invalid content given before prolog. Prolog should be the first thing in the
 				// file if given.
@@ -267,7 +268,7 @@ public enum XMLSyntaxErrorCode implements IXMLErrorCode {
 			} else {
 				// Invalid content given after prolog. Either root tag or comment should be
 				// present
-				int firstStartTagOffset = text.indexOf("<", errorOffset);
+				int firstStartTagOffset = StringUtils.indexOf(text, '<', errorOffset);
 				startOffset = errorOffset;
 				endOffset = firstStartTagOffset != -1 ? firstStartTagOffset : text.length();
 			}
@@ -328,7 +329,7 @@ public enum XMLSyntaxErrorCode implements IXMLErrorCode {
 	 * @return the offset of the first character from the left offset which is not a
 	 *         whitespace.
 	 */
-	private static int removeLeftSpaces(final int initialOffset, String text) {
+	private static int removeLeftSpaces(final int initialOffset, CharSequence text) {
 		int offset = initialOffset;
 		if (offset >= text.length()) {
 			return text.length();
@@ -369,7 +370,7 @@ public enum XMLSyntaxErrorCode implements IXMLErrorCode {
 	 * @return the proper range from the given node to the given offset.
 	 */
 	private static Range getRangeFromStartNodeToOffset(DOMNode fromNode, int toOffset, DOMDocument document) {
-		int endOffset = removeLeftSpaces(toOffset, document.getText());
+		int endOffset = removeLeftSpaces(toOffset, document.getTextSequence());
 		int startOffset = fromNode.getStart();
 		if (fromNode.isElement()) {
 			// The from node is a DOM element, adjust end and start offset

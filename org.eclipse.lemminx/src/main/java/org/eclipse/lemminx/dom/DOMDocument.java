@@ -67,7 +67,7 @@ public class DOMDocument extends DOMNode implements Document {
 	private String externalGrammarFromNamespaceURI;
 
 	public DOMDocument(TextDocument textDocument, URIResolverExtensionManager resolverExtensionManager) {
-		super(0, textDocument.getText().length());
+		super(0, textDocument.getTextSequence().length());
 		this.textDocument = textDocument;
 		this.resolverExtensionManager = resolverExtensionManager;
 		resetGrammar();
@@ -133,11 +133,35 @@ public class DOMDocument extends DOMNode implements Document {
 
 	/**
 	 * Returns the text content of the XML document.
-	 * 
+	 *
 	 * @return the text content of the XML document.
+	 * @deprecated Use {@link #getTextSequence()} instead.
 	 */
+	@Deprecated
 	public String getText() {
 		return textDocument.getText();
+	}
+
+	/**
+	 * Returns the text content as a {@link CharSequence}.
+	 *
+	 * @return the text content as a {@link CharSequence}.
+	 */
+	public CharSequence getTextSequence() {
+		return textDocument.getTextSequence();
+	}
+
+	/**
+	 * Returns a {@link String} from the text content between the given
+	 * <code>start</code> and <code>end</code> offsets.
+	 *
+	 * @param start the start offset.
+	 * @param end   the end offset.
+	 * @return a {@link String} from the text content between the given
+	 *         <code>start</code> and <code>end</code> offsets.
+	 */
+	public String getText(int start, int end) {
+		return textDocument.getText(start, end);
 	}
 
 	public TextDocument getTextDocument() {
@@ -892,7 +916,7 @@ public class DOMDocument extends DOMNode implements Document {
 	}
 
 	public Range getTrimmedRange(int start, int end) {
-		String text = getText();
+		CharSequence text = getTextSequence();
 		char c = text.charAt(start);
 		while (Character.isWhitespace(c)) {
 			start++;
