@@ -38,6 +38,8 @@ public class TextDocument extends TextDocumentItem {
 
 	private ILineTracker lineTracker;
 
+	private volatile boolean disposed;
+
 	private boolean incremental;
 
 	private CharSequence textSequence;
@@ -209,6 +211,25 @@ public class TextDocument extends TextDocumentItem {
 		ILineTracker lineTracker = isIncremental() ? new TreeLineTracker(new ListLineTracker()) : new ListLineTracker();
 		lineTracker.set(textSequence);
 		return lineTracker;
+	}
+
+	/**
+	 * Dispose this document, releasing all retained memory (text content and
+	 * line tracker) for garbage collection.
+	 */
+	public void dispose() {
+		this.disposed = true;
+		this.textSequence = null;
+		this.lineTracker = null;
+	}
+
+	/**
+	 * Returns true if this document has been disposed and false otherwise.
+	 *
+	 * @return true if this document has been disposed and false otherwise.
+	 */
+	public boolean isDisposed() {
+		return disposed;
 	}
 
 	/**

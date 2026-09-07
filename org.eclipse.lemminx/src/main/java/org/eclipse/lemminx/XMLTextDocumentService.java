@@ -414,8 +414,6 @@ public class XMLTextDocumentService implements TextDocumentService {
 		TextDocumentIdentifier identifier = params.getTextDocument();
 		String uri = identifier.getUri();
 		DOMDocument xmlDocument = documents.getExistingModel(uri);
-		// Remove the document from the cache
-		documents.onDidCloseTextDocument(params);
 		// Remove the validation from the delayer
 		xmlValidatorDelayer.cleanPendingValidation(uri);
 		// Publish empty errors from the document
@@ -433,6 +431,8 @@ public class XMLTextDocumentService implements TextDocumentService {
 				}
 			});
 		}
+		// Remove the document from the cache and dispose it
+		documents.onDidCloseTextDocument(params);
 	}
 
 	@Override

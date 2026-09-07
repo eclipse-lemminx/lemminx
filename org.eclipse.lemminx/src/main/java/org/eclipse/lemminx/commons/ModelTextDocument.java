@@ -29,6 +29,8 @@ public class ModelTextDocument<T> extends TextDocument {
 
 	private static final Logger LOGGER = Logger.getLogger(ModelTextDocument.class.getName());
 
+	private static final int DISPOSED_VERSION = -9999;
+
 	private final BiFunction<TextDocument, CancelChecker, T> parse;
 
 	private T model;
@@ -60,6 +62,9 @@ public class ModelTextDocument<T> extends TextDocument {
 	 * @return the parsed model synchronized with last version of the text document.
 	 */
 	public T getModel() {
+		if (isDisposed()) {
+			return null;
+		}
 		if (model == null) {
 			return getSynchronizedModel();
 		}
@@ -74,6 +79,9 @@ public class ModelTextDocument<T> extends TextDocument {
 	 *         document or parse the model.
 	 */
 	private synchronized T getSynchronizedModel() {
+		if (isDisposed()) {
+			return null;
+		}
 		if (model != null) {
 			return model;
 		}
@@ -116,6 +124,19 @@ public class ModelTextDocument<T> extends TextDocument {
 	 */
 	private void cancelModel() {
 		model = null;
+	}
+
+	/**
+	 * Dispose this document, preventing any further re-parsing and releasing
+	 * all retained memory (model and text content) for garbage collection.
+	 */
+	@Override
+	public void dispose() {
+		// Setting an invalid version cancels any in-progress parse via
+		// TextDocumentVersionChecker, and triggers cancelModel() which
+		// releases the cached DOM tree.
+		setVersion(DISPOSED_VERSION);
+		super.dispose();
 	}
 
 }

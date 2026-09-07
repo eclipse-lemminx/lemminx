@@ -15,6 +15,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.eclipse.lsp4j.DidCloseTextDocumentParams;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
 import org.eclipse.lsp4j.TextDocumentItem;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
@@ -34,6 +35,15 @@ public class ModelTextDocuments<T> extends TextDocuments<ModelTextDocument<T>> {
 
 	public ModelTextDocuments(BiFunction<TextDocument, CancelChecker, T> parse) {
 		this.parse = parse;
+	}
+
+	@Override
+	public ModelTextDocument<T> onDidCloseTextDocument(DidCloseTextDocumentParams params) {
+		ModelTextDocument<T> document = super.onDidCloseTextDocument(params);
+		if (document != null) {
+			document.dispose();
+		}
+		return document;
 	}
 
 	@Override
