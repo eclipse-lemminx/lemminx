@@ -12,8 +12,6 @@
  */
 package org.eclipse.lemminx.dom;
 
-import java.util.List;
-
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Node;
 import org.w3c.dom.TypeInfo;
@@ -52,7 +50,7 @@ public class DOMAttr extends DOMNode implements org.w3c.dom.Attr {
 	}
 
 	public DOMAttr(String name, int start, int end, DOMNode ownerElement) {
-		super(NULL_VALUE, NULL_VALUE);
+		super();
 		this.name = name;
 		this.delimiter = NULL_VALUE;
 		this.nameStart = start;
@@ -379,20 +377,8 @@ public class DOMAttr extends DOMNode implements org.w3c.dom.Attr {
 		return attributeName.startsWith(XMLNS_NO_DEFAULT_ATTR);
 	}
 
-	/*
-	 * (non-Javadoc)
-	 *
-	 * @see org.w3c.dom.Node#getNextSibling()
-	 */
-	@Override
-	public DOMNode getNextSibling() {
-		DOMNode parentNode = getOwnerElement();
-		if (parentNode == null) {
-			return null;
-		}
-		List<DOMAttr> children = parentNode.getAttributeNodes();
-		int nextIndex = children.indexOf(this) + 1;
-		return nextIndex < children.size() ? children.get(nextIndex) : null;
+	DOMAttr nextAttr() {
+		return (DOMAttr) nextSibling;
 	}
 
 	public boolean isIncluded(int offset) {

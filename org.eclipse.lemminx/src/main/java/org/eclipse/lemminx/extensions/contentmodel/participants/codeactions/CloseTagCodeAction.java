@@ -173,8 +173,7 @@ public class CloseTagCodeAction implements ICodeActionParticipant {
 				// the element have some children(Text node, Element node, etc)
 				boolean hasChildWithNoTagName = false;
 				// Search orphan elements in the children to replace
-				List<DOMNode> children = element.getChildren();
-				for (DOMNode child : children) {
+				for (DOMNode child : element.children()) {
 					if (child.isElement()) {
 						DOMElement childElement = (DOMElement) child;
 						if (!childElement.hasTagName() || childElement.isOrphanEndTag()) {
@@ -221,8 +220,7 @@ public class CloseTagCodeAction implements ICodeActionParticipant {
 		} else {
 			// The element has an end tag
 			// Search orphan end tag elements in the children which breaks the XML.
-			List<DOMNode> children = element.getChildren();
-			for (DOMNode child : children) {
+			for (DOMNode child : element.children()) {
 				if (child.isElement()) {
 					DOMElement childElement = (DOMElement) child;
 					if (!childElement.hasTagName() || childElement.isOrphanEndTag()) {
@@ -309,7 +307,7 @@ public class CloseTagCodeAction implements ICodeActionParticipant {
 	 *         otherwise.
 	 */
 	private static boolean hasElements(DOMElement element) {
-		for (DOMNode node : element.getChildren()) {
+		for (DOMNode node : element.children()) {
 			if (node.isElement()) {
 				return true;
 			}

@@ -15,9 +15,9 @@ import static org.eclipse.lemminx.extensions.xerces.xmlmodel.XMLModelDeclaration
 import static org.eclipse.lemminx.extensions.xerces.xmlmodel.XMLModelDeclaration.isApplicableForXSD;
 import static org.eclipse.lemminx.extensions.xerces.xmlmodel.XMLModelDeclaration.isApplicableForRelaxNG;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 import org.eclipse.lemminx.extensions.xerces.xmlmodel.XMLModelDeclaration;
 import org.w3c.dom.ProcessingInstruction;
@@ -105,12 +105,16 @@ public class XMLModel {
 	 * @return the declared xml-model list.
 	 */
 	static List<XMLModel> createXMLModels(DOMDocument document) {
-		List<DOMNode> children = document.getChildren();
-		if (children != null && !children.isEmpty()) {
-			return children.stream().filter(XMLModel::isXMLModel)
-					.map(node -> new XMLModel((DOMProcessingInstruction) node)).collect(Collectors.toList());
+		List<XMLModel> result = null;
+		for (DOMNode child : document.children()) {
+			if (isXMLModel(child)) {
+				if (result == null) {
+					result = new ArrayList<>();
+				}
+				result.add(new XMLModel((DOMProcessingInstruction) child));
+			}
 		}
-		return Collections.emptyList();
+		return result != null ? result : Collections.emptyList();
 	}
 
 	/**

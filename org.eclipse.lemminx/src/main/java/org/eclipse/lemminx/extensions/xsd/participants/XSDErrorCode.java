@@ -15,7 +15,7 @@ package org.eclipse.lemminx.extensions.xsd.participants;
 import static org.eclipse.lemminx.utils.StringUtils.getString;
 
 import java.util.HashMap;
-import java.util.List;
+
 import java.util.Map;
 
 import org.apache.xerces.xni.XMLLocator;
@@ -113,13 +113,13 @@ public enum XSDErrorCode implements IXMLErrorCode {
 		case cos_all_limited_2: {
 			String nameValue = getString(arguments[1]);
 			DOMNode parent = document.findNodeAt(offset);
-			List<DOMNode> children = parent.getChildrenWithAttributeValue("name", nameValue);
+			DOMNode child = parent.findChildWithAttributeValue("name", nameValue);
 
-			if (children.isEmpty()) {
+			if (child == null) {
 				return XMLPositionUtility.selectStartTagName(offset, document);
 			}
 
-			offset = children.get(0).getStart() + 1;
+			offset = child.getStart() + 1;
 			return XMLPositionUtility.selectAttributeValueAt("maxOccurs", offset, document);
 		}
 		case ct_props_correct_3: {

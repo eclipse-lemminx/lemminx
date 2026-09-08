@@ -211,13 +211,12 @@ public class DOMElementFormatter {
 
 	private int formatAttributes(DOMElement element, XMLFormattingConstraints parentConstraints, List<TextEdit> edits) {
 		if (element.hasAttributes()) {
-			List<DOMAttr> attributes = element.getAttributeNodes();
 			// initialize the previous offset with the start tag:
 			// <foo| attr1="" attr2="">.
 			int prevOffset = element.getOffsetAfterStartTag();
-			boolean singleAttribute = attributes.size() == 1;
+			boolean singleAttribute = element.hasSingleAttribute();
 			boolean isFirstAttr = true;
-			for (DOMAttr attr : attributes) {
+			for (DOMAttr attr : element.attributes()) {
 				// Format current attribute
 				attributeFormatter.formatAttribute(attr, prevOffset, singleAttribute, true, isFirstAttr,
 						parentConstraints, edits);
@@ -388,10 +387,9 @@ public class DOMElementFormatter {
 	 * @return true if should format according to closingBracketNewLine setting.
 	 */
 	private boolean shouldFormatClosingBracketNewLine(DOMElement element) {
-		boolean isSingleAttribute = element.getAttributeNodes() != null ? element.getAttributeNodes().size() == 1
-				: true;
 		return (formatterDocument.getSharedSettings().getFormattingSettings().getClosingBracketNewLine()
-				&& getSplitAttributes() != SplitAttributes.preserve && !isSingleAttribute);
+				&& getSplitAttributes() != SplitAttributes.preserve
+				&& element.hasAttributes() && !element.hasSingleAttribute());
 	}
 
 	private void replaceLeftSpacesWith(int from, int to, String replace, List<TextEdit> edits) {
@@ -447,8 +445,7 @@ public class DOMElementFormatter {
 		if (!element.hasAttributes()) {
 			return null;
 		}
-		List<DOMAttr> attributes = element.getAttributeNodes();
-		return attributes.get(attributes.size() - 1);
+		return element.getLastAttr();
 	}
 
 	private boolean isPreserveAttributeLineBreaks() {

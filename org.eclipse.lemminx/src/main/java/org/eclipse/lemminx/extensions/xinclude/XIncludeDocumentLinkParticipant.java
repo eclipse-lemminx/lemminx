@@ -41,7 +41,7 @@ public class XIncludeDocumentLinkParticipant implements IDocumentLinkParticipant
 	}
 
 	public void findDocumentLinks(DOMNode parent, DOMDocument document, List<DocumentLink> links) {
-		for (DOMNode child : parent.getChildren()) {
+		for (DOMNode child : parent.children()) {
 			if (child.isElement()) {
 				DOMElement xincludeElement = (DOMElement) child;
 				if (XIncludeUtils.isInclude(xincludeElement)) {

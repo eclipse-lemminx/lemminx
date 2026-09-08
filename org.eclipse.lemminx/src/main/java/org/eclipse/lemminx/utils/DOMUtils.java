@@ -268,7 +268,7 @@ public class DOMUtils {
 	}
 
 	public static DOMElement findFirstChildElementByTagName(DOMElement element, String tagName) {
-		for (DOMNode child : element.getChildren()) {
+		for (DOMNode child : element.children()) {
 			if (isDOMElement(child, tagName)) {
 				return (DOMElement) child;
 			}

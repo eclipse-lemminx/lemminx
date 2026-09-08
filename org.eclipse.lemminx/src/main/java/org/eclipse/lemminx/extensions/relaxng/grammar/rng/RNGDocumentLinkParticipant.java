@@ -53,7 +53,7 @@ public class RNGDocumentLinkParticipant implements IDocumentLinkParticipant {
 	}
 
 	public void findDocumentLinks(DOMNode parent, DOMDocument document, List<DocumentLink> links) {
-		for (DOMNode child : parent.getChildren()) {
+		for (DOMNode child : parent.children()) {
 			if (child.isElement()) {
 				DOMElement rngElement = (DOMElement) child;
 				if (RelaxNGUtils.isInclude(rngElement) || RelaxNGUtils.isExternalRef(rngElement)) {

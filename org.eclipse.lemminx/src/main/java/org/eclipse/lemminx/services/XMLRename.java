@@ -252,13 +252,11 @@ class XMLRename {
 
 	private List<TextEdit> getXmlnsAttrRenameTextEdits(DOMDocument xmlDocument, DOMElement element, Position position,
 			String newText) {
-		List<DOMAttr> attributes = element.getAttributeNodes();
-
-		if (attributes == null) {
+		if (!element.hasAttributes()) {
 			return Collections.emptyList();
 		}
 
-		for (DOMAttr attr : attributes) {
+		for (DOMAttr attr : element.attributes()) {
 			DOMRange nameNode = attr.getNodeAttrName();
 
 			if (!attr.isXmlns()) {
@@ -349,7 +347,7 @@ class XMLRename {
 	 * @return
 	 */
 	private static List<TextEdit> renameElementsNamespace(DOMDocument document, List<TextEdit> edits,
-			List<DOMNode> elements, String oldNamespace, String newNamespace) {
+			Iterable<DOMNode> elements, String oldNamespace, String newNamespace) {
 		int oldNamespaceLength = oldNamespace.length();
 		for (DOMNode node : elements) {
 			if (node.isElement()) {
@@ -362,7 +360,7 @@ class XMLRename {
 				}
 
 				if (element.hasChildNodes()) {
-					renameElementsNamespace(document, edits, element.getChildren(), oldNamespace, newNamespace);
+					renameElementsNamespace(document, edits, element.children(), oldNamespace, newNamespace);
 				}
 			}
 		}
@@ -401,10 +399,9 @@ class XMLRename {
 	private static List<TextEdit> renameElementAttributeValueNamespace(DOMDocument document, DOMElement element,
 			String oldNamespace, String newNamespace) {
 
-		List<DOMAttr> attributes = element.getAttributeNodes();
 		List<TextEdit> edits = new ArrayList<>();
-		if (attributes != null) {
-			for (DOMAttr attr : attributes) {
+		if (element.hasAttributes()) {
+			for (DOMAttr attr : element.attributes()) {
 				DOMRange attrValue = attr.getNodeAttrValue();
 				if (attrValue != null) {
 					String attrValueText = attr.getValue();

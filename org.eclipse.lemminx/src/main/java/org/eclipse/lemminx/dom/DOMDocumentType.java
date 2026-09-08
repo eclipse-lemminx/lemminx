@@ -106,8 +106,7 @@ public class DOMDocumentType extends DTDDeclNode implements org.w3c.dom.Document
 	public NamedNodeMap getEntities() {
 		if (entitiesNodes == null) {
 			entitiesNodes = new XMLNamedNodeMap<>();
-			List<DOMNode> children = super.getChildren();
-			for (DOMNode child : children) {
+			for (DOMNode child : super.children()) {
 				if (child.getNodeType() == DOMNode.ENTITY_NODE) {
 					entitiesNodes.add((DTDEntityDecl) child);
 				}

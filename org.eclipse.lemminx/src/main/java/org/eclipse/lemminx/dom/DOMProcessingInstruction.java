@@ -23,7 +23,7 @@ import org.w3c.dom.NamedNodeMap;
  */
 public class DOMProcessingInstruction extends DOMCharacterData implements org.w3c.dom.ProcessingInstruction {
 
-	private XMLNamedNodeMap<DOMAttr> attributeNodes;
+	DOMAttr firstAttr;
 
 	String target;
 	int startContent;
@@ -35,26 +35,23 @@ public class DOMProcessingInstruction extends DOMCharacterData implements org.w3
 	}
 
 	@Override
-	public boolean hasAttributes() {
-		return attributeNodes != null && !attributeNodes.isEmpty();
-	}
-
-	@Override
-	public List<DOMAttr> getAttributeNodes() {
-		return attributeNodes;
-	}
-
-	@Override
 	public NamedNodeMap getAttributes() {
-		return attributeNodes;
+		return createAttributeNamedNodeMap(firstAttr);
 	}
 
 	@Override
 	public void setAttributeNode(DOMAttr attr) {
-		if (attributeNodes == null) {
-			attributeNodes = new XMLNamedNodeMap<>();
-		}
-		attributeNodes.add(attr);
+		addAttribute(attr, this);
+	}
+
+	@Override
+	DOMAttr getFirstAttr() {
+		return firstAttr;
+	}
+
+	@Override
+	void setFirstAttr(DOMAttr attr) {
+		firstAttr = attr;
 	}
 
 	public boolean isProlog() {

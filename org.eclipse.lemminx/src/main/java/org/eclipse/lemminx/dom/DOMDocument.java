@@ -19,12 +19,12 @@ package org.eclipse.lemminx.dom;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.eclipse.lemminx.commons.BadLocationException;
 import org.eclipse.lemminx.commons.TextDocument;
@@ -49,7 +49,7 @@ import org.w3c.dom.NodeList;
  * XML document.
  *
  */
-public class DOMDocument extends DOMNode implements Document {
+public class DOMDocument extends DOMContainerNode implements Document {
 
 	private SchemaLocation schemaLocation;
 	private NoNamespaceSchemaLocation noNamespaceSchemaLocation;
@@ -89,8 +89,8 @@ public class DOMDocument extends DOMNode implements Document {
 		return cancelChecker;
 	}
 
-	public List<DOMNode> getRoots() {
-		return super.getChildren();
+	public Iterable<DOMNode> getRoots() {
+		return children();
 	}
 
 	public Position positionAt(int offset) throws BadLocationException {
@@ -290,7 +290,7 @@ public class DOMDocument extends DOMNode implements Document {
 		schemaPrefix = null;
 		// Search if document element root declares namespace with "xmlns".
 		if (documentElement.hasAttributes()) {
-			for (DOMAttr attr : documentElement.getAttributeNodes()) {
+			for (DOMAttr attr : documentElement.attributes()) {
 				String attributeName = attr.getName();
 				if (attributeName != null) {
 					if (attributeName.equals(DOMAttr.XMLNS_ATTR)
@@ -323,8 +323,8 @@ public class DOMDocument extends DOMNode implements Document {
 	 * @return
 	 */
 	public boolean hasProlog() {
-		List<DOMNode> children = getChildren();
-		return (children != null && !children.isEmpty() && children.get(0).isProlog());
+		DOMNode first = getFirstChild();
+		return first != null && first.isProlog();
 	}
 
 	/**
@@ -333,11 +333,8 @@ public class DOMDocument extends DOMNode implements Document {
 	 * @return prolog DOMNode, if the document has one, null otherwise
 	 */
 	public DOMNode getProlog() {
-		if (hasProlog()) {
-			return getChild(0);
-		} else {
-			return null;
-		}
+		DOMNode first = getFirstChild();
+		return first != null && first.isProlog() ? first : null;
 	}
 
 	/**
@@ -566,12 +563,9 @@ public class DOMDocument extends DOMNode implements Document {
 	 */
 	@Override
 	public DOMElement getDocumentElement() {
-		List<DOMNode> roots = getRoots();
-		if (roots != null) {
-			for (DOMNode node : roots) {
-				if (node.isElement()) {
-					return (DOMElement) node;
-				}
+		for (DOMNode node : getRoots()) {
+			if (node.isElement()) {
+				return (DOMElement) node;
 			}
 		}
 		return null;
@@ -584,12 +578,9 @@ public class DOMDocument extends DOMNode implements Document {
 	 */
 	@Override
 	public DOMDocumentType getDoctype() {
-		List<DOMNode> roots = getRoots();
-		if (roots != null) {
-			for (DOMNode node : roots) {
-				if (node.isDoctype()) {
-					return (DOMDocumentType) node;
-				}
+		for (DOMNode node : getRoots()) {
+			if (node.isDoctype()) {
+				return (DOMDocumentType) node;
 			}
 		}
 		return null;
@@ -969,13 +960,22 @@ public class DOMDocument extends DOMNode implements Document {
 	 * @return the DTD Attribute list for the given element name and empty
 	 *         otherwise.
 	 */
-	public Collection<DOMNode> findDTDAttrList(String elementName) {
+	public Iterable<DOMNode> findDTDAttrList(String elementName) {
 		DOMDocumentType docType = getDoctype();
 		if (docType == null || elementName == null) {
 			return Collections.emptyList();
 		}
-		return docType.getChildren().stream().filter(DOMNode::isDTDAttListDecl)
-				.filter(n -> elementName.equals(((DTDAttlistDecl) n).getElementName())).collect(Collectors.toList());
+		List<DOMNode> result = null;
+		for (DOMNode child : docType.children()) {
+			if (child.isDTDAttListDecl()
+					&& elementName.equals(((DTDAttlistDecl) child).getElementName())) {
+				if (result == null) {
+					result = new ArrayList<>();
+				}
+				result.add(child);
+			}
+		}
+		return result != null ? result : Collections.emptyList();
 	}
 
 	/**

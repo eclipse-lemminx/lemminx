@@ -75,7 +75,7 @@ class XMLSelectionRanges {
 		DOMNode node = DOMDocument.findNodeOrAttrAt(xmlDocument, offset);
 		if (node.isAttribute()) {
 			DOMAttr attr = (DOMAttr) node;
-			for (DOMNode attrChild : attr.getChildren()) {
+			for (DOMNode attrChild : attr.children()) {
 				if (attrChild.getStart() <= offset && offset <= attrChild.getEnd()) {
 					return attrChild;
 				}
@@ -84,7 +84,7 @@ class XMLSelectionRanges {
 			DOMDocumentType doctype = (DOMDocumentType) node;
 			DTDDeclParameter subset = doctype.getInternalSubsetNode();
 			if (subset != null && subset.getStart() < offset && offset < subset.getEnd()) {
-				for (DOMNode child : doctype.getChildren()) {
+				for (DOMNode child : doctype.children()) {
 					if (child.getStart() != -1 && child.getStart() <= offset && offset < child.getEnd()) {
 						return child;
 					}

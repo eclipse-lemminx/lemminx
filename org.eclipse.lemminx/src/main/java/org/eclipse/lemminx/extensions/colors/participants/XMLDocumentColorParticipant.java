@@ -67,8 +67,7 @@ public class XMLDocumentColorParticipant implements IDocumentColorParticipant {
 		if (node.isElement()) {
 			DOMElement element = (DOMElement) node;
 			if (element.hasAttributes()) {
-				List<DOMAttr> attributes = element.getAttributeNodes();
-				for (DOMAttr attr : attributes) {
+				for (DOMAttr attr : element.attributes()) {
 					if (isColorNode(attr, expressions)) {
 						// The current attribute node matches an XML color expression declared in the
 						// "xml/colors"
@@ -100,8 +99,7 @@ public class XMLDocumentColorParticipant implements IDocumentColorParticipant {
 				}
 			}
 		}
-		List<DOMNode> children = node.getChildren();
-		for (DOMNode child : children) {
+		for (DOMNode child : node.children()) {
 			cancelChecker.checkCanceled();
 			doDocumentColor(child, expressions, colors, cancelChecker);
 		}

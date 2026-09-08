@@ -376,7 +376,7 @@ public class XMLFormatterDocument {
 
 	public void formatChildren(DOMNode currentDOMNode, XMLFormattingConstraints parentConstraints, int start, int end,
 			List<TextEdit> edits) {
-		for (DOMNode child : currentDOMNode.getChildren()) {
+		for (DOMNode child : currentDOMNode.children()) {
 			format(child, parentConstraints, start, end, edits);
 		}
 	}
@@ -626,7 +626,7 @@ public class XMLFormatterDocument {
 		boolean hasElement = false;
 		boolean hasText = false;
 		boolean onlySpaces = true;
-		for (DOMNode child : element.getChildren()) {
+		for (DOMNode child : element.children()) {
 			if (child.isElement() || child.isComment() || child.isProcessingInstruction()) {
 				hasElement = true;
 			} else if (child.isText()) {

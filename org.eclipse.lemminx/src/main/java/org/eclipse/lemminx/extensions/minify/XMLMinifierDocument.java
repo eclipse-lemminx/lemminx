@@ -292,50 +292,22 @@ public class XMLMinifierDocument {
 			return;
 		}
 
-		List<DOMAttr> attributes = element.getAttributeNodes();
-
-		// Remove extra spaces between element name and first attribute
-		if (!attributes.isEmpty()) {
-			DOMAttr firstAttr = attributes.get(0);
-			int afterElementName = element.getStartTagOpenOffset() + element.getTagName().length() + 1;
-			int beforeFirstAttr = firstAttr.getStart();
-
-			if (afterElementName < beforeFirstAttr) {
-				int length = beforeFirstAttr - afterElementName;
-				if (StringUtils.isWhitespace(textDocument.getTextSequence(), afterElementName, beforeFirstAttr) && length > 1) {
-					// Replace multiple spaces with single space
+		int prevEnd = element.getStartTagOpenOffset() + element.getTagName().length() + 1;
+		for (DOMAttr attr : element.attributes()) {
+			int beforeAttr = attr.getStart();
+			if (prevEnd < beforeAttr) {
+				int length = beforeAttr - prevEnd;
+				if (StringUtils.isWhitespace(textDocument.getTextSequence(), prevEnd, beforeAttr) && length > 1) {
 					try {
-						Range range = new Range(textDocument.positionAt(afterElementName),
-								textDocument.positionAt(beforeFirstAttr));
+						Range range = new Range(textDocument.positionAt(prevEnd),
+								textDocument.positionAt(beforeAttr));
 						edits.add(new TextEdit(range, " "));
 					} catch (BadLocationException e) {
 						LOGGER.log(Level.SEVERE, e.getMessage(), e);
 					}
 				}
 			}
-		}
-
-		// Remove extra spaces between attributes, keep only one space
-		for (int i = 0; i < attributes.size() - 1; i++) {
-			DOMAttr attr = attributes.get(i);
-			DOMAttr nextAttr = attributes.get(i + 1);
-
-			int afterAttr = attr.getEnd();
-			int beforeNextAttr = nextAttr.getStart();
-
-			if (afterAttr < beforeNextAttr) {
-				int length = beforeNextAttr - afterAttr;
-				if (StringUtils.isWhitespace(textDocument.getTextSequence(), afterAttr, beforeNextAttr) && length > 1) {
-					// Replace multiple spaces with single space
-					try {
-						Range range = new Range(textDocument.positionAt(afterAttr),
-								textDocument.positionAt(beforeNextAttr));
-						edits.add(new TextEdit(range, " "));
-					} catch (BadLocationException e) {
-						LOGGER.log(Level.SEVERE, e.getMessage(), e);
-					}
-				}
-			}
+			prevEnd = attr.getEnd();
 		}
 	}
 

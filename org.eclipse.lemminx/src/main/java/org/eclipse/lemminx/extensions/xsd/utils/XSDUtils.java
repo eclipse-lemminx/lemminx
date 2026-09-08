@@ -497,8 +497,7 @@ public class XSDUtils {
 	public static DOMAttr findSchemaLocationAttrByURI(DOMDocument document, String grammarURI) {
 		DOMElement documentElement = document.getDocumentElement();
 		if (documentElement != null) {
-			List<DOMNode> children = documentElement.getChildren();
-			for (DOMNode child : children) {
+			for (DOMNode child : documentElement.children()) {
 				if (child.isElement()) {
 					DOMElement xsdElement = (DOMElement) child;
 					if (XSDUtils.isXSInclude(xsdElement) || XSDUtils.isXSImport(xsdElement)) {

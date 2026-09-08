@@ -133,8 +133,7 @@ public class CMRelaxNGElementDeclaration implements CMElementDeclaration {
 		Name n = createName(parentElement);
 		matcher.matchStartTagOpen(n, n.getLocalName(), context);
 		if (parentElement.hasAttributes()) {
-			List<DOMAttr> attributes = parentElement.getAttributeNodes();
-			for (DOMAttr attr : attributes) {
+			for (DOMAttr attr : parentElement.attributes()) {
 				Name a = createName(attr);
 				matcher.matchAttributeName(a, a.getLocalName(), context);
 				matcher.matchAttributeValue(attr.getValue(), a, a.getLocalName(), context);

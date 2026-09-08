@@ -53,11 +53,11 @@ public class XMLSyntaxRelatedInfoFinder implements IRelatedInfoFinder {
 			}
 
 			int closeTagOffset;
-			int numChildren = node.getChildren().size();
-			if (numChildren == 0) {
+			DOMNode lastChild = node.getLastChild();
+			if (lastChild == null) {
 				closeTagOffset = node.getEnd();
 			} else {
-				closeTagOffset = node.getChildren().get(numChildren - 1).getEnd();
+				closeTagOffset = lastChild.getEnd();
 			}
 
 			Range range = XMLPositionUtility.createRange(closeTagOffset, closeTagOffset, document);

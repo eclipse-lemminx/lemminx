@@ -21,7 +21,7 @@ import org.w3c.dom.Node;
 /**
  * DTDNode
  */
-public class DTDDeclNode extends DOMNode {
+public class DTDDeclNode extends DOMContainerNode {
 
 	/**
 	 * This class is the base for all declaration nodes for DTD's.
@@ -103,7 +103,7 @@ public class DTDDeclNode extends DOMNode {
 		}
 		DTDDeclParameter parameter = new DTDDeclParameter(this, start, end);
 		parameters.add(parameter);
-		this.end = end; // updates end position of the node.
+		setEnd(end); // updates end position of the node.
 		return parameter;
 	}
 
@@ -111,7 +111,7 @@ public class DTDDeclNode extends DOMNode {
 		if (parameters != null && parameters.size() > 0) {
 			DTDDeclParameter last = parameters.get(parameters.size() - 1);
 			last.end = end;
-			this.end = end;
+			setEnd(end);
 		}
 	}
 

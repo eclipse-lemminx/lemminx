@@ -87,7 +87,7 @@ public abstract class NewFileSnippetContext implements IXMLSnippetContext {
 		// - processing instruction
 		// - text
 		// - '<', '<!' characters
-		for (DOMNode child : document.getChildren()) {
+		for (DOMNode child : document.children()) {
 			if (child.isElement()) {
 				DOMElement first = (DOMElement) child;
 				// check if element is just '<' or '<!'

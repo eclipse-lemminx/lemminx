@@ -206,7 +206,7 @@ public enum XMLSyntaxErrorCode implements IXMLErrorCode {
 				DOMElement tagElement = (DOMElement) node;
 				int endOffset = offset;
 				if (tagElement.hasChildNodes()) {
-					for (DOMNode child : tagElement.getChildren()) {
+					for (DOMNode child : tagElement.children()) {
 						if (child.isElement()) {
 							endOffset = child.getStart() - 1;
 							break;

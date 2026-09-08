@@ -344,8 +344,7 @@ public class ContentModelCompletionParticipant extends CompletionParticipantAdap
 					if (documentElement.hasAttributes()) {
 						// Get the position after the last attributes
 						// <book xmlns="http://docbook.org/ns/docbook"| >
-						DOMAttr lastAttr = documentElement
-								.getAttributeAtIndex(documentElement.getAttributeNodes().size() - 1);
+						DOMAttr lastAttr = documentElement.getLastAttr();
 						offset = lastAttr.getEnd();
 					} else {
 						// No attributes, get the position after the start tag

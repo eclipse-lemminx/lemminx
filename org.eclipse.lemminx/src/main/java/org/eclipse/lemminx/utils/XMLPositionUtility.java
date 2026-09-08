@@ -140,12 +140,14 @@ public class XMLPositionUtility {
 	public static Range selectAttributeValueFromGivenValue(String attrValue, int offset, DOMDocument document) {
 		DOMNode element = document.findNodeAt(offset);
 		if (element != null && element.hasAttributes()) {
-			List<DOMAttr> attribues = element.getAttributeNodes();
-			for (int i = attribues.size() - 1; i >= 0; i--) {
-				DOMAttr attr = attribues.get(i);
+			DOMAttr found = null;
+			for (DOMAttr attr : element.attributes()) {
 				if (offset > attr.getStart() && attrValue.equals(attr.getValue())) {
-					return createAttrValueRange(attr, document);
+					found = attr;
 				}
+			}
+			if (found != null) {
+				return createAttrValueRange(found, document);
 			}
 		}
 		return null;
@@ -169,8 +171,7 @@ public class XMLPositionUtility {
 	public static Range selectAttributeValueByGivenValueAt(String attrValue, int offset, DOMDocument document) {
 		DOMNode element = document.findNodeAt(offset);
 		if (element != null && element.hasAttributes()) {
-			List<DOMAttr> attributes = element.getAttributeNodes();
-			for (DOMAttr attr : attributes) {
+			for (DOMAttr attr : element.attributes()) {
 				if (attrValue.equals(attr.getValue())) {
 					return createAttrValueRange(attr, document);
 				}
@@ -242,14 +243,13 @@ public class XMLPositionUtility {
 	 */
 	public static Range selectChildNodeAttributeValueFromGivenNameAt(String childNodeName, String attrName, int offset,
 			DOMDocument document) {
-		List<DOMNode> childNodes = document.findNodeAt(offset).getChildren();
-		if (childNodes.size() == 0) {
+		DOMNode parent = document.findNodeAt(offset);
+		if (!parent.hasChildNodes()) {
 			return null;
 		}
-		for (DOMNode domNode : childNodes) {
+		for (DOMNode domNode : parent.children()) {
 			if (domNode.getNodeName().equals(childNodeName) && domNode.hasAttributes()) {
-				List<DOMAttr> attributes = domNode.getAttributeNodes();
-				for (DOMAttr attr : attributes) {
+				for (DOMAttr attr : domNode.attributes()) {
 					if (attrName.equals(attr.getName())) {
 						return createAttrValueRange(attr, document);
 					}
@@ -264,8 +264,7 @@ public class XMLPositionUtility {
 		if (element != null && element.hasAttributes()) {
 			int startOffset = -1;
 			int endOffset = 0;
-			List<DOMAttr> attributes = element.getAttributeNodes();
-			for (DOMAttr attr : attributes) {
+			for (DOMAttr attr : element.attributes()) {
 				if (startOffset == -1) {
 					startOffset = attr.getStart();
 					endOffset = attr.getEnd();
@@ -379,9 +378,9 @@ public class XMLPositionUtility {
 		DOMNode curr = parent;
 		DOMNode child;
 		while (curr != null) {
-			child = findUnclosedChildNode(childTag, curr.getChildren());
+			child = findUnclosedChildNode(childTag, curr.children());
 			if (child == null) {
-				curr = findUnclosedChildNode(curr.getChildren());
+				curr = findUnclosedChildNode(curr.children());
 			} else {
 				return createRange(child.getStart() + 1, child.getStart() + 1 + childTag.length(), document);
 			}
@@ -391,7 +390,7 @@ public class XMLPositionUtility {
 		return createRange(parent.getStart() + 2, parent.getStart() + 2 + parentName.length(), document);
 	}
 
-	private static DOMNode findUnclosedChildNode(List<DOMNode> children) {
+	private static DOMNode findUnclosedChildNode(Iterable<DOMNode> children) {
 		for (DOMNode child : children) {
 			if (!child.isClosed()) {
 				return child;
@@ -400,7 +399,7 @@ public class XMLPositionUtility {
 		return null;
 	}
 
-	private static DOMNode findUnclosedChildNode(String childTag, List<DOMNode> children) {
+	private static DOMNode findUnclosedChildNode(String childTag, Iterable<DOMNode> children) {
 		for (DOMNode child : children) {
 			if (child.isElement() && childTag != null && childTag.equals(((DOMElement) child).getTagName())
 					&& !child.isClosed()) {
@@ -716,7 +715,7 @@ public class XMLPositionUtility {
 	public static Range selectFirstNonWhitespaceText(int offset, DOMDocument document) {
 		DOMNode element = document.findNodeAt(offset);
 		if (element != null) {
-			for (DOMNode node : element.getChildren()) {
+			for (DOMNode node : element.children()) {
 				if (node.isText() || node.isCDATA()) {
 					DOMCharacterData data = (DOMCharacterData) node;
 					int start = data.getStartContent();

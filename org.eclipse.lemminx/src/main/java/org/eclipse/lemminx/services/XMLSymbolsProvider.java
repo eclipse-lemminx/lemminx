@@ -141,20 +141,20 @@ class XMLSymbolsProvider {
 				List<DOMNode> attrToIgnoreList = getFilteredNodeAttributes(node, filter, hasFilterForAttr);
 				// Convert to HashSet for O(1) lookup instead of O(n) with List.contains()
 				Set<DOMNode> attrToIgnore = attrToIgnoreList.isEmpty() ? Collections.emptySet() : new HashSet<>(attrToIgnoreList);
-				for (DOMAttr attr : node.getAttributeNodes()) {
+				for (DOMAttr attr : node.attributes()) {
 					findSymbolInformations(attr, containerName, symbols, attrToIgnore.contains(attr), filter, hasFilterForAttr,
 							cancelChecker);
 				}
 			}
 		}
-		node.getChildren().forEach(child -> {
+		for (DOMNode child : node.children()) {
 			try {
 				findSymbolInformations(child, containerName, symbols, false, filter, hasFilterForAttr, cancelChecker);
 			} catch (BadLocationException e) {
 				LOGGER.log(Level.SEVERE, "XMLSymbolsProvider was given a BadLocation by the provided 'node' variable",
 						e);
 			}
-		});
+		}
 	}
 
 	// -------------- Document symbols
@@ -177,7 +177,7 @@ class XMLSymbolsProvider {
 			boolean isDTD = xmlDocument.isDTD();
 			boolean hasFilterForAttr = filter.hasFilterFor(MatcherType.ATTRIBUTE);
 			Set<DOMNode> nodesToIgnore = new HashSet<>();
-			xmlDocument.getRoots().forEach(node -> {
+			for (DOMNode node : xmlDocument.getRoots()) {
 				try {
 					if ((node.isDoctype() && isDTD)) {
 						nodesToIgnore.add(node);
@@ -187,7 +187,7 @@ class XMLSymbolsProvider {
 					LOGGER.log(Level.SEVERE,
 							"XMLSymbolsProvider#findDocumentSymbols was given a BadLocation by a 'node' variable", e);
 				}
-			});
+			}
 		} catch (ResultLimitExceededException e) {
 			symbols.setResultLimitExceeded(true);
 		}
@@ -230,21 +230,20 @@ class XMLSymbolsProvider {
 					List<DOMNode> attrToIgnoreList = getFilteredNodeAttributes(node, filter, hasFilterForAttr);
 					// Convert to HashSet for O(1) lookup instead of O(n) with List.contains()
 					Set<DOMNode> attrToIgnore = attrToIgnoreList.isEmpty() ? Collections.emptySet() : new HashSet<>(attrToIgnoreList);
-					for (DOMAttr attr : node.getAttributeNodes()) {
+					for (DOMAttr attr : node.attributes()) {
 						findDocumentSymbols(attr, childrenSymbols, attrToIgnore, filter, hasFilterForAttr, cancelChecker);
 					}
 				}
 			} else {
 				if (node.isDTDElementDecl() || (nodesToIgnore != null && node.isDTDAttListDecl())) {
 					// In the case of DTD ELEMENT we try to add in the children the DTD ATTLIST
-					Collection<DOMNode> attlistDecls;
+					Iterable<DOMNode> attlistDecls;
 					if (node.isDTDElementDecl()) {
 						DTDElementDecl elementDecl = (DTDElementDecl) node;
 						String elementName = elementDecl.getName();
 						attlistDecls = node.getOwnerDocument().findDTDAttrList(elementName);
 					} else {
-						attlistDecls = new ArrayList<>();
-						attlistDecls.add(node);
+						attlistDecls = Collections.singletonList(node);
 					}
 
 					for (DOMNode attrDecl : attlistDecls) {
@@ -268,14 +267,14 @@ class XMLSymbolsProvider {
 			return;
 		}
 		final DocumentSymbolsResult childrenOfChild = childrenSymbols;
-		node.getChildren().forEach(child -> {
+		for (DOMNode child : node.children()) {
 			try {
 				findDocumentSymbols(child, childrenOfChild, nodesToIgnore, filter, hasFilterForAttr, cancelChecker);
 			} catch (BadLocationException e) {
 				LOGGER.log(Level.SEVERE, "XMLSymbolsProvider was given a BadLocation by the provided 'node' variable",
 						e);
 			}
-		});
+		}
 	}
 
 	private List<DOMNode> getFilteredNodeAttributes(DOMNode node, XMLSymbolFilter filter, boolean hasFilterForAttr){
@@ -284,7 +283,7 @@ class XMLSymbolsProvider {
 		}
 
 		List<DOMNode> attrNodesToIgnore = new ArrayList<DOMNode>();
-		for(DOMAttr attrNode : node.getAttributeNodes()){
+		for(DOMAttr attrNode : node.attributes()){
 			XMLSymbolExpressionFilter filterExpression = filter.getFilterForInlineAttr(attrNode);
 			if(filterExpression != null){
 				// prevent rendering the attribute as a child node if it's
@@ -356,7 +355,7 @@ class XMLSymbolsProvider {
 				if (firstChild != null && firstChild.isText() && filter.isNodeSymbol(firstChild)) {
 					return element.getTagName() + ": " + firstChild.getNodeValue();
 				} else if(hasFilterForAttr && node.hasAttributes()){
-					for(DOMAttr attrNode : node.getAttributeNodes()){
+					for(DOMAttr attrNode : node.attributes()){
 						XMLSymbolExpressionFilter inlineAttrfilter = filter.getFilterForInlineAttr(attrNode);
 						if(inlineAttrfilter != null){
 							if(!inlineAttrfilter.isShowAttributeName()){
