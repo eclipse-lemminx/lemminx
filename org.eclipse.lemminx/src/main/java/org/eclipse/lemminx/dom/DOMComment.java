@@ -12,11 +12,13 @@
  */
 package org.eclipse.lemminx.dom;
 
+import org.w3c.dom.Comment;
+
 /**
  * A Comment node.
  *
  */
-public class DOMComment extends DOMCharacterData implements org.w3c.dom.Comment {
+public class DOMComment extends DOMCharacterData implements Comment {
 
 	int startContent;
 

@@ -188,7 +188,7 @@ public class SearchEngine {
 		}
 		if (node.hasChildNodes()) {
 			// Search in the children
-			for (DOMNode child : node.getChildren()) {
+			for (DOMNode child : node.children()) {
 				searchInNode(child, query, collector, externalURIs, cancelChecker);
 			}
 		}

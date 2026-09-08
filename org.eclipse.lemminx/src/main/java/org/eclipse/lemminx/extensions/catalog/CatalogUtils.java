@@ -66,7 +66,7 @@ public class CatalogUtils {
 		if (!DOMUtils.isCatalog(document)) {
 			return Collections.emptyList();
 		}
-		for (DOMNode n : document.getChildren()) {
+		for (DOMNode n : document.children()) {
 			if (n.isElement() && CATALOG_ENTITY_NAME.equals(n.getNodeName())) {
 				return collectCatalogEntries((DOMElement) n);
 			}
@@ -142,7 +142,7 @@ public class CatalogUtils {
 		List<CatalogEntry> entries = new ArrayList<>();
 		String baseURI = catalog.getAttribute(XML_BASE_ATTRIBUTE);
 		baseURI = baseURI == null ? "" : baseURI;
-		for (DOMNode node : catalog.getChildren()) {
+		for (DOMNode node : catalog.children()) {
 			if (node.isElement()) {
 				DOMElement element = (DOMElement) node;
 				CatalogEntry catalogEntry = createCatalogEntry(baseURI, element);
@@ -169,7 +169,7 @@ public class CatalogUtils {
 		if (groupSegment != null) {
 			baseURI = Paths.get(baseURI, groupSegment).toString();
 		}
-		for (DOMNode node : group.getChildren()) {
+		for (DOMNode node : group.children()) {
 			if (node.isElement()) {
 				DOMElement element = (DOMElement) node;
 				CatalogEntry catalogEntry = createCatalogEntry(baseURI, element);

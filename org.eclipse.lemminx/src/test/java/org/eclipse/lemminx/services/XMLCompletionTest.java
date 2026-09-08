@@ -178,6 +178,12 @@ public class XMLCompletionTest {
 	}
 
 	@Test
+	public void testAutoCloseTagCompletionNoAttributes() {
+		assertAutoCloseEndTagCompletionWithRange("<a/|></a>", ">$0", r(0, 3, 0, 8));
+		assertAutoCloseEndTagCompletion("<a/|", ">$0");
+	}
+
+	@Test
 	public void testAutoCloseEnabledDisabled() throws BadLocationException {
 		testCompletionFor("<a><div|<a>", false, c("div", "<div>"));
 		testCompletionFor("<a><div|<a>", true, c("div", "<div></div>"));

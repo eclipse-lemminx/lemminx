@@ -137,7 +137,7 @@ public class XMLFormatterDocumentOld {
 
 	private boolean containsTextWithinStartTag() {
 
-		if (this.rangeDomDocument.getChildren().size() < 1) {
+		if (!this.rangeDomDocument.hasChildNodes()) {
 			return false;
 		}
 
@@ -325,7 +325,7 @@ public class XMLFormatterDocumentOld {
 			}
 		} else if (node.hasChildNodes()) {
 			// Other nodes kind like root
-			for (DOMNode child : node.getChildren()) {
+			for (DOMNode child : node.children()) {
 				format(child);
 			}
 		}
@@ -475,7 +475,7 @@ public class XMLFormatterDocumentOld {
 					// element has body
 
 					this.indentLevel++;
-					for (DOMNode child : element.getChildren()) {
+					for (DOMNode child : element.children()) {
 						hasElements = hasElements || !child.isText();
 						format(child);
 					}
@@ -547,10 +547,9 @@ public class XMLFormatterDocumentOld {
 	}
 
 	private void formatAttributes(DOMElement element) throws BadLocationException {
-		List<DOMAttr> attributes = element.getAttributeNodes();
 		boolean isSingleAttribute = hasSingleAttributeInFullDoc(element);
 		int prevOffset = element.getStart();
-		for (DOMAttr attr : attributes) {
+		for (DOMAttr attr : element.attributes()) {
 			formatAttribute(attr, isSingleAttribute, prevOffset);
 			prevOffset = attr.getEnd();
 		}
@@ -608,8 +607,7 @@ public class XMLFormatterDocumentOld {
 		if (!element.hasAttributes()) {
 			return null;
 		}
-		List<DOMAttr> attributes = element.getAttributeNodes();
-		return attributes.get(attributes.size() - 1);
+		return element.getLastAttr();
 	}
 
 	/**
@@ -622,7 +620,7 @@ public class XMLFormatterDocumentOld {
 	 */
 	private boolean hasSingleAttributeInFullDoc(DOMElement element) {
 		DOMElement fullElement = getFullDocElemFromRangeElem(element);
-		return fullElement.getAttributeNodes().size() == 1;
+		return fullElement.hasSingleAttribute();
 	}
 
 	/**
@@ -657,7 +655,7 @@ public class XMLFormatterDocumentOld {
 
 	private static boolean formatDTD(DOMDocumentType doctype, int level, int end, XMLBuilder xmlBuilder) {
 		DOMNode previous = null;
-		for (DOMNode node : doctype.getChildren()) {
+		for (DOMNode node : doctype.children()) {
 			if (previous != null) {
 				xmlBuilder.linefeed();
 			}
@@ -794,11 +792,10 @@ public class XMLFormatterDocumentOld {
 	 * Will add all attributes, to the given builder, on a single line
 	 */
 	private static void addPrologAttributes(DOMNode node, XMLBuilder xmlBuilder) {
-		List<DOMAttr> attrs = node.getAttributeNodes();
-		if (attrs == null) {
+		if (!node.hasAttributes()) {
 			return;
 		}
-		for (DOMAttr attr : attrs) {
+		for (DOMAttr attr : node.attributes()) {
 			xmlBuilder.addPrologAttribute(attr);
 		}
 	}

@@ -54,9 +54,8 @@ public class DOMProcessingInstructionFormatter {
 		if (processingInstruction.hasAttributes()) {
 			// --- <?xml version = \"1.0\" encoding = \"UTF-8\"?>
 			// --> <?xml version=\"1.0\" encoding=\"UTF-8\"?>
-			List<DOMAttr> attributes = processingInstruction.getAttributeNodes();
-			boolean singleAttribute = attributes.size() == 1;
-			for (DOMAttr attr : attributes) {
+			boolean singleAttribute = processingInstruction.hasSingleAttribute();
+			for (DOMAttr attr : processingInstruction.attributes()) {
 				attributeFormatter.formatAttribute(attr, prevOffset, singleAttribute, false, false, parentConstraints, edits);
 				prevOffset = attr.getEnd();
 			}

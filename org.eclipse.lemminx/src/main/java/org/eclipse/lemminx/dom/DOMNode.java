@@ -12,11 +12,11 @@
  */
 package org.eclipse.lemminx.dom;
 
+import java.util.AbstractList;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
-import java.util.function.Function;
 
 import org.w3c.dom.DOMException;
 import org.w3c.dom.NamedNodeMap;
@@ -60,27 +60,11 @@ public abstract class DOMNode implements Node, DOMRange {
 	 */
 	public static final short DTD_DECL_NODE = 105;
 
-	private byte flags = 0;
-	static final byte FLAG_CLOSED = 0x01;
-	static final byte FLAG_SELF_CLOSED = 0x02;           // DOMElement
-	static final byte FLAG_START_TAG_CLOSE = 0x04;       // DOMProcessingInstruction
-	static final byte FLAG_PROLOG = 0x08;                // DOMProcessingInstruction
-	static final byte FLAG_PROCESSING_INSTRUCTION = 0x10;// DOMProcessingInstruction
-	static final byte FLAG_WHITESPACE = 0x20;            // DOMCharacterData
-	static final byte FLAG_COMMENT_SAME_LINE = 0x40;     // DOMComment
-
-	private XMLNodeList<DOMNode> children;
-
-	final int start; // |<root> </root>
-	int end; // <root> </root>|
+	DOMNode nextSibling;
 
 	DOMNode parent;
-	
-	// Cache the index in parent's children list to avoid O(n) indexOf() calls
-	// This is set to -1 when not cached, and updated when needed
-	int cachedIndexInParent = -1;
 
-	private static final NodeList EMPTY_CHILDREN = new NodeList() {
+	static final NodeList EMPTY_CHILDREN = new NodeList() {
 
 		@Override
 		public Node item(int index) {
@@ -92,59 +76,6 @@ public abstract class DOMNode implements Node, DOMRange {
 			return 0;
 		}
 	};
-
-	static class XMLNodeList<T extends DOMNode> extends ArrayList<T> implements NodeList {
-
-		private static final long serialVersionUID = 1L;
-		
-		// Pre-allocate capacity to reduce ArrayList resizing overhead
-		// Most elements have 2-5 children, so start with capacity of 4
-		private static final int INITIAL_CAPACITY = 4;
-
-		XMLNodeList() {
-			super(INITIAL_CAPACITY);
-		}
-
-		@Override
-		public int getLength() {
-			return super.size();
-		}
-
-		@Override
-		public DOMNode item(int index) {
-			return super.get(index);
-		}
-		
-		@Override
-		public boolean add(T node) {
-			boolean result = super.add(node);
-			// Invalidate cached indices for all nodes after this one
-			invalidateCachedIndices(size() - 1);
-			return result;
-		}
-		
-		@Override
-		public void add(int index, T node) {
-			super.add(index, node);
-			// Invalidate cached indices for all nodes from this index onwards
-			invalidateCachedIndices(index);
-		}
-		
-		@Override
-		public T remove(int index) {
-			T removed = super.remove(index);
-			// Invalidate cached indices for all nodes from this index onwards
-			invalidateCachedIndices(index);
-			return removed;
-		}
-		
-		private void invalidateCachedIndices(int fromIndex) {
-			for (int i = fromIndex; i < size(); i++) {
-				get(i).cachedIndexInParent = -1;
-			}
-		}
-
-	}
 
 	static class XMLNamedNodeMap<T extends DOMNode> extends ArrayList<T> implements NamedNodeMap {
 
@@ -186,21 +117,18 @@ public abstract class DOMNode implements Node, DOMRange {
 		}
 
 		@Override
-		public T setNamedItem(org.w3c.dom.Node arg0) throws DOMException {
+		public T setNamedItem(Node arg0) throws DOMException {
 			throw new UnsupportedOperationException();
 		}
 
 		@Override
-		public T setNamedItemNS(org.w3c.dom.Node arg0) throws DOMException {
+		public T setNamedItemNS(Node arg0) throws DOMException {
 			throw new UnsupportedOperationException();
 		}
 
 	}
 
-	public DOMNode(int start, int end) {
-		this.start = start;
-		this.end = end;
-		// flags is already initialized to 0, so FLAG_CLOSED is not set
+	DOMNode() {
 	}
 
 	/**
@@ -231,26 +159,28 @@ public abstract class DOMNode implements Node, DOMRange {
 			result.append("\t");
 		}
 		result.append("{start: ");
-		result.append(start);
+		result.append(getStart());
 		result.append(", end: ");
-		result.append(end);
+		result.append(getEnd());
 		result.append(", name: ");
 		result.append(getNodeName());
 		result.append(", closed: ");
 		result.append(isClosed());
-		if (children != null && children.size() > 0) {
+		DOMNode fc = getFirstChild();
+		if (fc != null) {
 			result.append(", \n");
 			for (int i = 0; i < indent + 1; i++) {
 				result.append("\t");
 			}
 			result.append("children:[");
-			for (int i = 0; i < children.size(); i++) {
-				DOMNode node = children.get(i);
-				result.append("\n");
-				result.append(node.toString(indent + 2));
-				if (i < children.size() - 1) {
+			boolean first = true;
+			for (DOMNode node = fc; node != null; node = node.nextSibling) {
+				if (!first) {
 					result.append(",");
 				}
+				result.append("\n");
+				result.append(node.toString(indent + 2));
+				first = false;
 			}
 			result.append("\n");
 			for (int i = 0; i < indent + 1; i++) {
@@ -272,33 +202,10 @@ public abstract class DOMNode implements Node, DOMRange {
 	 * Returns the node before
 	 */
 	public DOMNode findNodeBefore(int offset) {
-		List<DOMNode> children = getChildren();
-		int idx = findFirst(children, c -> offset <= c.start) - 1;
-		if (idx >= 0) {
-			DOMNode child = children.get(idx);
-			if (offset > child.start) {
-				if (offset < child.end) {
-					return child.findNodeBefore(offset);
-				}
-				DOMNode lastChild = child.getLastChild();
-				if (lastChild != null && lastChild.end == child.end) {
-					return child.findNodeBefore(offset);
-				}
-				return child;
-			}
-		}
 		return this;
 	}
 
 	public DOMNode findNodeAt(int offset) {
-		List<DOMNode> children = getChildren();
-		int idx = findFirst(children, c -> offset <= c.start) - 1;
-		if (idx >= 0) {
-			DOMNode child = children.get(idx);
-			if (isIncluded(child, offset)) {
-				return child.findNodeAt(offset);
-			}
-		}
 		return this;
 	}
 
@@ -327,7 +234,7 @@ public abstract class DOMNode implements Node, DOMRange {
 
 	public static DOMAttr findAttrAt(DOMNode node, int offset) {
 		if (node != null && node.hasAttributes()) {
-			for (DOMAttr attr : node.getAttributeNodes()) {
+			for (DOMAttr attr : node.attributes()) {
 				if (attr.isIncluded(offset)) {
 					return attr;
 				}
@@ -355,7 +262,7 @@ public abstract class DOMNode implements Node, DOMRange {
 
 	public static DOMText findTextAt(DOMNode node, int offset) {
 		if (node != null && node.hasChildNodes()) {
-			for (DOMNode child : node.getChildren()) {
+			for (DOMNode child = node.getFirstChild(); child != null; child = child.nextSibling) {
 				if (child.isText() && isIncluded(child, offset)) {
 					return (DOMText) child;
 				}
@@ -375,30 +282,6 @@ public abstract class DOMNode implements Node, DOMRange {
 		return node;
 	}
 
-	/**
-	 * Takes a sorted array and a function p. The array is sorted in such a way that
-	 * all elements where p(x) is false are located before all elements where p(x)
-	 * is true.
-	 * 
-	 * @returns the least x for which p(x) is true or array.length if no element
-	 *          full fills the given function.
-	 */
-	private static <T> int findFirst(List<T> array, Function<T, Boolean> p) {
-		int low = 0, high = array.size();
-		if (high == 0) {
-			return 0; // no children
-		}
-		while (low < high) {
-			int mid = (int) Math.floor((low + high) / 2);
-			if (p.apply(array.get(mid))) {
-				high = mid;
-			} else {
-				low = mid + 1;
-			}
-		}
-		return low;
-	}
-
 	public DOMAttr getAttributeNode(String name) {
 		return getAttributeNode(null, name);
 	}
@@ -409,19 +292,24 @@ public abstract class DOMNode implements Node, DOMRange {
 	 * If there is no namespace, set prefix to null.
 	 */
 	public DOMAttr getAttributeNode(String prefix, String suffix) {
-		StringBuilder sb = new StringBuilder();
-		if (prefix != null) {
-			sb.append(prefix);
-			sb.append(":");
-		}
-		sb.append(suffix);
-		String name = sb.toString();
 		if (!hasAttributes()) {
 			return null;
 		}
-		for (DOMAttr attr : getAttributeNodes()) {
-			if (name.equals(attr.getName())) {
-				return attr;
+		for (DOMAttr attr : attributes()) {
+			String attrName = attr.getName();
+			if (prefix == null) {
+				if (suffix.equals(attrName)) {
+					return attr;
+				}
+			} else {
+				int prefixLen = prefix.length();
+				int suffixLen = suffix.length();
+				if (attrName.length() == prefixLen + 1 + suffixLen
+						&& attrName.startsWith(prefix)
+						&& attrName.charAt(prefixLen) == ':'
+						&& attrName.regionMatches(prefixLen + 1, suffix, 0, suffixLen)) {
+					return attr;
+				}
 			}
 		}
 		return null;
@@ -457,14 +345,14 @@ public abstract class DOMNode implements Node, DOMRange {
 	 * @return
 	 */
 	public DOMAttr getAttributeAtIndex(int index) {
-		if (!hasAttributes()) {
-			return null;
+		int i = 0;
+		for (DOMAttr attr : attributes()) {
+			if (i == index) {
+				return attr;
+			}
+			i++;
 		}
-		List<DOMAttr> attrs = getAttributeNodes();
-		if (index > attrs.size() - 1) {
-			return null;
-		}
-		return attrs.get(index);
+		return null;
 	}
 
 	public boolean hasAttribute(String name) {
@@ -478,7 +366,35 @@ public abstract class DOMNode implements Node, DOMRange {
 	 */
 	@Override
 	public boolean hasAttributes() {
-		return false;
+		return getFirstAttr() != null;
+	}
+
+	/**
+	 * Returns true if this node has exactly one attribute.
+	 *
+	 * @return true if this node has exactly one attribute and false otherwise.
+	 */
+	public boolean hasSingleAttribute() {
+		DOMAttr first = getFirstAttr();
+		return first != null && first.nextAttr() == null;
+	}
+
+	/**
+	 * Returns the last attribute of this node, or null if there are no
+	 * attributes.
+	 *
+	 * @return the last attribute of this node, or null.
+	 */
+	public DOMAttr getLastAttr() {
+		DOMAttr first = getFirstAttr();
+		if (first == null) {
+			return null;
+		}
+		DOMAttr last = first;
+		for (DOMAttr next = first.nextAttr(); next != null; next = next.nextAttr()) {
+			last = next;
+		}
+		return last;
 	}
 
 	public void setAttribute(String name, String value) {
@@ -493,41 +409,199 @@ public abstract class DOMNode implements Node, DOMRange {
 	public void setAttributeNode(DOMAttr attr) {
 	}
 
+	public Iterable<DOMAttr> attributes() {
+		DOMAttr first = getFirstAttr();
+		if (first == null) {
+			return Collections.emptyList();
+		}
+		return () -> new Iterator<DOMAttr>() {
+			DOMAttr current = first;
+
+			@Override
+			public boolean hasNext() {
+				return current != null;
+			}
+
+			@Override
+			public DOMAttr next() {
+				DOMAttr attr = current;
+				current = current.nextAttr();
+				return attr;
+			}
+		};
+	}
+
+	/**
+	 * @deprecated Use {@link #attributes()} to traverse attributes without
+	 *             allocating a list.
+	 */
+	@Deprecated
 	public List<DOMAttr> getAttributeNodes() {
+		return createAttributeList(getFirstAttr());
+	}
+
+	static void addAttribute(DOMAttr attr, DOMNode owner) {
+		attr.nextSibling = null;
+		DOMAttr first = owner.getFirstAttr();
+		if (first == null) {
+			owner.setFirstAttr(attr);
+		} else {
+			DOMAttr last = first;
+			while (last.nextAttr() != null) {
+				last = last.nextAttr();
+			}
+			last.nextSibling = attr;
+		}
+	}
+
+	DOMAttr getFirstAttr() {
+		return null;
+	}
+
+	void setFirstAttr(DOMAttr attr) {
+	}
+
+	static List<DOMAttr> createAttributeList(DOMAttr firstAttr) {
+		if (firstAttr == null) {
+			return Collections.emptyList();
+		}
+		return new AbstractList<DOMAttr>() {
+			@Override
+			public DOMAttr get(int index) {
+				int i = 0;
+				for (DOMAttr attr = firstAttr; attr != null; attr = attr.nextAttr()) {
+					if (i == index) {
+						return attr;
+					}
+					i++;
+				}
+				throw new IndexOutOfBoundsException(index);
+			}
+
+			@Override
+			public int size() {
+				int count = 0;
+				for (DOMAttr attr = firstAttr; attr != null; attr = attr.nextAttr()) {
+					count++;
+				}
+				return count;
+			}
+
+			@Override
+			public Iterator<DOMAttr> iterator() {
+				return new Iterator<DOMAttr>() {
+					DOMAttr current = firstAttr;
+
+					@Override
+					public boolean hasNext() {
+						return current != null;
+					}
+
+					@Override
+					public DOMAttr next() {
+						DOMAttr node = current;
+						current = current.nextAttr();
+						return node;
+					}
+				};
+			}
+		};
+	}
+
+	static NamedNodeMap createAttributeNamedNodeMap(DOMAttr firstAttr) {
+		if (firstAttr == null) {
+			return null;
+		}
+		return new NamedNodeMap() {
+			@Override
+			public int getLength() {
+				int count = 0;
+				for (DOMAttr attr = firstAttr; attr != null; attr = attr.nextAttr()) {
+					count++;
+				}
+				return count;
+			}
+
+			@Override
+			public Node getNamedItem(String name) {
+				for (DOMAttr attr = firstAttr; attr != null; attr = attr.nextAttr()) {
+					if (name.equals(attr.getNodeName())) {
+						return attr;
+					}
+				}
+				return null;
+			}
+
+			@Override
+			public Node getNamedItemNS(String ns, String local) throws DOMException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public Node item(int index) {
+				int i = 0;
+				for (DOMAttr attr = firstAttr; attr != null; attr = attr.nextAttr()) {
+					if (i == index) {
+						return attr;
+					}
+					i++;
+				}
+				return null;
+			}
+
+			@Override
+			public Node removeNamedItem(String name) throws DOMException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public Node removeNamedItemNS(String ns, String local) throws DOMException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public Node setNamedItem(Node arg) throws DOMException {
+				throw new UnsupportedOperationException();
+			}
+
+			@Override
+			public Node setNamedItemNS(Node arg) throws DOMException {
+				throw new UnsupportedOperationException();
+			}
+		};
+	}
+
+	/**
+	 * Returns the first child having an attribute with the given name and value,
+	 * or null if none found.
+	 *
+	 * @param name  name of attribute
+	 * @param value value of attribute
+	 * @return the first matching child, or null
+	 */
+	public DOMNode findChildWithAttributeValue(String name, String value) {
 		return null;
 	}
 
 	/**
-	 * Returns a list of children, each having an attribute called name, with a
-	 * value of value
-	 * 
-	 * @param name  name of attribute
-	 * @param value value of attribute
-	 * @return list of children, each having a specified attribute name and value
+	 * Returns an iterable over this node's children. Does not allocate a list.
+	 *
+	 * @return an iterable over the children.
 	 */
-	public List<DOMNode> getChildrenWithAttributeValue(String name, String value) {
-		List<DOMNode> result = new ArrayList<>();
-		for (DOMNode child : getChildren()) {
-			if (child.hasAttribute(name)) {
-				String attrValue = child.getAttribute(name);
-				if (Objects.equals(attrValue, value)) {
-					result.add(child);
-				}
-			}
-		}
-		return result;
+	public Iterable<DOMNode> children() {
+		return Collections.emptyList();
 	}
 
 	/**
-	 * Returns the node children.
-	 * 
+	 * Returns the node children as a list.
+	 *
 	 * @return the node children.
+	 * @deprecated Use {@link #children()} to traverse children without allocating a
+	 *             list.
 	 */
+	@Deprecated
 	public List<DOMNode> getChildren() {
-		if (children == null) {
-			return Collections.emptyList();
-		}
-		return children;
+		return Collections.emptyList();
 	}
 
 	/**
@@ -537,42 +611,27 @@ public abstract class DOMNode implements Node, DOMRange {
 	 */
 	public void addChild(DOMNode child) {
 		child.parent = this;
-		if (children == null) {
-			children = new XMLNodeList<>();
-		}
-		// Cache the index when adding
-		child.cachedIndexInParent = children.size();
-		children.add(child);
+		child.nextSibling = null;
 	}
 
 	/**
 	 * Returns node child at the given index.
-	 * 
+	 *
 	 * @param index
 	 * @return node child at the given index.
 	 */
 	public DOMNode getChild(int index) {
-		return getChildren().get(index);
-	}
-
-	boolean getFlag(byte flag) {
-		return (flags & flag) != 0;
-	}
-
-	void setFlag(byte flag, boolean value) {
-		if (value) {
-			flags |= flag;
-		} else {
-			flags &= ~flag;
-		}
+		return null;
 	}
 
 	public boolean isClosed() {
-		return getFlag(FLAG_CLOSED);
+		return false;
 	}
 
 	void setClosed(boolean closed) {
-		setFlag(FLAG_CLOSED, closed);
+	}
+
+	void setEnd(int end) {
 	}
 
 	public DOMElement getParentElement() {
@@ -657,12 +716,12 @@ public abstract class DOMNode implements Node, DOMRange {
 
 	@Override
 	public int getStart() {
-		return start;
+		return NULL_VALUE;
 	}
 
 	@Override
 	public int getEnd() {
-		return end;
+		return NULL_VALUE;
 	}
 
 	/*
@@ -692,17 +751,17 @@ public abstract class DOMNode implements Node, DOMRange {
 	 */
 	@Override
 	public DOMNode getFirstChild() {
-		return this.children != null && children.size() > 0 ? this.children.get(0) : null;
+		return null;
 	}
 
 	/*
 	 * (non-Javadoc)
-	 * 
+	 *
 	 * @see org.w3c.dom.Node#getLastChild()
 	 */
 	@Override
 	public DOMNode getLastChild() {
-		return this.children != null && this.children.size() > 0 ? this.children.get(this.children.size() - 1) : null;
+		return null;
 	}
 
 	/*
@@ -722,7 +781,7 @@ public abstract class DOMNode implements Node, DOMRange {
 	 */
 	@Override
 	public NodeList getChildNodes() {
-		return children != null ? children : EMPTY_CHILDREN;
+		return EMPTY_CHILDREN;
 	}
 
 	/*
@@ -731,7 +790,7 @@ public abstract class DOMNode implements Node, DOMRange {
 	 * @see org.w3c.dom.Node#appendChild(org.w3c.dom.Node)
 	 */
 	@Override
-	public org.w3c.dom.Node appendChild(org.w3c.dom.Node newChild) throws DOMException {
+	public Node appendChild(Node newChild) throws DOMException {
 		throw new UnsupportedOperationException();
 	}
 
@@ -741,7 +800,7 @@ public abstract class DOMNode implements Node, DOMRange {
 	 * @see org.w3c.dom.Node#cloneNode(boolean)
 	 */
 	@Override
-	public org.w3c.dom.Node cloneNode(boolean deep) {
+	public Node cloneNode(boolean deep) {
 		throw new UnsupportedOperationException();
 	}
 
@@ -751,7 +810,7 @@ public abstract class DOMNode implements Node, DOMRange {
 	 * @see org.w3c.dom.Node#compareDocumentPosition(org.w3c.dom.Node)
 	 */
 	@Override
-	public short compareDocumentPosition(org.w3c.dom.Node other) throws DOMException {
+	public short compareDocumentPosition(Node other) throws DOMException {
 		throw new UnsupportedOperationException();
 	}
 
@@ -787,22 +846,11 @@ public abstract class DOMNode implements Node, DOMRange {
 	 */
 	@Override
 	public DOMNode getNextSibling() {
-		DOMNode parentNode = getParentNode();
-		if (parentNode == null) {
-			return null;
-		}
-		List<DOMNode> children = parentNode.getChildren();
-		
-		// Use cached index if available to avoid O(n) indexOf() call
-		int currentIndex = cachedIndexInParent;
-		if (currentIndex == -1) {
-			// Cache miss - compute and cache the index
-			currentIndex = children.indexOf(this);
-			cachedIndexInParent = currentIndex;
-		}
-		
-		int nextIndex = currentIndex + 1;
-		return nextIndex < children.size() ? children.get(nextIndex) : null;
+		return nextSibling;
+	}
+
+	public boolean hasSiblings() {
+		return parent != null && parent.getFirstChild() != parent.getLastChild();
 	}
 
 	@Override
@@ -822,22 +870,17 @@ public abstract class DOMNode implements Node, DOMRange {
 	 */
 	@Override
 	public DOMNode getPreviousSibling() {
-		DOMNode parentNode = getParentNode();
-		if (parentNode == null) {
+		if (parent == null) {
 			return null;
 		}
-		List<DOMNode> children = parentNode.getChildren();
-		
-		// Use cached index if available to avoid O(n) indexOf() call
-		int currentIndex = cachedIndexInParent;
-		if (currentIndex == -1) {
-			// Cache miss - compute and cache the index
-			currentIndex = children.indexOf(this);
-			cachedIndexInParent = currentIndex;
+		DOMNode prev = null;
+		for (DOMNode child = parent.getFirstChild(); child != null; child = child.nextSibling) {
+			if (child == this) {
+				return prev;
+			}
+			prev = child;
 		}
-		
-		int previousIndex = currentIndex - 1;
-		return previousIndex >= 0 ? children.get(previousIndex) : null;
+		return null;
 	}
 
 	public DOMNode getPreviousNonTextSibling() {
@@ -923,12 +966,12 @@ public abstract class DOMNode implements Node, DOMRange {
 			return null;
 		// concatenation of the textContent attribute value of every child node
 		default:
-			if (this.children != null && children.size() > 0) {
+			DOMNode fc = getFirstChild();
+			if (fc != null) {
 				final StringBuilder builder = new StringBuilder();
-				for (DOMNode child : children) {
+				for (DOMNode child = fc; child != null; child = child.nextSibling) {
 					short nodeType = child.getNodeType();
 					if (nodeType == Node.COMMENT_NODE || nodeType == Node.PROCESSING_INSTRUCTION_NODE) {
-						// excluding COMMENT_NODE and PROCESSING_INSTRUCTION_NODE nodes.
 						continue;
 					}
 					String text = child.getTextContent();
@@ -938,7 +981,6 @@ public abstract class DOMNode implements Node, DOMRange {
 				}
 				return builder.toString();
 			}
-			// empty string if the node has no children
 			return "";
 		}
 	}
@@ -955,11 +997,11 @@ public abstract class DOMNode implements Node, DOMRange {
 	 */
 	@Override
 	public boolean hasChildNodes() {
-		return children != null && !children.isEmpty();
+		return false;
 	}
 
 	@Override
-	public org.w3c.dom.Node insertBefore(org.w3c.dom.Node arg0, org.w3c.dom.Node arg1) throws DOMException {
+	public Node insertBefore(Node arg0, Node arg1) throws DOMException {
 		return null;
 	}
 
@@ -969,12 +1011,12 @@ public abstract class DOMNode implements Node, DOMRange {
 	}
 
 	@Override
-	public boolean isEqualNode(org.w3c.dom.Node arg0) {
+	public boolean isEqualNode(Node arg0) {
 		return false;
 	}
 
 	@Override
-	public boolean isSameNode(org.w3c.dom.Node arg0) {
+	public boolean isSameNode(Node arg0) {
 		return false;
 	}
 
@@ -998,12 +1040,12 @@ public abstract class DOMNode implements Node, DOMRange {
 	}
 
 	@Override
-	public org.w3c.dom.Node removeChild(org.w3c.dom.Node arg0) throws DOMException {
+	public Node removeChild(Node arg0) throws DOMException {
 		return null;
 	}
 
 	@Override
-	public org.w3c.dom.Node replaceChild(org.w3c.dom.Node arg0, org.w3c.dom.Node arg1) throws DOMException {
+	public Node replaceChild(Node arg0, Node arg1) throws DOMException {
 		return null;
 	}
 

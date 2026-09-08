@@ -31,45 +31,37 @@ import org.w3c.dom.TypeInfo;
  * An Element node.
  *
  */
-public class DOMElement extends DOMNode implements org.w3c.dom.Element {
+public class DOMElement extends DOMContainerNode implements org.w3c.dom.Element {
 
-	private XMLNamedNodeMap<DOMAttr> attributeNodes;
+	DOMAttr firstAttr;
 
 	String tag;
 
-	// DomElement.start == startTagOpenOffset
-	int startTagOpenOffset = NULL_VALUE; // |<root>
 	int startTagCloseOffset = NULL_VALUE; // <root |>
-
 	int endTagOpenOffset = NULL_VALUE; // <root> |</root >
-	int endTagCloseOffset = NULL_VALUE;// <root> </root |>
-	// DomElement.end = <root> </root>| , is always scanner.getTokenEnd()
 
 	public DOMElement(int start, int end) {
 		super(start, end);
 	}
 
 	@Override
-	public boolean hasAttributes() {
-		return attributeNodes != null && !attributeNodes.isEmpty();
-	}
-
-	@Override
-	public List<DOMAttr> getAttributeNodes() {
-		return attributeNodes;
-	}
-
-	@Override
 	public NamedNodeMap getAttributes() {
-		return attributeNodes;
+		return createAttributeNamedNodeMap(firstAttr);
 	}
 
 	@Override
 	public void setAttributeNode(DOMAttr attr) {
-		if (attributeNodes == null) {
-			attributeNodes = new XMLNamedNodeMap<>();
-		}
-		attributeNodes.add(attr);
+		addAttribute(attr, this);
+	}
+
+	@Override
+	DOMAttr getFirstAttr() {
+		return firstAttr;
+	}
+
+	@Override
+	void setFirstAttr(DOMAttr attr) {
+		firstAttr = attr;
 	}
 
 	/*
@@ -206,7 +198,7 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	public Collection<String> getAllPrefixes() {
 		if (hasAttributes()) {
 			Collection<String> prefixes = new ArrayList<>();
-			for (DOMAttr attr : getAttributeNodes()) {
+			for (DOMAttr attr : attributes()) {
 				if (attr.isNoDefaultXmlns()) {
 					prefixes.add(attr.extractPrefixFromXmlns());
 				}
@@ -227,7 +219,7 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 			return null;
 		}
 		if (hasAttributes()) {
-			for (DOMAttr attr : getAttributeNodes()) {
+			for (DOMAttr attr : attributes()) {
 				String prefix = attr.getPrefixIfMatchesURI(namespaceURI);
 				if (prefix != null) {
 					return prefix;
@@ -310,11 +302,11 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	}
 
 	public boolean isInStartTag(int offset) {
-		if (startTagOpenOffset == NULL_VALUE || startTagCloseOffset == NULL_VALUE) {
+		if (!hasStartTag() || startTagCloseOffset == NULL_VALUE) {
 			// case <|
 			return true;
 		}
-		if (offset > startTagOpenOffset && offset <= startTagCloseOffset) {
+		if (offset > start && offset <= startTagCloseOffset) {
 			// case <bean | >
 			return true;
 		}
@@ -349,7 +341,7 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 *         doesn't exist.
 	 */
 	public int getStartTagOpenOffset() {
-		return startTagOpenOffset;
+		return hasStartTag() ? start : NULL_VALUE;
 	}
 
 	/**
@@ -382,7 +374,7 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 *         exist.
 	 */
 	public int getEndTagCloseOffset() {
-		return endTagCloseOffset;
+		return isEndTagClosed() ? end - 1 : NULL_VALUE;
 	}
 
 	/**
@@ -394,7 +386,7 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 * @return true if has a start tag.
 	 */
 	public boolean hasStartTag() {
-		return getStartTagOpenOffset() != NULL_VALUE;
+		return getFlag(FLAG_HAS_START_TAG);
 	}
 
 	/**
@@ -420,7 +412,7 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	 * If '>' exists in </root>
 	 */
 	public boolean isEndTagClosed() {
-		return getEndTagCloseOffset() != NULL_VALUE;
+		return getFlag(FLAG_END_TAG_CLOSED);
 	}
 
 	/**
@@ -521,8 +513,7 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 		}
 		// search if it exists an end tag
 		DOMElement orphanEndElement = null;
-		List<DOMNode> children = getChildren();
-		for (DOMNode child : children) {
+		for (DOMNode child : children()) {
 			if (child.isElement()) {
 				DOMElement childElement = (DOMElement) child;
 				if (childElement.isOrphanEndTagOf(tagName)) {
@@ -550,11 +541,6 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 	@Override
 	public String getAttributeNS(String arg0, String arg1) throws DOMException {
 		return null;
-	}
-
-	@Override
-	public DOMAttr getAttributeNode(String name) {
-		return super.getAttributeNode(name);
 	}
 
 	@Override
@@ -630,7 +616,7 @@ public class DOMElement extends DOMNode implements org.w3c.dom.Element {
 		if (!hasChildNodes()) {
 			return true;
 		}
-		for (DOMNode child : getChildren()) {
+		for (DOMNode child : children()) {
 			if (child.isText()) {
 				DOMText text = (DOMText) child;
 				if (!text.isElementContentWhitespace()) {

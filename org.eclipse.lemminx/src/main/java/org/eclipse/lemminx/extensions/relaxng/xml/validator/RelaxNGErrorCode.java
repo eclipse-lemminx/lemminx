@@ -241,7 +241,7 @@ public enum RelaxNGErrorCode implements IXMLErrorCode {
 	}
 
 	private static DOMAttr findRefByName(DOMNode parent, String refName) {
-		for (DOMNode child : parent.getChildren()) {
+		for (DOMNode child : parent.children()) {
 			if (child.isElement() && RelaxNGUtils.isRef((DOMElement) child)) {
 				DOMElement ref = (DOMElement) child;
 				DOMAttr attr = ref.getAttributeNode(RelaxNGUtils.NAME_ATTR);

@@ -591,9 +591,8 @@ public class XMLCompletions {
 				Integer slashOffset = element1.endsWith('/', offset);
 				Position end = null;
 				if (!element1.isInEndTag(offset) && slashOffset != null) { // The typed characted was '/'
-					List<DOMAttr> attrList = element1.getAttributeNodes();
-					if (attrList != null) {
-						DOMAttr lastAttr = attrList.get(attrList.size() - 1);
+					DOMAttr lastAttr = element1.getLastAttr();
+					if (lastAttr != null) {
 						if (slashOffset < lastAttr.getEnd()) { // slash in attribute value
 							return null;
 						}
@@ -712,17 +711,17 @@ public class XMLCompletions {
 			// no grammar, collect similar tags from the parent node
 			Set<String> seenElements = new HashSet<>();
 			if (parentNode != null && parentNode.isElement() && parentNode.hasChildNodes()) {
-				parentNode.getChildren().forEach(node -> {
+				for (DOMNode node : parentNode.children()) {
 					DOMElement element = node.isElement() ? (DOMElement) node : null;
 					if (element == null || element.getTagName() == null
 							|| seenElements.contains(element.getTagName())) {
-						return;
+						continue;
 					}
 					String tag = element.getTagName();
 					seenElements.add(tag);
 					DOMElementCompletionItem item = new DOMElementCompletionItem(element, completionRequest);
 					completionResponse.addCompletionItem(item);
-				});
+				}
 			}
 		}
 	}

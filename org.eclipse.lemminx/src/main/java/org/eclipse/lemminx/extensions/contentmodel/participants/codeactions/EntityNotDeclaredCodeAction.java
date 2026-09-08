@@ -183,7 +183,7 @@ public class EntityNotDeclaredCodeAction implements ICodeActionParticipant {
 		if (!document.hasProlog()) {
 			return new Position(0, 0);
 		}
-		int prologEnd = document.getChildren().get(0).getEnd();
+		int prologEnd = document.getFirstChild().getEnd();
 		return document.positionAt(prologEnd);
 	}
 

@@ -14,108 +14,91 @@ package org.eclipse.lemminx.dom;
 
 import static java.lang.System.lineSeparator;
 
-import java.util.List;
-
 import org.eclipse.lemminx.commons.BadLocationException;
-import org.eclipse.lemminx.utils.StringUtils;
 import org.w3c.dom.DOMException;
+import org.w3c.dom.CharacterData;
 
 /**
  * A CharacterData node.
  *
  */
-public abstract class DOMCharacterData extends DOMNode implements org.w3c.dom.CharacterData {
-
-	private String delimiter;
+public abstract class DOMCharacterData extends DOMTreeNode implements CharacterData {
 
 	public DOMCharacterData(int start, int end) {
 		super(start, end);
 	}
 
 	public boolean hasMultiLine() {
-		return getData().contains(getDelimiter());
+		CharSequence text = getOwnerDocument().getTextSequence();
+		for (int i = getStartContent(); i < getEndContent(); i++) {
+			char c = text.charAt(i);
+			if (c == '\n' || c == '\r') {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	public String getDelimiter() {
-		if (delimiter != null) {
-			return delimiter;
-		}
 		try {
-			delimiter = getOwnerDocument().getTextDocument().lineDelimiter(0);
-			return delimiter;
+			return getOwnerDocument().getTextDocument().lineDelimiter(0);
 		} catch (BadLocationException e) {
-			delimiter = lineSeparator();
-			return delimiter;
+			return lineSeparator();
 		}
 	}
 
 	/**
 	 * If data ends with a new line character.
-	 * 
+	 *
 	 * Returns false if a character is found before a new line. Non-newline
 	 * whitespace will be ignored while searching.
-	 * 
+	 *
 	 * If no data exists, returns false.
-	 * 
-	 * @return true if newline character ocurrs before non-whitespace character
+	 *
+	 * @return true if newline character occurs before non-whitespace character
 	 */
 	public boolean endsWithNewLine() {
-		if (hasData()) {
-			String data = getData();
-			for (int i = data.length() - 1; i >= 0; i--) {
-				char c = data.charAt(i);
-				if (!Character.isWhitespace(c)) {
-					return false;
-				}
-				if (c == '\n') {
-					return true;
-				}
-
+		CharSequence text = getOwnerDocument().getTextSequence();
+		int startContent = getStartContent();
+		int endContent = getEndContent();
+		for (int i = endContent - 1; i >= startContent; i--) {
+			char c = text.charAt(i);
+			if (!Character.isWhitespace(c)) {
+				return false;
+			}
+			if (c == '\n') {
+				return true;
 			}
 		}
 		return false;
 	}
 
 	/**
-	 * If data ends with a new line character.
-	 * 
+	 * If data starts with a new line character.
+	 *
 	 * Returns false if a character is found before a new line. Non-newline
 	 * whitespace will be ignored while searching.
-	 * 
-	 * @return true if newline character ocurrs before non-whitespace character
+	 *
+	 * @return true if newline character occurs before non-whitespace character
 	 */
 	public boolean startsWithNewLine() {
-		if (hasData()) {
-			String data = getData();
-			for (int i = 0; i < data.length(); i++) {
-				char c = data.charAt(i);
-				if (!Character.isWhitespace(c)) {
-					return false;
-				}
-				if (c == '\n' || c == '\r') {
-					return true;
-				}
-
+		CharSequence text = getOwnerDocument().getTextSequence();
+		int startContent = getStartContent();
+		int endContent = getEndContent();
+		for (int i = startContent; i < endContent; i++) {
+			char c = text.charAt(i);
+			if (!Character.isWhitespace(c)) {
+				return false;
+			}
+			if (c == '\n' || c == '\r') {
+				return true;
 			}
 		}
 		return false;
-	}
-
-	public String getNormalizedData() {
-		// No caching - compute on demand to save memory
-		return StringUtils.normalizeSpace(getData());
 	}
 
 	public boolean hasData() {
-		return !getData().isEmpty();
-	}
-
-	/**
-	 * Returns true if this node has sibling nodes.
-	 */
-	public boolean hasSiblings() {
-		List<DOMNode> childrenOfParent = this.parent.getChildren();
-		return childrenOfParent.size() > 1;
+		return getStartContent() < getEndContent();
 	}
 
 	public int getStartContent() {
@@ -183,7 +166,7 @@ public abstract class DOMCharacterData extends DOMNode implements org.w3c.dom.Ch
 	 */
 	@Override
 	public int getLength() {
-		return getData().length();
+		return getEndContent() - getStartContent();
 	}
 
 	/*

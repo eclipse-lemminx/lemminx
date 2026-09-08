@@ -15,6 +15,7 @@ package org.eclipse.lemminx.dom;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -1182,7 +1183,7 @@ public class DOMParserTest {
 		}
 	}
 
-	private static class MockNode extends DOMNode {
+	private static class MockNode extends DOMTreeNode {
 
 		public MockNode(int start, int end) {
 			super(start, end);
@@ -1250,8 +1251,8 @@ public class DOMParserTest {
 			assertEquals(((DOMProcessingInstruction) expectedNode).getEndTagStart(),
 					((DOMProcessingInstruction) actualNode).getEndTagStart());
 		}
-		assertEquals(expectedNode.start, actualNode.start);
-		assertEquals(expectedNode.end, actualNode.end);
+		assertEquals(expectedNode.getStart(), actualNode.getStart());
+		assertEquals(expectedNode.getEnd(), actualNode.getEnd());
 		assertEquals(expectedNode.getAttributeNodes(), actualNode.getAttributeNodes());
 
 		if (expectedNode.isCharacterData()) {
@@ -1396,6 +1397,238 @@ public class DOMParserTest {
 		DOMNode text = document.getDocumentElement().getFirstChild();
 		assertTrue(text.isText());
 		assertFalse(text.hasAttributes());
+	}
+
+	// --- Linked list children tests ---
+
+	@Test
+	public void testChildrenIterable() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root><a/><b/><c/></root>", "", null);
+		DOMElement root = document.getDocumentElement();
+		int count = 0;
+		String[] expected = { "a", "b", "c" };
+		for (DOMNode child : root.children()) {
+			assertTrue(child.isElement());
+			assertEquals(expected[count], ((DOMElement) child).getTagName());
+			count++;
+		}
+		assertEquals(3, count);
+	}
+
+	@Test
+	public void testChildrenIterableEmpty() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root/>", "", null);
+		DOMElement root = document.getDocumentElement();
+		int count = 0;
+		for (DOMNode child : root.children()) {
+			count++;
+		}
+		assertEquals(0, count);
+	}
+
+	@Test
+	public void testSiblingNavigation() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root><a/><b/><c/></root>", "", null);
+		DOMElement root = document.getDocumentElement();
+		DOMNode first = root.getFirstChild();
+		assertNotNull(first);
+		assertEquals("a", first.getNodeName());
+
+		DOMNode second = first.getNextSibling();
+		assertNotNull(second);
+		assertEquals("b", second.getNodeName());
+
+		DOMNode third = second.getNextSibling();
+		assertNotNull(third);
+		assertEquals("c", third.getNodeName());
+		assertSame(root.getLastChild(), third);
+
+		assertEquals(null, third.getNextSibling());
+
+		assertSame(second, third.getPreviousSibling());
+		assertSame(first, second.getPreviousSibling());
+		assertEquals(null, first.getPreviousSibling());
+	}
+
+	@Test
+	public void testLeafNodeHasNoChildren() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root>hello</root>", "", null);
+		DOMNode text = document.getDocumentElement().getFirstChild();
+		assertTrue(text.isText());
+		assertFalse(text.hasChildNodes());
+		assertEquals(null, text.getFirstChild());
+		assertEquals(null, text.getLastChild());
+		assertEquals(0, text.getChildNodes().getLength());
+	}
+
+	@Test
+	public void testContainerNodeHasChildren() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root><child/></root>", "", null);
+		DOMElement root = document.getDocumentElement();
+		assertTrue(root instanceof DOMContainerNode);
+		assertTrue(root.hasChildNodes());
+		assertNotNull(root.getFirstChild());
+		assertSame(root.getFirstChild(), root.getLastChild());
+	}
+
+	// --- Attribute linked list tests ---
+
+	@Test
+	public void testAttributeLinkedListOrder() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root a=\"1\" b=\"2\" c=\"3\"/>", "", null);
+		DOMElement root = document.getDocumentElement();
+		List<DOMAttr> attrs = root.getAttributeNodes();
+		assertEquals(3, attrs.size());
+		assertEquals("a", attrs.get(0).getName());
+		assertEquals("b", attrs.get(1).getName());
+		assertEquals("c", attrs.get(2).getName());
+	}
+
+	@Test
+	public void testAttributeNextSibling() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root x=\"1\" y=\"2\" z=\"3\"/>", "", null);
+		DOMElement root = document.getDocumentElement();
+		List<DOMAttr> attrs = root.getAttributeNodes();
+		DOMAttr x = attrs.get(0);
+		DOMAttr y = attrs.get(1);
+		DOMAttr z = attrs.get(2);
+		assertSame(y, x.getNextSibling());
+		assertSame(z, y.getNextSibling());
+		assertEquals(null, z.getNextSibling());
+	}
+
+	@Test
+	public void testFindChildWithAttributeValue() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root><a name=\"foo\"/><b name=\"bar\"/></root>", "", null);
+		DOMElement root = document.getDocumentElement();
+		DOMNode found = root.findChildWithAttributeValue("name", "bar");
+		assertNotNull(found);
+		assertEquals("b", found.getNodeName());
+		assertEquals(null, root.findChildWithAttributeValue("name", "baz"));
+	}
+
+	@Test
+	public void testHasSingleAttributeNone() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root/>", "", null);
+		DOMElement root = document.getDocumentElement();
+		assertFalse(root.hasSingleAttribute());
+	}
+
+	@Test
+	public void testHasSingleAttributeOne() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root a=\"1\"/>", "", null);
+		DOMElement root = document.getDocumentElement();
+		assertTrue(root.hasSingleAttribute());
+	}
+
+	@Test
+	public void testHasSingleAttributeTwo() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root a=\"1\" b=\"2\"/>", "", null);
+		DOMElement root = document.getDocumentElement();
+		assertFalse(root.hasSingleAttribute());
+	}
+
+	@Test
+	public void testGetLastAttrNone() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root/>", "", null);
+		DOMElement root = document.getDocumentElement();
+		assertNull(root.getLastAttr());
+	}
+
+	@Test
+	public void testGetLastAttrOne() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root a=\"1\"/>", "", null);
+		DOMElement root = document.getDocumentElement();
+		DOMAttr last = root.getLastAttr();
+		assertNotNull(last);
+		assertEquals("a", last.getName());
+	}
+
+	@Test
+	public void testGetLastAttrMultiple() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root a=\"1\" b=\"2\" c=\"3\"/>", "", null);
+		DOMElement root = document.getDocumentElement();
+		DOMAttr last = root.getLastAttr();
+		assertNotNull(last);
+		assertEquals("c", last.getName());
+	}
+
+	@Test
+	public void testGetAttributeAtIndex() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root a=\"1\" b=\"2\" c=\"3\"/>", "", null);
+		DOMElement root = document.getDocumentElement();
+		assertEquals("a", root.getAttributeAtIndex(0).getName());
+		assertEquals("b", root.getAttributeAtIndex(1).getName());
+		assertEquals("c", root.getAttributeAtIndex(2).getName());
+		assertNull(root.getAttributeAtIndex(3));
+		assertNull(root.getAttributeAtIndex(-1));
+	}
+
+	// --- DOMCharacterData tests ---
+
+	@Test
+	public void testHasMultiLine() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root>line1\nline2</root>", "", null);
+		DOMText text = (DOMText) document.getDocumentElement().getFirstChild();
+		assertTrue(text.hasMultiLine());
+	}
+
+	@Test
+	public void testHasMultiLineSingleLine() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root>single line</root>", "", null);
+		DOMText text = (DOMText) document.getDocumentElement().getFirstChild();
+		assertFalse(text.hasMultiLine());
+	}
+
+	@Test
+	public void testStartsWithNewLine() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root>\n  text</root>", "", null);
+		DOMText text = (DOMText) document.getDocumentElement().getFirstChild();
+		assertTrue(text.startsWithNewLine());
+	}
+
+	@Test
+	public void testEndsWithNewLine() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root>text  \n</root>", "", null);
+		DOMText text = (DOMText) document.getDocumentElement().getFirstChild();
+		assertTrue(text.endsWithNewLine());
+	}
+
+	@Test
+	public void testHasSiblings() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root><a/>text</root>", "", null);
+		DOMElement root = document.getDocumentElement();
+		DOMNode a = root.getFirstChild();
+		DOMNode text = a.getNextSibling();
+		assertTrue(text.hasSiblings());
+	}
+
+	@Test
+	public void testHasSiblingsAlone() {
+		DOMDocument document = DOMParser.getInstance().parse(
+				"<root>text</root>", "", null);
+		DOMNode text = document.getDocumentElement().getFirstChild();
+		assertFalse(text.hasSiblings());
 	}
 
 	public DOMDocument getXMLDocument(String input) {

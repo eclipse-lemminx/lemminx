@@ -14,12 +14,13 @@ package org.eclipse.lemminx.dom;
 
 import org.eclipse.lemminx.utils.StringUtils;
 import org.w3c.dom.DOMException;
+import org.w3c.dom.Text;
 
 /**
  * A Text node.
  *
  */
-public class DOMText extends DOMCharacterData implements org.w3c.dom.Text {
+public class DOMText extends DOMCharacterData implements Text {
 
 	public DOMText(int start, int end) {
 		super(start, end);

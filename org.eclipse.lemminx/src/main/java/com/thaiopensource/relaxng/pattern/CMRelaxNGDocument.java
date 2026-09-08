@@ -271,15 +271,13 @@ public class CMRelaxNGDocument implements CMDocument {
 		if (choice == null) {
 			return null;
 		}
-		int length = choice.getChildren().size();
-		for (int i = 0; i < length; i++) {
-			DOMNode child = choice.getChild(i);
+		for (DOMNode child : choice.children()) {
 			if (isDOMElement(child, VALUE_ELT)) {
 				// <value>a</value>
 				DOMElement valueElement = (DOMElement) child;
-				if (i < length - 1 && value.equals(getTextContent(valueElement))) {
-					DOMNode next = choice.getChild(i + 1);
-					if (isDOMElement(next, DOCUMENTATION_ELT)) {
+				if (value.equals(getTextContent(valueElement))) {
+					DOMNode next = child.getNextSibling();
+					if (next != null && isDOMElement(next, DOCUMENTATION_ELT)) {
 						return (DOMElement) next;
 					}
 					return null;

@@ -30,6 +30,7 @@ import org.eclipse.lemminx.dom.DOMAttr;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMDocumentType;
 import org.eclipse.lemminx.dom.DOMElement;
+import org.eclipse.lemminx.dom.DOMNode;
 import org.eclipse.lemminx.dom.NoNamespaceSchemaLocation;
 import org.eclipse.lemminx.dom.SchemaLocationHint;
 import org.eclipse.lemminx.dom.XMLModel;
@@ -346,7 +347,12 @@ public class XMLValidator {
 			return false;
 		}
 		// Disable the DTD validation only if there are not <!ELEMENT or an <!ATTRLIST
-		return !docType.getChildren().stream().anyMatch(node -> node.isDTDElementDecl() || node.isDTDAttListDecl());
+		for (DOMNode node : docType.children()) {
+			if (node.isDTDElementDecl() || node.isDTDAttListDecl()) {
+				return false;
+			}
+		}
+		return true;
 	}
 
 	/**

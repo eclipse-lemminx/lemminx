@@ -49,8 +49,7 @@ public class XSDDocumentLinkParticipant implements IDocumentLinkParticipant {
 			return;
 		}
 		String xmlSchemaPrefix = root.getPrefix();
-		List<DOMNode> children = root.getChildren();
-		for (DOMNode child : children) {
+		for (DOMNode child : root.children()) {
 			if (child.isElement() && Objects.equals(child.getPrefix(), xmlSchemaPrefix)) {
 				DOMElement xsdElement = (DOMElement) child;
 				if (XSDUtils.isXSInclude(xsdElement) || XSDUtils.isXSImport(xsdElement)) {

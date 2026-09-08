@@ -97,7 +97,7 @@ public class DOMDocTypeFormatter {
 	private void formatDTD(DOMDocumentType docType, XMLFormattingConstraints parentConstraints, int start, int end,
 			List<TextEdit> edits) {
 		boolean addLineSeparator = !docType.getOwnerDocument().isDTD();
-		for (DOMNode child : docType.getChildren()) {
+		for (DOMNode child : docType.children()) {
 			switch (child.getNodeType()) {
 
 			case DOMNode.DTD_ELEMENT_DECL_NODE:
