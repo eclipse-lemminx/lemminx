@@ -1289,11 +1289,13 @@ public class XMLAssert {
 		Position position = document.positionAt(offset);
 
 		DOMDocument htmlDoc = DOMParser.getInstance().parse(document, xmlLanguageService.getResolverExtensionManager());
+		xmlLanguageService.setDocumentProvider((uri) -> htmlDoc);
 		// Configure XML catalog for XML schema
 		if (catalogPath != null) {
 			settings.setCatalogs(new String[] { catalogPath });
 		}
 		xmlLanguageService.doSave(new SettingsSaveContext(settings));
+		xmlLanguageService.initializeIfNeeded();
 
 		Hover hover = xmlLanguageService.doHover(htmlDoc, position, sharedSettings);
 		if (expectedHoverLabel == null) {
