@@ -13,6 +13,8 @@
  *******************************************************************************/
 package org.eclipse.lemminx.dom;
 
+import java.util.Objects;
+
 import org.eclipse.lemminx.utils.XMLPositionUtility;
 import org.eclipse.lsp4j.Range;
 
@@ -82,6 +84,11 @@ public class DTDDeclParameter implements DOMRange, TargetRange {
 		}
 		DTDDeclParameter temp = (DTDDeclParameter) obj;
 		return start == temp.start && end == temp.end;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(end, start);
 	}
 
 	@Override
