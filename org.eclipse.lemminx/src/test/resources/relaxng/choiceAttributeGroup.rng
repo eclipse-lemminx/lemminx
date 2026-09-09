@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<grammar xmlns="http://relaxng.org/ns/structure/1.0"
+         datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
+
+    <start>
+        <ref name="root"/>
+    </start>
+
+    <define name="keyname.type">
+        <data type="string"/>
+    </define>
+
+    <define name="root">
+        <element name="root">
+            <zeroOrMore>
+                <ref name="key.element"/>
+            </zeroOrMore>
+        </element>
+    </define>
+
+    <define name="key.element">
+        <element name="key">
+            <attribute name="name">
+                <ref name="keyname.type"/>
+            </attribute>
+            <ref name="structured.content"/>
+        </element>
+    </define>
+
+    <define name="structured.content">
+        <choice>
+            <group>
+                <attribute name="type">
+                    <value>dict</value>
+                </attribute>
+                <zeroOrMore>
+                    <element name="key">
+                        <attribute name="name">
+                            <ref name="keyname.type"/>
+                        </attribute>
+                        <ref name="structured.content"/>
+                    </element>
+                </zeroOrMore>
+            </group>
+            <group>
+                <attribute name="type">
+                    <value>arr</value>
+                </attribute>
+                <zeroOrMore>
+                    <element name="item">
+                        <ref name="structured.content"/>
+                    </element>
+                </zeroOrMore>
+            </group>
+            <group>
+                <attribute name="type">
+                    <value>str</value>
+                </attribute>
+                <data type="string"/>
+            </group>
+        </choice>
+    </define>
+</grammar>

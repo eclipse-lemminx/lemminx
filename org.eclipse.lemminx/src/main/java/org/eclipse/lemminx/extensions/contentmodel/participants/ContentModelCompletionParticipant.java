@@ -306,7 +306,7 @@ public class ContentModelCompletionParticipant extends CompletionParticipantAdap
 		if (parentElement == null) {
 			return;
 		}
-		Collection<CMAttributeDeclaration> attributes = elementDeclaration.getAttributes();
+		Collection<CMAttributeDeclaration> attributes = elementDeclaration.getPossibleAttributes(parentElement);
 		if (attributes == null) {
 			return;
 		}

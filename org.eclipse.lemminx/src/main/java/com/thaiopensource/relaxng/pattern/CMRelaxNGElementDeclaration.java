@@ -126,6 +126,46 @@ public class CMRelaxNGElementDeclaration implements CMElementDeclaration {
 		return attributes;
 	}
 
+	/**
+	 * Returns the possible attributes for the given parent element, using
+	 * {@link PatternMatcher} to narrow down the valid attributes based on
+	 * already-specified attributes. This respects {@code <choice>} groups:
+	 * e.g. if {@code Type="Bar"} is already set, only attributes from the
+	 * matching choice branch are returned.
+	 */
+	@Override
+	public Collection<CMAttributeDeclaration> getPossibleAttributes(DOMElement parentElement) {
+		if (parentElement == null || !parentElement.hasAttributes()) {
+			return getAttributes();
+		}
+		// Use the same PatternMatcher approach as getPossibleElements(),
+		// but for attributes: simulate the start tag and feed existing
+		// attributes to narrow the matcher's state.
+		PatternMatcher matcher = new PatternMatcher(pattern, new ValidatorPatternBuilder(new SchemaPatternBuilder()));
+		matcher.matchStartDocument();
+		Context context = new Context();
+		Name n = createName(parentElement);
+		matcher.matchStartTagOpen(n, n.getLocalName(), context);
+		// Feed already-specified attributes so the matcher selects the
+		// matching <choice> branch
+		for (DOMAttr attr : parentElement.attributes()) {
+			Name a = createName(attr);
+			matcher.matchAttributeName(a, a.getLocalName(), context);
+			matcher.matchAttributeValue(attr.getValue(), a, a.getLocalName(), context);
+		}
+		// Ask the matcher which attributes are still valid
+		com.thaiopensource.relaxng.match.NameClass nc = matcher.possibleAttributeNames();
+		Set<Name> allowed = nc.getIncludedNames();
+		List<CMAttributeDeclaration> possibleAttributes = new ArrayList<>();
+		for (Name name : allowed) {
+			CMAttributeDeclaration possible = findCMAttribute(name.getLocalName(), name.getNamespaceUri());
+			if (possible != null) {
+				possibleAttributes.add(possible);
+			}
+		}
+		return possibleAttributes;
+	}
+
 	@Override
 	public Collection<CMElementDeclaration> getElements() {
 		if (elements == null) {

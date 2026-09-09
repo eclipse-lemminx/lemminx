@@ -26,7 +26,10 @@ import org.eclipse.lemminx.XMLAssert;
 import org.eclipse.lemminx.commons.BadLocationException;
 import org.eclipse.lemminx.extensions.contentmodel.BaseFileTempTest;
 import org.eclipse.lemminx.services.XMLLanguageService;
+import org.eclipse.lemminx.settings.SharedSettings;
+import org.eclipse.lsp4j.CompletionCapabilities;
 import org.eclipse.lsp4j.CompletionItem;
+import org.eclipse.lsp4j.CompletionItemCapabilities;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -237,12 +240,109 @@ public class XMLCompletionBasedOnRelaxNGTest extends BaseFileTempTest {
 				c("noupdate", te(1, 6, 1, 6, "noupdate=\"\""), "noupdate"));
 	}
 
+	// Tests for https://github.com/redhat-developer/vscode-xml/issues/1107
+
+	@Test
+	public void completionOnElementWithChoiceAttributeGroup() throws BadLocationException {
+		String xml = "<?xml-model href=\"choiceAttributeGroup.rng\" ?>\r\n" + //
+				"<root>\r\n" + //
+				"  <|\r\n" + //
+				"</root>";
+		// Without snippet
+		testCompletionFor(xml, //
+				null, //
+				c("key", te(2, 2, 2, 3, "<key name=\"\" type=\"\"></key>"), "<key"));
+		// With snippet
+		testCompletionSnippetSupportFor(xml, //
+				null, //
+				c("key", te(2, 2, 2, 3, "<key name=\"$1\" type=\"${2|dict,arr,str|}\">$3</key>$0"), "<key"));
+	}
+
+	@Test
+	public void completionOnAttributeNameWithChoiceAttributeGroup() throws BadLocationException {
+		String xml = "<?xml-model href=\"choiceAttributeGroup.rng\" ?>\r\n" + //
+				"<root>\r\n" + //
+				"  <key name=\"foo\" |></key>\r\n" + //
+				"</root>";
+		// Without snippet
+		testCompletionFor(xml, //
+				1, //
+				c("type", te(2, 18, 2, 18, "type=\"\""), "type"));
+		// With snippet
+		testCompletionSnippetSupportFor(xml, //
+				1, //
+				c("type", te(2, 18, 2, 18, "type=\"${1|dict,arr,str|}\"$0"), "type"));
+	}
+
+	@Test
+	public void completionOnAttributeValueWithChoiceAttributeGroup() throws BadLocationException {
+		String xml = "<?xml-model href=\"choiceAttributeGroup.rng\" ?>\r\n" + //
+				"<root>\r\n" + //
+				"  <key name=\"foo\" type=\"|\" />\r\n" + //
+				"</root>";
+		testCompletionFor(xml, //
+				3, //
+				c("dict", te(2, 24, 2, 24, "dict"), "dict"), //
+				c("arr", te(2, 24, 2, 24, "arr"), "arr"), //
+				c("str", te(2, 24, 2, 24, "str"), "str"));
+	}
+
+	@Test
+	public void completionOnAttributeNameWithChoiceAttributeGroupDistinct() throws BadLocationException {
+		// When Type="Bar" is set, only BarAttr should be offered (not FooAttr)
+		String xml = "<?xml-model href=\"choiceAttributeGroupDistinct.rng\" ?>\r\n" + //
+				"<Items>\r\n" + //
+				"  <Item Type=\"Bar\" |></Item>\r\n" + //
+				"</Items>";
+		testCompletionFor(xml, //
+				1, //
+				c("BarAttr", te(2, 19, 2, 19, "BarAttr=\"\""), "BarAttr"));
+	}
+
+	@Test
+	public void completionOnAttributeNameWithChoiceAttributeGroupDistinctFoo() throws BadLocationException {
+		// When Type="Foo" is set, only FooAttr should be offered (not BarAttr)
+		String xml = "<?xml-model href=\"choiceAttributeGroupDistinct.rng\" ?>\r\n" + //
+				"<Items>\r\n" + //
+				"  <Item Type=\"Foo\" |></Item>\r\n" + //
+				"</Items>";
+		testCompletionFor(xml, //
+				1, //
+				c("FooAttr", te(2, 19, 2, 19, "FooAttr=\"\""), "FooAttr"));
+	}
+
+	@Test
+	public void completionOnAttributeNameWithChoiceAttributeGroupDistinctNoContext() throws BadLocationException {
+		// When no attributes are set, all attributes should be offered
+		String xml = "<?xml-model href=\"choiceAttributeGroupDistinct.rng\" ?>\r\n" + //
+				"<Items>\r\n" + //
+				"  <Item |></Item>\r\n" + //
+				"</Items>";
+		testCompletionFor(xml, //
+				3, //
+				c("Type", te(2, 8, 2, 8, "Type=\"\""), "Type"), //
+				c("FooAttr", te(2, 8, 2, 8, "FooAttr=\"\""), "FooAttr"), //
+				c("BarAttr", te(2, 8, 2, 8, "BarAttr=\"\""), "BarAttr"));
+	}
+
 	// role,xml:id,version,xml:lang,xml:base,remap,xreflabel,revisionflag,dir,arch,audience,condition,conformance,os,revision,security,userlevel,vendor,wordsize,annotations,linkend,xlink:href,xlink:type,xlink:role,xlink:arcrole,xlink:title,xlink:show,xlink:actuate,label,status
 
 	private static void testCompletionFor(String value, Integer expectedCount, CompletionItem... expectedItems)
 			throws BadLocationException {
 		XMLAssert.testCompletionFor(new XMLLanguageService(), value, null, null, "src/test/resources/relaxng/test.xml",
 				expectedCount, true, expectedItems);
+	}
+
+	private static void testCompletionSnippetSupportFor(String value, Integer expectedCount,
+			CompletionItem... expectedItems) throws BadLocationException {
+		CompletionCapabilities completionCapabilities = new CompletionCapabilities();
+		CompletionItemCapabilities completionItem = new CompletionItemCapabilities(true);
+		completionCapabilities.setCompletionItem(completionItem);
+
+		SharedSettings sharedSettings = new SharedSettings();
+		sharedSettings.getCompletionSettings().setCapabilities(completionCapabilities);
+		XMLAssert.testCompletionFor(new XMLLanguageService(), value, null, null, "src/test/resources/relaxng/test.xml",
+				expectedCount, sharedSettings, expectedItems);
 	}
 
 }

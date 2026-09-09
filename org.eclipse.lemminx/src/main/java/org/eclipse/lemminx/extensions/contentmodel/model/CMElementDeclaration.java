@@ -66,10 +66,22 @@ public interface CMElementDeclaration {
 
 	/**
 	 * Returns the attributes of this declared element.
-	 * 
+	 *
 	 * @return the attributes element of this declared element.
 	 */
 	Collection<CMAttributeDeclaration> getAttributes();
+
+	/**
+	 * Returns the possible attributes for the given parent element, taking into
+	 * account already-specified attributes to narrow choices (e.g. in RelaxNG
+	 * choice groups).
+	 *
+	 * @param parentElement the DOM element being edited.
+	 * @return the possible attribute declarations.
+	 */
+	default Collection<CMAttributeDeclaration> getPossibleAttributes(DOMElement parentElement) {
+		return getAttributes();
+	}
 
 	/**
 	 * Returns the children declared element of this declared element.

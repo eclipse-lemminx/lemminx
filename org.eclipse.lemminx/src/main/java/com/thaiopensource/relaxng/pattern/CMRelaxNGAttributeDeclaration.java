@@ -11,6 +11,7 @@
 *******************************************************************************/
 package com.thaiopensource.relaxng.pattern;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -47,10 +48,31 @@ public class CMRelaxNGAttributeDeclaration implements CMAttributeDeclaration {
 	private boolean required;
 	private List<String> values;
 
+	// Additional patterns from other <choice> branches that declare the same
+	// attribute name. Their enumeration values and documentation are merged with
+	// the primary pattern so that completion shows all possible values.
+	private List<AttributePattern> mergedPatterns;
+
 	public CMRelaxNGAttributeDeclaration(CMRelaxNGElementDeclaration element, AttributePattern pattern) {
 		this.cmElement = element;
 		this.pattern = pattern;
 		this.computedPrefix = false;
+	}
+
+	/**
+	 * Merges an additional {@link AttributePattern} from another {@code <choice>}
+	 * branch that declares the same attribute name. The merged pattern's
+	 * enumeration values and documentation will be included in
+	 * {@link #getEnumerationValues()} and
+	 * {@link #getAttributeValueDocumentation(String, ISharedSettingsRequest)}.
+	 *
+	 * @param p the attribute pattern to merge.
+	 */
+	void addMergedPattern(AttributePattern p) {
+		if (mergedPatterns == null) {
+			mergedPatterns = new ArrayList<>();
+		}
+		mergedPatterns.add(p);
 	}
 
 	@Override
@@ -102,6 +124,16 @@ public class CMRelaxNGAttributeDeclaration implements CMAttributeDeclaration {
 	public Collection<String> getEnumerationValues() {
 		if (values == null) {
 			values = new CMRelaxNGAttributeValuesCollector(pattern.getContent()).getValues();
+			// Collect enumeration values from merged <choice> branch patterns
+			if (mergedPatterns != null) {
+				for (AttributePattern mp : mergedPatterns) {
+					for (String v : new CMRelaxNGAttributeValuesCollector(mp.getContent()).getValues()) {
+						if (!values.contains(v)) {
+							values.add(v);
+						}
+					}
+				}
+			}
 		}
 		return values;
 	}
@@ -117,6 +149,15 @@ public class CMRelaxNGAttributeDeclaration implements CMAttributeDeclaration {
 			String documentation = cmElement.getCMDocument().getDocumentation(pattern.getLocator(), value);
 			if (documentation != null) {
 				return documentation;
+			}
+			// Check merged <choice> branch patterns for value-specific documentation
+			if (mergedPatterns != null) {
+				for (AttributePattern mp : mergedPatterns) {
+					documentation = cmElement.getCMDocument().getDocumentation(mp.getLocator(), value);
+					if (documentation != null) {
+						return documentation;
+					}
+				}
 			}
 		}
 		// There was no specific documentation for the value, so use the general
