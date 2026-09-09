@@ -176,4 +176,39 @@ public class XMLSchemaTypeDefinitionExtensionsTest extends AbstractCacheBasedTes
 				ll(targetSchemaURI, r(18, 13, 18, 25), r(268, 23, 268, 37)));
 	}
 
+	@Test
+	public void xsiTypeWithNamespacePrefixTypeDefinition() throws BadLocationException, MalformedURIException {
+		String xmlFile = "src/test/resources/xsitype-ns.xml";
+		String targetSchemaURI = XMLEntityManager.expandSystemId("xsd/xsitype-ns.xsd", xmlFile, true);
+
+		String xml = "<root xmlns=\"http://example.com/test\"\r\n" + //
+				"      xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
+				"      xmlns:tns=\"http://example.com/test\"\r\n" + //
+				"      xsi:schemaLocation=\"http://example.com/test xsd/xsitype-ns.xsd\">\r\n" + //
+				"  <item xsi:type=\"tns:DerivedType\" name=\"test\">\r\n" + //
+				"    <tns:derived|Prop></tns:derivedProp>\r\n" + //
+				"  </item>\r\n" + //
+				"</root>";
+		XMLLanguageService xmlLanguageService = new XMLLanguageService();
+		testTypeDefinitionFor(xmlLanguageService, xml, xmlFile,
+				ll(targetSchemaURI, r(5, 5, 5, 20), r(21, 37, 21, 50)));
+	}
+
+	@Test
+	public void xsiTypeWithDefaultNamespaceTypeDefinition() throws BadLocationException, MalformedURIException {
+		String xmlFile = "src/test/resources/xsitype-ns.xml";
+		String targetSchemaURI = XMLEntityManager.expandSystemId("xsd/xsitype-ns.xsd", xmlFile, true);
+
+		String xml = "<root xmlns=\"http://example.com/test\"\r\n" + //
+				"      xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
+				"      xsi:schemaLocation=\"http://example.com/test xsd/xsitype-ns.xsd\">\r\n" + //
+				"  <item xsi:type=\"DerivedType\" name=\"test\">\r\n" + //
+				"    <derived|Prop></derivedProp>\r\n" + //
+				"  </item>\r\n" + //
+				"</root>";
+		XMLLanguageService xmlLanguageService = new XMLLanguageService();
+		testTypeDefinitionFor(xmlLanguageService, xml, xmlFile,
+				ll(targetSchemaURI, r(4, 5, 4, 16), r(21, 37, 21, 50)));
+	}
+
 }
