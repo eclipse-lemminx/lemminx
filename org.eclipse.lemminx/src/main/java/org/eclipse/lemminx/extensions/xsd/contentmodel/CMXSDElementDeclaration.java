@@ -170,14 +170,35 @@ public class CMXSDElementDeclaration implements CMElementDeclaration {
 			}
 
 			SubstitutionGroupHandler handler = new SubstitutionGroupHandler(document);
+			// For xs:all, element order is irrelevant and each element can appear at most
+			// once, so all existing siblings must be considered regardless of cursor
+			// position. For xs:sequence/xs:choice, only elements before the cursor matter.
+			boolean isAllGroup = false;
+			XSParticle particle = ((XSComplexTypeDecl) typeDefinition).getParticle();
+			if (particle != null) {
+				XSTerm term = particle.getTerm();
+				if (term instanceof XSModelGroup
+						&& ((XSModelGroup) term).getCompositor() == XSModelGroup.COMPOSITOR_ALL) {
+					isAllGroup = true;
+				}
+			}
+			// For xs:all, element order is irrelevant and each element can appear at most
+			// once, so all existing siblings must be considered regardless of cursor
+			// position. For xs:sequence/xs:choice, only elements before the cursor matter.
+			int effectiveOffset = isAllGroup ? Integer.MAX_VALUE : offset;
 			// Compute list of child element (QName)
-			List<QName> qNames = toQNames(parentElement, offset);
+			List<QName> qNames = toQNames(parentElement, effectiveOffset);
 			// Loop for each element (QName) and check if it is valid according the XML
 			// Schema constraint
 			int[] states = validator.startContentModel();
 			for (QName elementName : qNames) {
 				Object decl = validator.oneTransition(elementName, states, handler);
 				if (decl == null) {
+					if (isAllGroup) {
+						// For xs:all, skip invalid/unknown elements (e.g. typos) so that
+						// valid siblings are still counted against their maxOccurs.
+						continue;
+					}
 					return Collections.emptyList();
 				}
 			}
