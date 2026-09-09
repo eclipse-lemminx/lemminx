@@ -121,6 +121,27 @@ public class XMLSchemaDiagnosticsTest extends AbstractCacheBasedTest {
 	}
 
 	@Test
+	public void cvc_type_4_With_existing_attribute() throws Exception {
+		String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" + //
+				"<invoice xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
+				" xsi:noNamespaceSchemaLocation=\"src/test/resources/xsd/invoice.xsd\">\r\n" + //
+				"  <date>2017-11-30</date>\r\n" + //
+				"  <number>2</number>\r\n" + //
+				"  <products>\r\n" + //
+				"  	<product description=\"test\" />\r\n" + // <- error: missing 'price'
+				"  </products>\r\n" + //
+				"  <payments>\r\n" + //
+				"  	<payment amount=\"1\" method=\"credit\"/>\r\n" + //
+				"  </payments>\r\n" + //
+				"</invoice>";
+		Diagnostic d = d(6, 4, 6, 11, XMLSchemaErrorCode.cvc_complex_type_4,
+				"Attribute 'price' is missing from element 'product'.\n\nCode:");
+		testDiagnosticsFor(xml, d);
+		// Insert after the last existing attribute (description="test"), not after the tag name
+		testCodeActionsFor(xml, d, ca(d, te(6, 30, 6, 30, " price=\"\"")));
+	}
+
+	@Test
 	public void cvc_complex_type_2_4_a() throws Exception {
 		String xml = "<project xmlns=\"http://maven.apache.org/POM/4.0.0\"\r\n" + //
 				"	xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
