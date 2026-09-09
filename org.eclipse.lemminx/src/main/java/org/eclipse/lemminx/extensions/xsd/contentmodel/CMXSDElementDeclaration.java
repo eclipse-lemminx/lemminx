@@ -609,6 +609,16 @@ public class CMXSDElementDeclaration implements CMElementDeclaration {
 	}
 
 	@Override
+	public Collection<String> getDerivedTypeNames() {
+		// Only abstract complex types require xsi:type to specify a concrete derived type
+		if (!(typeDefinition instanceof XSComplexTypeDefinition)
+				|| !((XSComplexTypeDefinition) typeDefinition).getAbstract()) {
+			return Collections.emptyList();
+		}
+		return document.findDerivedTypeLocalNames(typeDefinition);
+	}
+
+	@Override
 	public Set<CMElementDeclaration> getRequiredElements() {
 		Set<CMElementDeclaration> requiredElements = new LinkedHashSet<>();
 		for (CMElementDeclaration element : elements) {

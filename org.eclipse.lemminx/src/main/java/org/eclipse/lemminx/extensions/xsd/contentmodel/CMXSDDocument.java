@@ -241,6 +241,99 @@ public class CMXSDDocument implements CMDocument, XSElementDeclHelper {
 		return null;
 	}
 
+	@Override
+	public Collection<String> findDerivedTypeNames(DOMElement element) {
+		// Find the content model element declaration to get the element's declared type
+		CMXSDElementDeclaration cmElement = (CMXSDElementDeclaration) findCMElement(element,
+				element.getNamespaceURI());
+		if (cmElement == null) {
+			return Collections.emptyList();
+		}
+		// Get the base type declared for this element (e.g. BaseType in
+		// <xs:element name="item" type="tns:BaseType"/>)
+		XSTypeDefinition baseType = cmElement.getElementDeclaration().getTypeDefinition();
+		if (baseType == null) {
+			return Collections.emptyList();
+		}
+		// Iterate all type definitions in the schema and collect those that derive
+		// from the base type via extension or restriction (for use as xsi:type values)
+		XSNamedMap types = model.getComponents(XSConstants.TYPE_DEFINITION);
+		Collection<String> result = new ArrayList<>();
+		for (int i = 0; i < types.getLength(); i++) {
+			XSTypeDefinition type = (XSTypeDefinition) types.item(i);
+			if (type == baseType) {
+				// Skip the base type itself (it's already the element's declared type)
+				continue;
+			}
+			if ("http://www.w3.org/2001/XMLSchema".equals(type.getNamespace())) {
+				// Skip built-in XML Schema types (xs:anyType, xs:string, etc.)
+				continue;
+			}
+			if (type.getName() == null) {
+				// Skip anonymous types
+				continue;
+			}
+			if (type.derivedFromType(baseType,
+					(short) (XSConstants.DERIVATION_EXTENSION | XSConstants.DERIVATION_RESTRICTION))) {
+				String qualifiedName = getQualifiedTypeName(type, element);
+				if (qualifiedName != null) {
+					result.add(qualifiedName);
+				}
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * Returns the qualified type name for the given type definition, using the
+	 * appropriate prefix from the XML element context. If the type's namespace has
+	 * an explicit prefix (e.g. xmlns:tns), returns "tns:TypeName". If only the
+	 * default namespace matches, returns just "TypeName".
+	 */
+	private static String getQualifiedTypeName(XSTypeDefinition type, DOMElement element) {
+		String typeNamespace = type.getNamespace();
+		String typeName = type.getName();
+		if (typeNamespace != null) {
+			// Try to find an explicit prefix for the namespace (e.g. xmlns:tns="...")
+			String prefix = element.getPrefix(typeNamespace);
+			if (prefix != null) {
+				return prefix + ":" + typeName;
+			}
+			// Fallback: if the default namespace matches, use unprefixed name
+			String defaultNs = element.getNamespaceURI(null);
+			if (typeNamespace.equals(defaultNs)) {
+				return typeName;
+			}
+			// No prefix available for this namespace
+			return null;
+		}
+		return typeName;
+	}
+
+	/**
+	 * Returns the local names of all types that derive from the given base type
+	 * via extension or restriction. Used by {@link CMXSDElementDeclaration} to
+	 * provide xsi:type snippet choices for elements with abstract types.
+	 */
+	Collection<String> findDerivedTypeLocalNames(XSTypeDefinition baseType) {
+		XSNamedMap types = model.getComponents(XSConstants.TYPE_DEFINITION);
+		Collection<String> result = new ArrayList<>();
+		for (int i = 0; i < types.getLength(); i++) {
+			XSTypeDefinition type = (XSTypeDefinition) types.item(i);
+			if (type == baseType || type.getName() == null) {
+				continue;
+			}
+			if ("http://www.w3.org/2001/XMLSchema".equals(type.getNamespace())) {
+				continue;
+			}
+			if (type.derivedFromType(baseType,
+					(short) (XSConstants.DERIVATION_EXTENSION | XSConstants.DERIVATION_RESTRICTION))) {
+				result.add(type.getName());
+			}
+		}
+		return result;
+	}
+
 	private CMElementDeclaration findElementDeclaration(String tag, String namespace) {
 		for (CMElementDeclaration cmElement : getElements()) {
 			if (cmElement.getLocalName().equals(tag)) {

@@ -1683,4 +1683,20 @@ public class XMLSchemaCompletionExtensionsTest extends BaseFileTempTest {
 				c("baseProp", "<baseProp></baseProp>"), //
 				c("derivedProp", "<derivedProp></derivedProp>"));
 	}
+
+	@Test
+	public void elementCompletionWithAbstractTypeGeneratesXsiType() throws BadLocationException {
+		// When completing an element whose type is abstract, the generated snippet
+		// should include xsi:type with derived types as a snippet choice
+		String xml = "<root\r\n" + //
+				"      xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
+				"      xsi:noNamespaceSchemaLocation=\"xsd/xsitype-abstract.xsd\">\r\n" + //
+				"  <|" + //
+				"</root>";
+		testCompletionSnippetSupportFor(xml, "src/test/resources/xsitype-abstract.xml",
+				1 + 2 /* CDATA and Comments */, //
+				c("Character",
+						"<Character xsi:type=\"${1|Student,Teacher|}\" Name=\"$2\">$3</Character>$0",
+						r(3, 2, 3, 3), "<Character"));
+	}
 }

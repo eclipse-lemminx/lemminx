@@ -89,8 +89,19 @@ public interface CMDocument {
 	boolean isDirty();
 
 	/**
+	 * Returns the names of types that can be used as xsi:type values for the given
+	 * element (i.e. derived types of the element's declared type).
+	 *
+	 * @param element the DOM element
+	 * @return the collection of qualified type names.
+	 */
+	default Collection<String> findDerivedTypeNames(DOMElement element) {
+		return Collections.emptyList();
+	}
+
+	/**
 	 * Returns list of declared entities.
-	 * 
+	 *
 	 * @return list of declared entities.
 	 */
 	default List<Entity> getEntities() {

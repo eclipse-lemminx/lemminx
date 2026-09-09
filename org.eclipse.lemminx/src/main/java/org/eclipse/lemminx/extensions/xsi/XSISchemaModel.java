@@ -14,12 +14,15 @@ package org.eclipse.lemminx.extensions.xsi;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 
 import org.eclipse.lemminx.commons.BadLocationException;
 import org.eclipse.lemminx.dom.DOMAttr;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMElement;
 import org.eclipse.lemminx.dom.DOMNode;
+import org.eclipse.lemminx.extensions.contentmodel.model.CMDocument;
+import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
 import org.eclipse.lemminx.services.extensions.completion.AttributeCompletionItem;
 import org.eclipse.lemminx.services.extensions.completion.ICompletionRequest;
 import org.eclipse.lemminx.services.extensions.completion.ICompletionResponse;
@@ -119,8 +122,13 @@ public class XSISchemaModel {
 		if (!hasAttribute(elementAtOffset, actualPrefix, "type")) {
 			documentation = TYPE_DOC;
 			name = actualPrefix + ":type";
-			createCompletionItem(name, isSnippetsSupported, generateValue, editRange, null, null, documentation,
-					response, sharedSettings);
+			// When the element has a declared type in the schema, provide the list of
+			// derived types as enumeration values so that inserting xsi:type shows a
+			// snippet choice (e.g. xsi:type="${1|DerivedType1,DerivedType2|}")
+			Collection<String> derivedTypes = findDerivedTypeNames(request, elementAtOffset);
+			String defaultValue = !derivedTypes.isEmpty() ? derivedTypes.iterator().next() : null;
+			createCompletionItem(name, isSnippetsSupported, generateValue, editRange, defaultValue,
+					!derivedTypes.isEmpty() ? derivedTypes : null, documentation, response, sharedSettings);
 		}
 
 		if (inRootElement) {
@@ -172,6 +180,16 @@ public class XSISchemaModel {
 			if (actualPrefix != null && attrName.equals(actualPrefix + ":nil")) {
 				// Value completion for 'nil' attribute
 				createCompletionItemsForValues(StringUtils.TRUE_FALSE_ARRAY, document, request, response);
+			} else if (actualPrefix != null && attrName.equals(actualPrefix + ":type")) {
+				// Value completion for 'type' attribute: propose all types derived from
+				// the element's declared type (via extension or restriction)
+				DOMElement parentElement = nodeAtOffset.isElement() ? (DOMElement) nodeAtOffset : null;
+				if (parentElement != null) {
+					Collection<String> derivedTypes = findDerivedTypeNames(request, parentElement);
+					if (!derivedTypes.isEmpty()) {
+						createCompletionItemsForValues(derivedTypes, document, request, response);
+					}
+				}
 			} else if (document.getDocumentElement() != null && document.getDocumentElement().equals(nodeAtOffset)) {
 				// if in the root element
 				if (attrName.equals("xmlns:xsi")) {
@@ -212,6 +230,27 @@ public class XSISchemaModel {
 
 	private static boolean hasAttribute(DOMElement root, String name) {
 		return hasAttribute(root, null, name);
+	}
+
+	/**
+	 * Returns the list of derived type names that can be used as xsi:type values
+	 * for the given element. Uses the content model to find the element's declared
+	 * type and enumerate all types that derive from it.
+	 */
+	private static Collection<String> findDerivedTypeNames(ICompletionRequest request, DOMElement element) {
+		try {
+			ContentModelManager contentModelManager = request.getComponent(ContentModelManager.class);
+			Collection<CMDocument> cmDocuments = contentModelManager.findCMDocument(element);
+			for (CMDocument cmDocument : cmDocuments) {
+				Collection<String> types = cmDocument.findDerivedTypeNames(element);
+				if (!types.isEmpty()) {
+					return types;
+				}
+			}
+		} catch (Exception e) {
+			// Content model not available (schema loading, no grammar, etc.), ignore
+		}
+		return Collections.emptyList();
 	}
 
 	public static Hover computeHoverResponse(DOMAttr attribute, IHoverRequest request) {
