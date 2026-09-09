@@ -200,13 +200,13 @@ public class CMDTDDocument extends LSPXML11DTDProcessor implements CMDocument {
 			char[] ch = scannedEntity.ch;
 			int wordIndex = entityName.length(); //
 			int startEntityNameIndex = -1;
-			if (endEntityIndex > ch.length) {
+			if (endEntityIndex <= 0 || endEntityIndex > ch.length) {
 				return -1;
 			}
 			// Loop for characters from the end of the entity (>) to search the entity name
 			// start offset
 			// <!ENTITY name .....> |
-			for (int i = endEntityIndex; i >= 0; i--) {
+			for (int i = endEntityIndex - 1; i >= 0; i--) {
 				char c = ch[i];
 				// current character matches the entity name
 				if (c == entityName.charAt(wordIndex - 1)) {

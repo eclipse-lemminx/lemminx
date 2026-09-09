@@ -45,9 +45,24 @@ public class XMLFormatterWithDTDGrammarAwareFormattingTest {
 	}
 
 	@Test
+	public void testDTDWithManyEntities() throws BadLocationException {
+		// See https://github.com/eclipse-lemminx/lemminx/issues/1651
+		String content = "<?xml-model href=\"dtd/many-entities.dtd\"?>\r\n" + //
+				"<root> text \r\n" + //
+				"   content   </root>\r\n";
+		String expected = "<?xml-model href=\"dtd/many-entities.dtd\"?>\r\n" + //
+				"<root> text content </root>";
+		assertFormat(content, expected, //
+				te(1, 11, 2, 3, " "), //
+				te(2, 10, 2, 13, " "), //
+				te(2, 20, 3, 0, ""));
+		assertFormat(expected, expected);
+	}
+
+	@Test
 	public void testDTDForEmptyMixedElement() throws BadLocationException {
-		String content = "<?xml-model href=\"dtd/mixed-element.dtd\"?>\r\n"
-				+ "<mixedElement></mixedElement>";
+		String content = "<?xml-model href=\"dtd/mixed-element.dtd\"?>\r\n" + //
+				"<mixedElement></mixedElement>";
 		String expected = content;
 		// This should not generate any NullPointerException inside formatter
 		try {
