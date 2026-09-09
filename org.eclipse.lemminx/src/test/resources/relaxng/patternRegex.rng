@@ -1,0 +1,15 @@
+<grammar xmlns="http://relaxng.org/ns/structure/1.0"
+  datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
+  <start>
+    <element name="root">
+      <element name="item">
+        <attribute name="lang">
+          <data type="string">
+            <param name="pattern">[a-zA-Z]{2,3}(-[a-zA-Z0-9]+)*</param>
+          </data>
+        </attribute>
+        <text/>
+      </element>
+    </element>
+  </start>
+</grammar>

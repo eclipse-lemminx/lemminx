@@ -108,6 +108,25 @@ public class RelaxNGDiagnosticsV1Test extends AbstractCacheBasedTest {
 	}
 	
 	@Test
+	public void patternRegexValid() throws Exception {
+		String xml = "<?xml-model href=\"src/test/resources/relaxng/patternRegex.rng\" ?>\r\n" + //
+				"<root>\r\n" + //
+				"  <item lang=\"en\">text</item>\r\n" + //
+				"</root>";
+		testDiagnosticsFor(xml);
+	}
+
+	@Test
+	public void patternRegexInvalid() throws Exception {
+		String xml = "<?xml-model href=\"src/test/resources/relaxng/patternRegex.rng\" ?>\r\n" + //
+				"<root>\r\n" + //
+				"  <item lang=\"123\">text</item>\r\n" + //
+				"</root>";
+		testDiagnosticsFor(xml, //
+				d(2, 13, 18, RelaxNGErrorCode.invalid_attribute_value));
+	}
+
+	@Test
 	public void multiple_no_attributes_allowed() throws Exception {
 		String xml = "<?xml-model href=\"src/test/resources/relaxng/addressBook_v1.rng\" ?>\r\n" + //
 				"<addressBook id=\"\" name=\"\" >\r\n" + // no_attributes_allowed
