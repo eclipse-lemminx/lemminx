@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<grammar xmlns="http://relaxng.org/ns/structure/1.0"
+         datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
+
+    <define name="record">
+        <element name="record">
+            <attribute name="model" />
+            <optional><attribute name="id" /></optional>
+            <zeroOrMore>
+                <element name="field">
+                    <attribute name="name" />
+                    <text/>
+                </element>
+            </zeroOrMore>
+        </element>
+    </define>
+
+    <define name="root_element">
+        <element>
+            <choice>
+                <name>odoo</name>
+                <name>openerp</name>
+                <name>data</name>
+            </choice>
+            <optional><attribute name="noupdate" /></optional>
+            <zeroOrMore>
+                <choice>
+                    <text/>
+                    <ref name="record"/>
+                </choice>
+            </zeroOrMore>
+        </element>
+    </define>
+
+    <start>
+        <ref name="root_element"/>
+    </start>
+</grammar>

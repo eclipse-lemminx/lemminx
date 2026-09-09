@@ -13,10 +13,12 @@ package com.thaiopensource.relaxng.pattern;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import org.eclipse.lemminx.extensions.contentmodel.model.CMElementDeclaration;
 
 import com.thaiopensource.util.VoidValue;
+import com.thaiopensource.xml.util.Name;
 
 /**
  * RelaxNG class used to collect content model elements children for a given
@@ -51,8 +53,54 @@ public class CMRelaxNGElementDeclarationCollector extends AbstractCMRelaxNGColle
 		if (nameClass instanceof SimpleNameClass) {
 			CMRelaxNGElementDeclaration elementDeclaration = document.getPatternElement(p);
 			elements.add(elementDeclaration);
+		} else {
+			List<Name> names = new ArrayList<>();
+			collectSimpleNames(nameClass, names);
+			for (Name name : names) {
+				CMRelaxNGElementDeclaration elementDeclaration = document.createPatternElement(p, name);
+				elements.add(elementDeclaration);
+			}
 		}
 		return VoidValue.VOID;
+	}
+
+	private static void collectSimpleNames(NameClass nameClass, List<Name> names) {
+		nameClass.accept(new NameClassVisitor() {
+			@Override
+			public void visitChoice(NameClass nc1, NameClass nc2) {
+				collectSimpleNames(nc1, names);
+				collectSimpleNames(nc2, names);
+			}
+
+			@Override
+			public void visitName(Name name) {
+				names.add(name);
+			}
+
+			@Override
+			public void visitNsName(String ns) {
+			}
+
+			@Override
+			public void visitNsNameExcept(String ns, NameClass nc) {
+			}
+
+			@Override
+			public void visitAnyName() {
+			}
+
+			@Override
+			public void visitAnyNameExcept(NameClass nc) {
+			}
+
+			@Override
+			public void visitNull() {
+			}
+
+			@Override
+			public void visitError() {
+			}
+		});
 	}
 
 	public Collection<CMElementDeclaration> getElements() {

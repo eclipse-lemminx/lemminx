@@ -52,6 +52,8 @@ public class CMRelaxNGElementDeclaration implements CMElementDeclaration {
 
 	private final ElementPattern pattern;
 
+	private Name overrideName;
+
 	private Collection<CMElementDeclaration> elements;
 
 	private Collection<CMAttributeDeclaration> attributes;
@@ -65,6 +67,10 @@ public class CMRelaxNGElementDeclaration implements CMElementDeclaration {
 	CMRelaxNGElementDeclaration(CMRelaxNGDocument document, ElementPattern pattern) {
 		this.cmDocument = document;
 		this.pattern = pattern;
+	}
+
+	void setOverrideName(Name overrideName) {
+		this.overrideName = overrideName;
 	}
 
 	public ElementPattern getPattern() {
@@ -91,6 +97,9 @@ public class CMRelaxNGElementDeclaration implements CMElementDeclaration {
 	}
 
 	private Name getJingName() {
+		if (overrideName != null) {
+			return overrideName;
+		}
 		NameClass nameClass = pattern.getNameClass();
 		if (nameClass instanceof SimpleNameClass) {
 			return ((SimpleNameClass) nameClass).getName();
@@ -152,7 +161,9 @@ public class CMRelaxNGElementDeclaration implements CMElementDeclaration {
 		List<CMElementDeclaration> possibleElements = new ArrayList<>();
 		for (Name name : allowed) {
 			CMElementDeclaration possible = findCMElement(name.getLocalName(), name.getNamespaceUri());
-			possibleElements.add(possible);
+			if (possible != null) {
+				possibleElements.add(possible);
+			}
 		}
 		return possibleElements;
 	}

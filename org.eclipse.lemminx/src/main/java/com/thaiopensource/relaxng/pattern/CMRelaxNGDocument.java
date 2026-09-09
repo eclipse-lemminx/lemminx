@@ -38,6 +38,8 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.xml.sax.Locator;
 
+import com.thaiopensource.xml.util.Name;
+
 /**
  * RelaxNG content document implementation.
  * 
@@ -103,6 +105,12 @@ public class CMRelaxNGDocument implements CMDocument {
 			element = new CMRelaxNGElementDeclaration(this, elementDeclaration);
 			elementMappings.put(elementDeclaration, element);
 		}
+		return element;
+	}
+
+	CMRelaxNGElementDeclaration createPatternElement(ElementPattern elementDeclaration, Name overrideName) {
+		CMRelaxNGElementDeclaration element = new CMRelaxNGElementDeclaration(this, elementDeclaration);
+		element.setOverrideName(overrideName);
 		return element;
 	}
 
