@@ -1,0 +1,23 @@
+<grammar xmlns="http://relaxng.org/ns/structure/1.0"
+         xmlns:a="http://relaxng.org/ns/compatibility/annotations/1.0">
+  <start>
+    <element name="root">
+      <interleave>
+        <element name="foo">
+          <a:documentation>A foo element</a:documentation>
+          <element name="date">
+            <a:documentation>Date of a FOO object</a:documentation>
+            <text/>
+          </element>
+        </element>
+        <element name="bar">
+          <a:documentation>A bar element</a:documentation>
+          <element name="date">
+            <a:documentation>Date of a BAR object</a:documentation>
+            <text/>
+          </element>
+        </element>
+      </interleave>
+    </element>
+  </start>
+</grammar>

@@ -61,7 +61,11 @@ public class MySchemaPatternBuilder extends SchemaPatternBuilder {
 
 	@Override
 	Pattern makeElement(NameClass nameClass, Pattern content, Locator loc) {
-		return super.makeElement(nameClass, content, copy(loc));
+		// Don't call super.makeElement() which interns the pattern.
+		// Interning collapses ElementPatterns with the same name and content,
+		// losing the locator of subsequent definitions.
+		// See https://github.com/eclipse-lemminx/lemminx/issues/1745
+		return new ElementPattern(nameClass, content, copy(loc));
 	}
 
 	@Override
