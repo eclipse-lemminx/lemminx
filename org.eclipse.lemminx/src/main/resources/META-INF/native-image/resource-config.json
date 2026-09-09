@@ -57,6 +57,9 @@
 			"name": "com.thaiopensource.datatype.xsd.resources.Messages"
 		},
 		{
+			"name": "com.thaiopensource.datatype.xsd.regex.java.resources.Messages"
+		},
+		{
 			"name": "com.thaiopensource.relaxng.pattern.resources.Messages"
 		},
 		{
