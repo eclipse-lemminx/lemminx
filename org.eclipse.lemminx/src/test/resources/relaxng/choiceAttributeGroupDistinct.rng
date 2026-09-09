@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<grammar xmlns="http://relaxng.org/ns/structure/1.0"
+         datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes">
+
+    <start>
+        <element name="Items">
+            <zeroOrMore>
+                <element name="Item">
+                    <choice>
+                        <group>
+                            <attribute name="Type">
+                                <value>Foo</value>
+                            </attribute>
+                            <attribute name="FooAttr">
+                                <data type="string"/>
+                            </attribute>
+                        </group>
+                        <group>
+                            <attribute name="Type">
+                                <value>Bar</value>
+                            </attribute>
+                            <attribute name="BarAttr">
+                                <data type="string"/>
+                            </attribute>
+                        </group>
+                    </choice>
+                </element>
+            </zeroOrMore>
+        </element>
+    </start>
+</grammar>

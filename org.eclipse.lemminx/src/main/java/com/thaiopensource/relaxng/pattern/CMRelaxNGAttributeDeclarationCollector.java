@@ -13,6 +13,8 @@ package com.thaiopensource.relaxng.pattern;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.lemminx.extensions.contentmodel.model.CMAttributeDeclaration;
@@ -23,7 +25,7 @@ import com.thaiopensource.xml.util.Name;
 /**
  * RelaxNG class used to collect content model attributes for a given
  * {@link ElementPattern}.
- * 
+ *
  * <p>
  * NOTE : this class is hosted in 'com.thaiopensource.relaxng.pattern' because
  * {@link Pattern} implementation like {@link ElementPattern} are not public.
@@ -31,7 +33,7 @@ import com.thaiopensource.xml.util.Name;
  * move this class in 'org.eclipse.lemminx.extensions.relaxng.contentmodel'
  * package.
  * </p>
- * 
+ *
  * @author Angelo ZERR
  *
  */
@@ -39,21 +41,26 @@ public class CMRelaxNGAttributeDeclarationCollector extends AbstractCMRelaxNGCol
 
 	private final CMRelaxNGElementDeclaration elementDeclaration;
 
+	// Use a map keyed by attribute name to deduplicate attributes that appear
+	// in multiple branches of a <choice>. When the same attribute name is found
+	// in different branches, their enumeration values are merged via
+	// CMRelaxNGAttributeDeclaration#addMergedPattern.
+	private final Map<Name, CMRelaxNGAttributeDeclaration> attributeMap;
+
 	private final Collection<CMAttributeDeclaration> attributes;
 
 	public CMRelaxNGAttributeDeclarationCollector(CMRelaxNGElementDeclaration elementDeclaration, Pattern pattern) {
 		this.elementDeclaration = elementDeclaration;
-		this.attributes = new ArrayList<>();
+		this.attributeMap = new LinkedHashMap<>();
 		pattern.apply(this);
+		this.attributes = new ArrayList<>(attributeMap.values());
 		if (!attributes.isEmpty()) {
 			RequiredAttributesFunction attributesFunction = new RequiredAttributesFunction();
 			Set<Name> requiredAttributeNames = pattern.apply(attributesFunction);
 			for (Name requiredAttributeName : requiredAttributeNames) {
-				for (CMAttributeDeclaration attribute : attributes) {
-					CMRelaxNGAttributeDeclaration rngAttribute = (CMRelaxNGAttributeDeclaration) attribute;
-					if (requiredAttributeName.equals(rngAttribute.getJingName())) {
-						rngAttribute.setRequired(true);
-					}
+				CMRelaxNGAttributeDeclaration rngAttribute = attributeMap.get(requiredAttributeName);
+				if (rngAttribute != null) {
+					rngAttribute.setRequired(true);
 				}
 			}
 		}
@@ -63,9 +70,16 @@ public class CMRelaxNGAttributeDeclarationCollector extends AbstractCMRelaxNGCol
 	public VoidValue caseAttribute(AttributePattern p) {
 		NameClass nameClass = p.getNameClass();
 		if (nameClass instanceof SimpleNameClass) {
-			CMRelaxNGAttributeDeclaration attributeDeclaration = new CMRelaxNGAttributeDeclaration(elementDeclaration,
-					p);
-			attributes.add(attributeDeclaration);
+			Name name = ((SimpleNameClass) nameClass).getName();
+			CMRelaxNGAttributeDeclaration existing = attributeMap.get(name);
+			if (existing != null) {
+				// Same attribute name from another <choice> branch: merge its values
+				existing.addMergedPattern(p);
+			} else {
+				CMRelaxNGAttributeDeclaration attributeDeclaration = new CMRelaxNGAttributeDeclaration(
+						elementDeclaration, p);
+				attributeMap.put(name, attributeDeclaration);
+			}
 		}
 		return VoidValue.VOID;
 	}
