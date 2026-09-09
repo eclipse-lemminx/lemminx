@@ -97,7 +97,7 @@ public class XMLCodeActions {
 				sharedSettings);
 		String participantId = request.getParticipantId();
 		if (StringUtils.isEmpty(participantId)) {
-			return null;
+			return unresolved;
 		}
 		for (ICodeActionParticipant codeActionParticipant : extensionsRegistry.getCodeActionsParticipants()) {
 			try {
@@ -114,6 +114,6 @@ public class XMLCodeActions {
 						+ codeActionParticipant.getClass().getName() + "'.", e);
 			}
 		}
-		return null;
+		return unresolved;
 	}
 }
