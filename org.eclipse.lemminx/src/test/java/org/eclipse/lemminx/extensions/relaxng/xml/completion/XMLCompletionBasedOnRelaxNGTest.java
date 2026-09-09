@@ -206,6 +206,37 @@ public class XMLCompletionBasedOnRelaxNGTest extends BaseFileTempTest {
 						"xlink:actuate"));
 	}
 
+	@Test
+	public void completionOnRootWithChoiceNameClass() throws BadLocationException {
+		String xml = "<?xml-model href=\"choiceNameElement.rng\" ?>\r\n" + //
+				"<|";
+		testCompletionFor(xml, //
+				null, //
+				c("odoo", te(1, 0, 1, 1, "<odoo></odoo>"), "<odoo"), //
+				c("openerp", te(1, 0, 1, 1, "<openerp></openerp>"), "<openerp"), //
+				c("data", te(1, 0, 1, 1, "<data></data>"), "<data"));
+	}
+
+	@Test
+	public void completionInElementWithChoiceNameClass() throws BadLocationException {
+		String xml = "<?xml-model href=\"choiceNameElement.rng\" ?>\r\n" + //
+				"<odoo>\r\n" + //
+				"  <|\r\n" + //
+				"</odoo>";
+		testCompletionFor(xml, //
+				null, //
+				c("record", te(2, 2, 2, 3, "<record model=\"\"></record>"), "<record"));
+	}
+
+	@Test
+	public void completionOnAttributesWithChoiceNameClass() throws BadLocationException {
+		String xml = "<?xml-model href=\"choiceNameElement.rng\" ?>\r\n" + //
+				"<odoo |></odoo>";
+		testCompletionFor(xml, //
+				null, //
+				c("noupdate", te(1, 6, 1, 6, "noupdate=\"\""), "noupdate"));
+	}
+
 	// role,xml:id,version,xml:lang,xml:base,remap,xreflabel,revisionflag,dir,arch,audience,condition,conformance,os,revision,security,userlevel,vendor,wordsize,annotations,linkend,xlink:href,xlink:type,xlink:role,xlink:arcrole,xlink:title,xlink:show,xlink:actuate,label,status
 
 	private static void testCompletionFor(String value, Integer expectedCount, CompletionItem... expectedItems)
