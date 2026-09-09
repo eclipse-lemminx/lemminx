@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.eclipse.lemminx.commons.CodeActionFactory;
+import org.eclipse.lemminx.dom.DOMAttr;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMElement;
 import org.eclipse.lemminx.dom.DOMNode;
@@ -29,6 +30,7 @@ import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionRequest;
 import org.eclipse.lemminx.settings.SharedSettings;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.Diagnostic;
+import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
@@ -75,15 +77,34 @@ public class cvc_complex_type_4CodeAction implements ICodeActionParticipant {
 					XMLGenerator generator = new XMLGenerator(sharedSettings, "", "", supportSnippet, 0);
 					String xmlAttributes = generator.generate(requiredAttributes, element.getTagName());
 
-					// Insert required attributes
+					// Insert after the last existing attribute (if any),
+					// otherwise after the tag name.
+					Position insertPosition = getInsertAttrPosition(element, document, diagnosticRange);
 					CodeAction insertRequiredAttributesAction = CodeActionFactory.insert("Insert required attributes",
-							diagnosticRange.getEnd(), xmlAttributes, document.getTextDocument(), diagnostic);
+							insertPosition, xmlAttributes, document.getTextDocument(), diagnostic);
 					codeActions.add(insertRequiredAttributesAction);
 				}
 			}
 		} catch (Exception e) {
 			// Do nothing
 		}
+	}
+
+	private static Position getInsertAttrPosition(DOMElement element, DOMDocument document, Range diagnosticRange) {
+		if (element.hasAttributes()) {
+			DOMAttr lastAttr = null;
+			for (DOMAttr attr : element.attributes()) {
+				lastAttr = attr;
+			}
+			if (lastAttr != null) {
+				try {
+					return document.positionAt(lastAttr.getEnd());
+				} catch (Exception e) {
+					// Fall through to default
+				}
+			}
+		}
+		return diagnosticRange.getEnd();
 	}
 
 	private boolean codeAlreadyActionExists(List<CodeAction> codeActions, Diagnostic diagnostic) {
