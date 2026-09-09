@@ -44,12 +44,16 @@ import org.apache.xerces.xs.XSComplexTypeDefinition;
 import org.apache.xerces.xs.XSConstants;
 import org.apache.xerces.xs.XSElementDeclaration;
 import org.apache.xerces.xs.XSModel;
+import org.apache.xerces.xs.XSModelGroup;
+import org.apache.xerces.xs.XSModelGroupDefinition;
 import org.apache.xerces.xs.XSMultiValueFacet;
 import org.apache.xerces.xs.XSNamedMap;
 import org.apache.xerces.xs.XSNamespaceItem;
 import org.apache.xerces.xs.XSNamespaceItemList;
 import org.apache.xerces.xs.XSObject;
 import org.apache.xerces.xs.XSObjectList;
+import org.apache.xerces.xs.XSParticle;
+import org.apache.xerces.xs.XSTerm;
 import org.apache.xerces.xs.XSSimpleTypeDefinition;
 import org.apache.xerces.xs.XSTypeDefinition;
 import org.eclipse.lemminx.dom.DOMAttr;
@@ -340,6 +344,55 @@ public class CMXSDDocument implements CMDocument, XSElementDeclHelper {
 				return cmElement;
 			}
 		}
+		return findElementInModelGroups(tag, namespace);
+	}
+
+	/**
+	 * Fallback search for elements declared locally inside xs:group definitions.
+	 * This is needed when the element is not a global element declaration (e.g.
+	 * elements defined inside &lt;xs:group name="..."&gt;) and the parent element
+	 * in the XML document belongs to a different namespace, preventing the normal
+	 * DOM hierarchy walk from resolving the element.
+	 *
+	 * @param tag       the local name of the element to find.
+	 * @param namespace the namespace URI of the element to find.
+	 * @return the matching element declaration, or null if not found.
+	 *
+	 * @see <a href="https://github.com/redhat-developer/vscode-xml/issues/1129">vscode-xml#1129</a>
+	 */
+	private CMElementDeclaration findElementInModelGroups(String tag, String namespace) {
+		XSNamedMap groupMap = model.getComponents(XSConstants.MODEL_GROUP_DEFINITION);
+		for (int i = 0; i < groupMap.getLength(); i++) {
+			XSModelGroupDefinition groupDef = (XSModelGroupDefinition) groupMap.item(i);
+			if (namespace != null && !namespace.equals(groupDef.getNamespace())) {
+				continue;
+			}
+			XSModelGroup group = groupDef.getModelGroup();
+			CMElementDeclaration found = findElementInModelGroup(group, tag, namespace);
+			if (found != null) {
+				return found;
+			}
+		}
+		return null;
+	}
+
+	private CMElementDeclaration findElementInModelGroup(XSModelGroup group, String tag, String namespace) {
+		XSObjectList particles = group.getParticles();
+		for (int i = 0; i < particles.getLength(); i++) {
+			XSTerm term = ((XSParticle) particles.item(i)).getTerm();
+			if (term.getType() == XSConstants.ELEMENT_DECLARATION) {
+				XSElementDeclaration elemDecl = (XSElementDeclaration) term;
+				if (tag.equals(elemDecl.getName())
+						&& (namespace == null || namespace.equals(elemDecl.getNamespace()))) {
+					return getXSDElement(elemDecl);
+				}
+			} else if (term.getType() == XSConstants.MODEL_GROUP) {
+				CMElementDeclaration found = findElementInModelGroup((XSModelGroup) term, tag, namespace);
+				if (found != null) {
+					return found;
+				}
+			}
+		}
 		return null;
 	}
 
@@ -576,11 +629,21 @@ public class CMXSDDocument implements CMDocument, XSElementDeclHelper {
 			}
 		}
 
-		// 2.2) XSD local element, get the parent xs:complexType of the XSD element and
-		// loop for each xs:complexType of the SchemaGrammar
+		// 2.2) XSD local element inside a group, find grammar by element namespace
 		if (enclosingType == null) {
+			String ns = elementDeclaration.getNamespace();
+			if (ns != null) {
+				for (int i = 0; i < namespaces.getLength(); i++) {
+					XSNamespaceItem namespace = namespaces.item(i);
+					if (namespace instanceof SchemaGrammar && ns.equals(namespace.getSchemaNamespace())) {
+						return (SchemaGrammar) namespace;
+					}
+				}
+			}
 			return null;
 		}
+		// 2.3) XSD local element, get the parent xs:complexType of the XSD element and
+		// loop for each xs:complexType of the SchemaGrammar
 		for (int i = 0; i < namespaces.getLength(); i++) {
 			XSNamespaceItem namespace = namespaces.item(i);
 			if (namespace instanceof SchemaGrammar) {
@@ -606,6 +669,30 @@ public class CMXSDDocument implements CMDocument, XSElementDeclHelper {
 	 */
 	private static SchemaGrammar getSchemaGrammar(XSNamespaceItem namespaceItem) {
 		return (namespaceItem != null && namespaceItem instanceof SchemaGrammar) ? (SchemaGrammar) namespaceItem : null;
+	}
+
+	/**
+	 * Returns the schema grammar matching the given namespace URI. Used as a
+	 * fallback when the standard grammar resolution (via enclosing type or
+	 * namespace item) fails for local elements inside xs:group definitions,
+	 * where Xerces may resolve to the BuiltinSchemaGrammar instead of the
+	 * user's schema grammar.
+	 *
+	 * @param namespace the namespace URI to search for.
+	 * @return the matching schema grammar, or null if not found.
+	 */
+	SchemaGrammar findSchemaGrammarByNamespace(String namespace) {
+		if (namespace == null) {
+			return null;
+		}
+		XSNamespaceItemList namespaces = model.getNamespaceItems();
+		for (int i = 0; i < namespaces.getLength(); i++) {
+			XSNamespaceItem namespaceItem = namespaces.item(i);
+			if (namespaceItem instanceof SchemaGrammar && namespace.equals(namespaceItem.getSchemaNamespace())) {
+				return (SchemaGrammar) namespaceItem;
+			}
+		}
+		return null;
 	}
 
 	/**

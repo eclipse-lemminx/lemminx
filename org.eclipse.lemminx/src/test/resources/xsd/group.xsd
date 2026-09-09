@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+            targetNamespace="http://group-test"
+            xmlns:g="http://group-test"
+            elementFormDefault="qualified">
+
+    <xsd:element name="result" type="xsd:string">
+        <xsd:annotation>
+            <xsd:documentation>Result documentation</xsd:documentation>
+        </xsd:annotation>
+    </xsd:element>
+
+    <xsd:group name="CommonProperties">
+        <xsd:sequence>
+            <xsd:element name="resultTime" type="xsd:dateTime">
+                <xsd:annotation>
+                    <xsd:documentation>Result time documentation</xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+            <xsd:element name="procedure" type="xsd:string">
+                <xsd:annotation>
+                    <xsd:documentation>Procedure documentation</xsd:documentation>
+                </xsd:annotation>
+            </xsd:element>
+        </xsd:sequence>
+    </xsd:group>
+
+    <xsd:complexType name="ObservationType">
+        <xsd:sequence>
+            <xsd:group ref="g:CommonProperties"/>
+            <xsd:element ref="g:result"/>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:element name="observation" type="g:ObservationType">
+        <xsd:annotation>
+            <xsd:documentation>Observation documentation</xsd:documentation>
+        </xsd:annotation>
+    </xsd:element>
+
+</xsd:schema>

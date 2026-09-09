@@ -580,7 +580,16 @@ public class CMXSDElementDeclaration implements CMElementDeclaration {
 	@Override
 	public String getDocumentURI() {
 		SchemaGrammar schemaGrammar = document.getOwnerSchemaGrammar(elementDeclaration);
-		return CMXSDDocument.getSchemaURI(schemaGrammar);
+		String uri = CMXSDDocument.getSchemaURI(schemaGrammar);
+		if (uri == null) {
+			// For local elements inside xs:group, getOwnerSchemaGrammar may resolve to
+			// BuiltinSchemaGrammar (which has no document URI) because the element's type
+			// (e.g. xsd:dateTime) belongs to the XSD namespace. Fall back to finding the
+			// grammar by the element's own namespace.
+			schemaGrammar = document.findSchemaGrammarByNamespace(elementDeclaration.getNamespace());
+			uri = CMXSDDocument.getSchemaURI(schemaGrammar);
+		}
+		return uri;
 	}
 
 	@Override
