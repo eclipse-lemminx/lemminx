@@ -182,9 +182,16 @@ public class XMLGenerator {
 			xml.indent(level);
 		}
 		xml.startElement(prefix, elementDeclaration.getLocalName(), false);
+		// For elements with abstract types, add xsi:type attribute first with
+		// derived type choices (e.g. xsi:type="${1|Teacher,Student|}")
+		Collection<String> derivedTypeNames = elementDeclaration.getDerivedTypeNames();
+		boolean hasXsiType = !derivedTypeNames.isEmpty();
+		if (hasXsiType) {
+			snippetIndex = generateXsiTypeAttribute(derivedTypeNames, prefix, level, snippetIndex, xml);
+		}
 		// Attributes
 		Collection<CMAttributeDeclaration> attributes = elementDeclaration.getAttributes();
-		snippetIndex = generate(attributes, level, snippetIndex, xml, elementDeclaration.getLocalName());
+		snippetIndex = generate(attributes, level, snippetIndex, xml, elementDeclaration.getLocalName(), hasXsiType);
 		// Elements children
 		if (children.size() > 0) {
 			xml.closeStartElement();
@@ -210,7 +217,9 @@ public class XMLGenerator {
 			if (generateEndTag) {
 				xml.endElement(prefix, elementDeclaration.getLocalName());
 			}
-		} else if (elementDeclaration.isEmpty() && autoCloseTags) {
+		} else if (elementDeclaration.isEmpty() && autoCloseTags && !hasXsiType) {
+			// Don't self-close elements with abstract types: the concrete type
+			// chosen via xsi:type may have child elements
 			xml.selfCloseElement();
 		} else {
 			xml.closeStartElement();
@@ -241,12 +250,12 @@ public class XMLGenerator {
 
 	public String generate(Collection<CMAttributeDeclaration> attributes, String tagName) {
 		XMLBuilder xml = new XMLBuilder(sharedSettings, whitespacesIndent, lineDelimiter);
-		generate(attributes, 0, 0, xml, tagName);
+		generate(attributes, 0, 0, xml, tagName, false);
 		return xml.toString();
 	}
 
 	private int generate(Collection<CMAttributeDeclaration> attributes, int level, int snippetIndex, XMLBuilder xml,
-			String tagName) {
+			String tagName, boolean hasExtraAttributes) {
 		Map<String /* namespaceURI */, String /* prefix */> prefixes = null;
 		List<CMAttributeDeclaration> requiredAttributes = new ArrayList<>();
 		// Loop for attributes to collect :
@@ -297,12 +306,38 @@ public class XMLGenerator {
 			String value = generateAttributeValue(defaultValue, enumerationValues, canSupportSnippets, snippetIndex,
 					false, sharedSettings);
 			String attrName = attributeDeclaration.getName(prefixes);
-			if (attributesSize != 1 || generateXmlnsAttr) {
+			if (attributesSize != 1 || generateXmlnsAttr || hasExtraAttributes) {
 				xml.addAttribute(attrName, value, level, true);
 			} else {
 				xml.addSingleAttribute(attrName, value, true);
 			}
 		}
+		return snippetIndex;
+	}
+
+	/**
+	 * Generates the xsi:type attribute with a snippet choice listing the given
+	 * derived type names. Type names are qualified with the element's prefix
+	 * when the element belongs to a namespace.
+	 */
+	private int generateXsiTypeAttribute(Collection<String> derivedTypeNames, String elementPrefix,
+			int level, int snippetIndex, XMLBuilder xml) {
+		if (canSupportSnippets) {
+			snippetIndex++;
+		}
+		// Qualify type names with the element's prefix if it has a namespace
+		Collection<String> qualifiedTypes;
+		if (elementPrefix != null) {
+			qualifiedTypes = new ArrayList<>();
+			for (String typeName : derivedTypeNames) {
+				qualifiedTypes.add(elementPrefix + ":" + typeName);
+			}
+		} else {
+			qualifiedTypes = derivedTypeNames;
+		}
+		String value = generateAttributeValue(null, qualifiedTypes, canSupportSnippets, snippetIndex,
+				false, sharedSettings);
+		xml.addSingleAttribute("xsi:type", value, true);
 		return snippetIndex;
 	}
 

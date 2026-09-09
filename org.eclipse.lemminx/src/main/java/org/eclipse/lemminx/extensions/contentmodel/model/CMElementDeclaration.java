@@ -209,9 +209,21 @@ public interface CMElementDeclaration {
 	/**
 	 * Returns a list of required/non-optional child elements of the current
 	 * element.
-	 * 
+	 *
 	 * @return a list of required/non-optional child elements of the current
 	 *         element.
 	 */
 	Collection<CMElementDeclaration> getRequiredElements();
+
+	/**
+	 * Returns the local names of types derived from this element's declared type.
+	 * Used to generate xsi:type snippet choices when the element's type is abstract
+	 * and cannot be instantiated directly.
+	 *
+	 * @return the collection of derived type local names, or empty if the type is
+	 *         not abstract or has no derived types.
+	 */
+	default Collection<String> getDerivedTypeNames() {
+		return Collections.emptyList();
+	}
 }

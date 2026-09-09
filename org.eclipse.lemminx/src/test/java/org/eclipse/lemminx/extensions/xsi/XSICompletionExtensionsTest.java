@@ -153,6 +153,46 @@ public class XSICompletionExtensionsTest extends AbstractCacheBasedTest {
 				); // coming from stylesheet children
 	}
 
+	@Test
+	public void xsiTypeValueCompletionWithPrefix() throws BadLocationException {
+		String xml = "<root xmlns=\"http://example.com/test\"\r\n" + //
+				"      xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
+				"      xmlns:tns=\"http://example.com/test\"\r\n" + //
+				"      xsi:schemaLocation=\"http://example.com/test xsd/xsitype-ns.xsd\">\r\n" + //
+				"  <item xsi:type=\"|\">\r\n" + //
+				"  </item>\r\n" + //
+				"</root>";
+		testCompletionFor(xml, "src/test/resources/xsitype-ns.xml",
+				c("tns:DerivedType", te(4, 18, 4, 18, "tns:DerivedType"), "tns:DerivedType"));
+	}
+
+	@Test
+	public void xsiTypeValueCompletionWithDefaultNamespace() throws BadLocationException {
+		String xml = "<root xmlns=\"http://example.com/test\"\r\n" + //
+				"      xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
+				"      xsi:schemaLocation=\"http://example.com/test xsd/xsitype-ns.xsd\">\r\n" + //
+				"  <item xsi:type=\"|\">\r\n" + //
+				"  </item>\r\n" + //
+				"</root>";
+		testCompletionFor(xml, "src/test/resources/xsitype-ns.xml",
+				c("DerivedType", te(3, 18, 3, 18, "DerivedType"), "DerivedType"));
+	}
+
+	@Test
+	public void xsiTypeValueCompletionWithAbstractType() throws BadLocationException {
+		// Schema with no namespace, abstract base type 'Character',
+		// and two derived types 'Teacher' and 'Student'
+		String xml = "<root\r\n" + //
+				"      xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
+				"      xsi:noNamespaceSchemaLocation=\"xsd/xsitype-abstract.xsd\">\r\n" + //
+				"  <Character xsi:type=\"|\" Name=\"test\">\r\n" + //
+				"  </Character>\r\n" + //
+				"</root>";
+		testCompletionFor(xml, "src/test/resources/xsitype-abstract.xml",
+				c("Teacher", te(3, 23, 3, 23, "Teacher"), "Teacher"),
+				c("Student", te(3, 23, 3, 23, "Student"), "Student"));
+	}
+
 	private SharedSettings singleQuotesSharedSettings() {
 		SharedSettings settings = new SharedSettings();
 		settings.getPreferences().setQuoteStyle(QuoteStyle.singleQuotes);
@@ -162,6 +202,11 @@ public class XSICompletionExtensionsTest extends AbstractCacheBasedTest {
 
 	private void testCompletionFor(String xml, CompletionItem... expectedItems) throws BadLocationException {
 		XMLAssert.testCompletionFor(xml, null, expectedItems);
+	}
+
+	private void testCompletionFor(String xml, String fileURI, CompletionItem... expectedItems)
+			throws BadLocationException {
+		XMLAssert.testCompletionFor(xml, null, fileURI, null, expectedItems);
 	}
 
 	private void testCompletionFor(String xml, SharedSettings sharedSettings, CompletionItem... expectedItems) throws BadLocationException {
