@@ -58,6 +58,7 @@ import org.eclipse.lemminx.dom.DOMElement;
 import org.eclipse.lemminx.dom.DOMNode;
 import org.eclipse.lemminx.extensions.contentmodel.model.CMDocument;
 import org.eclipse.lemminx.extensions.contentmodel.model.CMElementDeclaration;
+import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
 import org.eclipse.lemminx.extensions.contentmodel.model.FilesChangedTracker;
 import org.eclipse.lemminx.extensions.xerces.ReflectionUtils;
 import org.eclipse.lemminx.extensions.xsd.utils.XSDUtils;
@@ -89,10 +90,16 @@ public class CMXSDDocument implements CMDocument, XSElementDeclHelper {
 	private final FilesChangedTracker tracker;
 
 	private final XSLoaderImpl xsLoader;
+	private final ContentModelManager contentModelManager;
 
 	public CMXSDDocument(XSModel model, XSLoaderImpl xsLoaderImpl) {
+		this(model, xsLoaderImpl, null);
+	}
+
+	public CMXSDDocument(XSModel model, XSLoaderImpl xsLoaderImpl, ContentModelManager contentModelManager) {
 		this.model = model;
 		this.xsLoader = xsLoaderImpl;
+		this.contentModelManager = contentModelManager;
 		this.elementMappings = new HashMap<>();
 		this.refinedElementMappings = new HashMap<>();
 		this.tracker = createFilesChangedTracker(model);
@@ -174,18 +181,14 @@ public class CMXSDDocument implements CMDocument, XSElementDeclHelper {
 
 	@Override
 	public CMElementDeclaration findCMElement(DOMElement element, String namespace) {
-		List<DOMElement> paths = new ArrayList<>();
-		while (element != null && (namespace == null || namespace.equals(element.getNamespaceURI()))) {
-			paths.add(0, element);
-			element = element.getParentNode() instanceof DOMElement ? (DOMElement) element.getParentNode() : null;
-		}
+		List<DOMElement> paths = collectPath(element, namespace);
 		CMXSDElementDeclaration declaration = null;
 		for (int i = 0; i < paths.size(); i++) {
 			DOMElement elt = paths.get(i);
 			if (i == 0) {
-				declaration = (CMXSDElementDeclaration) findElementDeclaration(elt.getLocalName(), namespace);
+				declaration = (CMXSDElementDeclaration) findElementDeclaration(elt.getLocalName());
 			} else {
-				declaration = (CMXSDElementDeclaration) declaration.findCMElement(elt.getLocalName(), namespace);
+				declaration = (CMXSDElementDeclaration) declaration.findCMElement(elt.getLocalName(), elt.getNamespaceURI());
 			}
 			if (declaration == null) {
 				break;
@@ -208,7 +211,38 @@ public class CMXSDDocument implements CMDocument, XSElementDeclHelper {
 		return declaration;
 	}
 
-	private XSTypeDefinition findXsiType(DOMElement element) {
+	private static List<DOMElement> collectPath(DOMElement element, String namespace) {
+		List<DOMElement> paths = new ArrayList<>();
+		DOMElement current = element;
+		while (current != null && (namespace == null || namespace.equals(current.getNamespaceURI()))) {
+			paths.add(0, current);
+			current = current.getParentNode() instanceof DOMElement ? (DOMElement) current.getParentNode() : null;
+		}
+		if (hasXSITypeAncestor(current)) {
+			while (current != null) {
+				paths.add(0, current);
+				current = current.getParentNode() instanceof DOMElement ? (DOMElement) current.getParentNode() : null;
+			}
+		}
+		return paths;
+	}
+
+	private static boolean hasXSITypeAncestor(DOMElement element) {
+		DOMElement current = element;
+		while (current != null) {
+			if (hasXSITypeValue(current)) {
+				return true;
+			}
+			current = current.getParentNode() instanceof DOMElement ? (DOMElement) current.getParentNode() : null;
+		}
+		return false;
+	}
+
+	private static boolean hasXSITypeValue(DOMElement element) {
+		return getXSITypeValue(element) != null;
+	}
+
+	private static String getXSITypeValue(DOMElement element) {
 		org.w3c.dom.NamedNodeMap attrs = element.getAttributes();
 		if (attrs == null) {
 			return null;
@@ -216,24 +250,53 @@ public class CMXSDDocument implements CMDocument, XSElementDeclHelper {
 		for (int i = 0; i < attrs.getLength(); i++) {
 			Node attr = attrs.item(i);
 			if (attr.getLocalName().equals("type") && XSISchemaModel.XSI_WEBSITE.equals(attr.getNamespaceURI())) {
-				String[] possiblyQualifiedType = attr.getNodeValue().split(":", 2);
-				javax.xml.namespace.QName qualifiedType;
-				if (possiblyQualifiedType.length == 1) {
-					qualifiedType = new javax.xml.namespace.QName(
-							null,
-							possiblyQualifiedType[0]);
-				} else {
-					qualifiedType = new javax.xml.namespace.QName(
-							element.getNamespaceURI(possiblyQualifiedType[0]),
-							possiblyQualifiedType[1]);
-				}
-				return (XSTypeDefinition) model.getComponents(XSConstants.TYPE_DEFINITION).get(qualifiedType);
+				return attr.getNodeValue();
 			}
 		}
 		return null;
 	}
 
-	private CMElementDeclaration findElementDeclaration(String tag, String namespace) {
+	private XSTypeDefinition findXsiType(DOMElement element) {
+		String typeValue = getXSITypeValue(element);
+		if (typeValue == null) {
+			return null;
+		}
+		String[] possiblyQualifiedType = typeValue.split(":", 2);
+		javax.xml.namespace.QName qualifiedType;
+		if (possiblyQualifiedType.length == 1) {
+			qualifiedType = new javax.xml.namespace.QName(null, possiblyQualifiedType[0]);
+		} else {
+			qualifiedType = new javax.xml.namespace.QName(
+					element.getNamespaceURI(possiblyQualifiedType[0]),
+					possiblyQualifiedType[1]);
+		}
+		// Try to find the type in the current schema model.
+		XSTypeDefinition exactType = (XSTypeDefinition) model.getComponents(XSConstants.TYPE_DEFINITION)
+				.get(qualifiedType);
+		if (exactType != null) {
+			return exactType;
+		}
+		// Try to find the type in the models bound to the XML document for the type namespace.
+		if (contentModelManager != null && qualifiedType.getNamespaceURI() != null) {
+			DOMDocument xmlDocument = element.getOwnerDocument();
+			if (xmlDocument != null) {
+				Collection<CMDocument> documents = contentModelManager.findCMDocument(xmlDocument,
+						qualifiedType.getNamespaceURI());
+				for (CMDocument document : documents) {
+					if (document instanceof CMXSDDocument) {
+						exactType = (XSTypeDefinition) ((CMXSDDocument) document).model
+								.getComponents(XSConstants.TYPE_DEFINITION).get(qualifiedType);
+						if (exactType != null) {
+							return exactType;
+						}
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+	private CMElementDeclaration findElementDeclaration(String tag) {
 		for (CMElementDeclaration cmElement : getElements()) {
 			if (cmElement.getLocalName().equals(tag)) {
 				return cmElement;
