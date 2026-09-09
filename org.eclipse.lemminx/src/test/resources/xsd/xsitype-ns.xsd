@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://example.com/test"
+           xmlns:tns="http://example.com/test"
+           elementFormDefault="qualified">
+
+    <xs:complexType name="BaseType">
+        <xs:sequence>
+            <xs:element name="baseProp" type="xs:string" minOccurs="0">
+                <xs:annotation>
+                    <xs:documentation>base property documentation</xs:documentation>
+                </xs:annotation>
+            </xs:element>
+        </xs:sequence>
+        <xs:attribute name="name" type="xs:string"/>
+    </xs:complexType>
+
+    <xs:complexType name="DerivedType">
+        <xs:complexContent>
+            <xs:extension base="tns:BaseType">
+                <xs:sequence>
+                    <xs:element name="derivedProp" type="xs:string" minOccurs="0">
+                        <xs:annotation>
+                            <xs:documentation>derived property documentation</xs:documentation>
+                        </xs:annotation>
+                    </xs:element>
+                </xs:sequence>
+                <xs:attribute name="extra" type="xs:string"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <xs:element name="root">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="item" type="tns:BaseType" maxOccurs="unbounded"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

@@ -425,6 +425,41 @@ public class XMLSchemaHoverExtensionsTest extends AbstractCacheBasedTest {
 		}));
 	}
 
+	@Test
+	public void testXsiTypeDerivedElementHoverWithNamespacePrefix() throws BadLocationException, MalformedURIException {
+		String schemaURI = getXMLSchemaFileURI("xsitype-ns.xsd");
+		String xml = "<root xmlns=\"http://example.com/test\"\r\n" + //
+				"      xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
+				"      xmlns:tns=\"http://example.com/test\"\r\n" + //
+				"      xsi:schemaLocation=\"http://example.com/test xsd/xsitype-ns.xsd\">\r\n" + //
+				"  <item xsi:type=\"tns:DerivedType\" name=\"test\">\r\n" + //
+				"    <tns:derived|Prop></tns:derivedProp>\r\n" + //
+				"  </item>\r\n" + //
+				"</root>";
+		XMLAssert.assertHover(xml, "src/test/resources/xsitype-ns.xml",
+				"derived property documentation" + //
+						System.lineSeparator() + //
+						System.lineSeparator() + "Source: [xsitype-ns.xsd](" + schemaURI + ")", //
+				r(5, 5, 5, 20));
+	}
+
+	@Test
+	public void testXsiTypeDerivedElementHoverWithDefaultNamespace() throws BadLocationException, MalformedURIException {
+		String schemaURI = getXMLSchemaFileURI("xsitype-ns.xsd");
+		String xml = "<root xmlns=\"http://example.com/test\"\r\n" + //
+				"      xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
+				"      xsi:schemaLocation=\"http://example.com/test xsd/xsitype-ns.xsd\">\r\n" + //
+				"  <item xsi:type=\"DerivedType\" name=\"test\">\r\n" + //
+				"    <derived|Prop></derivedProp>\r\n" + //
+				"  </item>\r\n" + //
+				"</root>";
+		XMLAssert.assertHover(xml, "src/test/resources/xsitype-ns.xml",
+				"derived property documentation" + //
+						System.lineSeparator() + //
+						System.lineSeparator() + "Source: [xsitype-ns.xsd](" + schemaURI + ")", //
+				r(4, 5, 4, 16));
+	}
+
 	private static void assertHover(String value, String expectedHoverLabel, Range expectedHoverRange)
 			throws BadLocationException {
 		XMLAssert.assertHover(new XMLLanguageService(), value, "src/test/resources/catalogs/catalog.xml", null,

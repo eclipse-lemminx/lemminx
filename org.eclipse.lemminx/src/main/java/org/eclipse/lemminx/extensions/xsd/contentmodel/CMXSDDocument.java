@@ -219,9 +219,17 @@ public class CMXSDDocument implements CMDocument, XSElementDeclHelper {
 				String[] possiblyQualifiedType = attr.getNodeValue().split(":", 2);
 				javax.xml.namespace.QName qualifiedType;
 				if (possiblyQualifiedType.length == 1) {
-					qualifiedType = new javax.xml.namespace.QName(
-							null,
-							possiblyQualifiedType[0]);
+					String typeName = possiblyQualifiedType[0];
+					qualifiedType = new javax.xml.namespace.QName(null, typeName);
+					XSTypeDefinition result = (XSTypeDefinition) model
+							.getComponents(XSConstants.TYPE_DEFINITION).get(qualifiedType);
+					if (result != null) {
+						return result;
+					}
+					String defaultNs = element.getNamespaceURI(null);
+					if (defaultNs != null) {
+						qualifiedType = new javax.xml.namespace.QName(defaultNs, typeName);
+					}
 				} else {
 					qualifiedType = new javax.xml.namespace.QName(
 							element.getNamespaceURI(possiblyQualifiedType[0]),

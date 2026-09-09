@@ -1652,4 +1652,35 @@ public class XMLSchemaCompletionExtensionsTest extends BaseFileTempTest {
 								"Source: attr-enum.xsd",
 						MarkupKind.PLAINTEXT));
 	}
+
+	@Test
+	public void xsiTypeWithNamespacePrefix() throws BadLocationException {
+		String xml = "<root xmlns=\"http://example.com/test\"\r\n" + //
+				"      xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
+				"      xmlns:tns=\"http://example.com/test\"\r\n" + //
+				"      xsi:schemaLocation=\"http://example.com/test xsd/xsitype-ns.xsd\">\r\n" + //
+				"  <item xsi:type=\"tns:DerivedType\" name=\"test\">\r\n" + //
+				"    <|" + //
+				"  </item>\r\n" + //
+				"</root>";
+		testCompletionFor(xml, null, "src/test/resources/xsitype-ns.xml",
+				2 + 2 /* CDATA and Comments */, //
+				c("tns:baseProp", "<tns:baseProp></tns:baseProp>"), //
+				c("tns:derivedProp", "<tns:derivedProp></tns:derivedProp>"));
+	}
+
+	@Test
+	public void xsiTypeWithDefaultNamespaceNoPrefix() throws BadLocationException {
+		String xml = "<root xmlns=\"http://example.com/test\"\r\n" + //
+				"      xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
+				"      xsi:schemaLocation=\"http://example.com/test xsd/xsitype-ns.xsd\">\r\n" + //
+				"  <item xsi:type=\"DerivedType\" name=\"test\">\r\n" + //
+				"    <|" + //
+				"  </item>\r\n" + //
+				"</root>";
+		testCompletionFor(xml, null, "src/test/resources/xsitype-ns.xml",
+				2 + 2 /* CDATA and Comments */, //
+				c("baseProp", "<baseProp></baseProp>"), //
+				c("derivedProp", "<derivedProp></derivedProp>"));
+	}
 }
