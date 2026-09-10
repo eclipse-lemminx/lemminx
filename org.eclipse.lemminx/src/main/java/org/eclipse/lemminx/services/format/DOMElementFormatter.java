@@ -315,7 +315,16 @@ public class DOMElementFormatter {
 
 		switch (formatElementCategory) {
 		case PreserveSpace:
-			// Preserve existing spaces
+			// Use case (#1301): <doc xml:space="preserve">\nContent\n</doc>
+			// The content is preserved but the end tag must be indented when it
+			// directly follows a newline with no existing indentation.
+			if (endTagOpenOffset > startTagCloseOffset + 1) {
+				char c = formatterDocument.getTextSequence().charAt(endTagOpenOffset - 1);
+				if (c == '\n' || c == '\r') {
+					replaceLeftSpacesWithIndentation(indentLevel, endTagOpenOffset, endTagOpenOffset, false, edits);
+					width += indentLevel * getTabSize();
+				}
+			}
 			break;
 		case MixedContent:
 			// Remove spaces and indent if the last child is an element, not text

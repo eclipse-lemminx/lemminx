@@ -257,6 +257,8 @@ public class XMLFormatterWhitespaceSettingTest {
 		assertFormat(expected, expected, settings);
 	}
 
+	// Use case (#1026): internal whitespace "f as  as" is preserved (not collapsed
+	// to "f as as") while trailing whitespace on other lines is still trimmed.
 	@Test
 	public void testTrimTrailingWhitespaceWithRange() throws BadLocationException {
 		SharedSettings settings = new SharedSettings();
@@ -287,7 +289,7 @@ public class XMLFormatterWhitespaceSettingTest {
 				"    fsd a\r\n" + //
 				"    sd f\r\n" + //
 				"    asd\r\n" + //
-				"    f as as\r\n" + //
+				"    f as  as\r\n" + //
 				"    hjkl\r\n" + //
 				"  </bbb>\r\n" + //
 				"  <ccc>\r\n" + //
@@ -296,10 +298,11 @@ public class XMLFormatterWhitespaceSettingTest {
 		assertFormat(content, expected, settings, //
 				te(2, 8, 3, 4, "\r\n    "), //
 				te(9, 7, 10, 4, "\r\n    "), //
-				te(10, 8, 10, 10, " "), //
 				te(11, 8, 11, 12, ""));
 	}
 
+	// Use case (#1026): same as testTrimTrailingWhitespaceWithRange but with LF
+	// line endings. Internal whitespace "f as  as" is preserved.
 	@Test
 	public void testTrimTrailingWhitespaceWithRangeSingleCharLineSeparator() throws BadLocationException {
 		SharedSettings settings = new SharedSettings();
@@ -330,7 +333,7 @@ public class XMLFormatterWhitespaceSettingTest {
 				"    fsd a\n" + //
 				"    sd f\n" + //
 				"    asd\n" + //
-				"    f as as\n" + //
+				"    f as  as\n" + //
 				"    hjkl\n" + //
 				"  </bbb>\n" + //
 				"  <ccc>\n" + //
@@ -339,7 +342,6 @@ public class XMLFormatterWhitespaceSettingTest {
 		assertFormat(content, expected, settings, //
 				te(2, 8, 3, 4, "\n    "), //
 				te(9, 7, 10, 4, "\n    "), //
-				te(10, 8, 10, 10, " "), //
 				te(11, 8, 11, 12, ""));
 	}
 
@@ -599,6 +601,22 @@ public class XMLFormatterWhitespaceSettingTest {
 		String expected = "<a>" + lineSeparator() + "  <b></b>" + lineSeparator() + "</a>";
 		assertFormat(content, expected, settings, //
 				te(0, 3, 1, 0, lineSeparator() + "  "));
+		assertFormat(expected, expected, settings);
+	}
+
+	// https://github.com/redhat-developer/vscode-xml/issues/1026
+	// Use case: multiple spaces between words in text content must be preserved.
+	// <Inner>Test     Spaces</Inner> => <Inner>Test     Spaces</Inner>
+	@Test
+	public void testPreserveInternalWhitespaces() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		String content = "<Tag><Inner>Test     Spaces</Inner></Tag>";
+		String expected = "<Tag>" + lineSeparator() + //
+				"  <Inner>Test     Spaces</Inner>" + lineSeparator() + //
+				"</Tag>";
+		assertFormat(content, expected, settings, //
+				te(0, 5, 0, 5, lineSeparator() + "  "), //
+				te(0, 35, 0, 35, lineSeparator()));
 		assertFormat(expected, expected, settings);
 	}
 

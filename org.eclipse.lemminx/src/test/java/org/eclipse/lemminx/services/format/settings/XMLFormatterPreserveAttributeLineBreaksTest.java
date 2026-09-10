@@ -54,6 +54,9 @@ public class XMLFormatterPreserveAttributeLineBreaksTest {
 		assertFormat(expected, expected, settings);
 	}
 
+	// Use case: element with multi-line attributes and no content.
+	// The closing tag </b> must be indented to match <b>, even when the
+	// only content between > and </b> is a single newline.
 	@Test
 	public void preserveAttributeLineBreaks() throws BadLocationException {
 		SharedSettings settings = new SharedSettings();
@@ -69,13 +72,14 @@ public class XMLFormatterPreserveAttributeLineBreaksTest {
 				"  <b attr=\"value\" attr=\"value\"\n" + //
 				"    attr=\"value\" attr=\"value\"\n" + //
 				"    attr=\"value\" attr=\"value\">\n" + //
-				"</b>\n" + //
+				"  </b>\n" + //
 				"</a>";
 
 		assertFormat(content, expected, settings, //
 				te(0, 3, 1, 0, "\n  "), //
 				te(1, 28, 2, 0, "\n    "), //
-				te(2, 25, 3, 0, "\n    "));
+				te(2, 25, 3, 0, "\n    "), //
+				te(3, 26, 4, 0, "\n  "));
 		assertFormat(expected, expected, settings);
 	}
 

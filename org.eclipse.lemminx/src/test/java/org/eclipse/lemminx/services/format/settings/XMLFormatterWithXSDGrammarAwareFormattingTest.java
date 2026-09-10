@@ -62,6 +62,9 @@ public class XMLFormatterWithXSDGrammarAwareFormattingTest {
 		}
 	}
 
+	// Use case (#1026): <description> is xs:string in XSD => whitespace preserved.
+	// <description2> is not in XSD schema => whitespace also preserved (#1026 fix:
+	// internal whitespace is no longer collapsed even for non-schema elements).
 	@Test
 	public void testXSDForPreserveSpaceWithStringContent() throws Exception {
 		String content = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" + //
@@ -75,19 +78,19 @@ public class XMLFormatterWithXSDGrammarAwareFormattingTest {
 				"<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 src/test/resources/xsd/maven-4.0.0.xsd\">\r\n"
 				+ //
 				"  <description>a    b     c</description>\r\n" + // <-- preserve space because description is xs:string
-				"  <description2>a b c</description2>\r\n" + // <-- no preserve space because description2 is not a
-																// xs:string
+				"  <description2>a    b     c</description2>\r\n" + // <-- preserve space because description2 is not
+																	// in schema
 				"</project>";
 
 		SharedSettings settings = new SharedSettings();
 		settings.getFormattingSettings().setMaxLineWidth(0);
 		settings.getFormattingSettings().setGrammarAwareFormatting(true);
-		assertFormat(content, expected, settings, "test.xml", true, //
-				te(3, 17, 3, 21, " "), //
-				te(3, 22, 3, 27, " "));
+		assertFormat(content, expected, settings, "test.xml", true);
 		assertFormat(expected, expected, settings, "test.xml", true);
 	}
 
+	// Use case (#1026): same as above but with maxLineWidth=80 (attribute wrapping).
+	// Internal whitespace in <description2> is preserved even with line wrapping.
 	@Test
 	public void testXSDForPreserveSpaceWithStringContentWithMaxLineWidth() throws Exception {
 		String content = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" + //
@@ -103,8 +106,8 @@ public class XMLFormatterWithXSDGrammarAwareFormattingTest {
 				"  xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 src/test/resources/xsd/maven-4.0.0.xsd\">\r\n"
 				+ //
 				"  <description>a    b     c</description>\r\n" + // <-- preserve space because description is xs:string
-				"  <description2>a b c</description2>\r\n" + // <-- no preserve space because description2 is not a
-																// xs:string
+				"  <description2>a    b     c</description2>\r\n" + // <-- preserve space because description2 is not
+																	// in schema
 				"</project>";
 
 		SharedSettings settings = new SharedSettings();
@@ -112,9 +115,7 @@ public class XMLFormatterWithXSDGrammarAwareFormattingTest {
 		settings.getFormattingSettings().setMaxLineWidth(80);
 		assertFormat(content, expected, settings, "test.xml", true, //
 				te(1, 50, 1, 51, "\r\n  "), //
-				te(1, 104, 1, 105, "\r\n  "), //
-				te(3, 17, 3, 21, " "), //
-				te(3, 22, 3, 27, " "));
+				te(1, 104, 1, 105, "\r\n  "));
 		assertFormat(expected, expected, settings, "test.xml", true);
 	}
 
