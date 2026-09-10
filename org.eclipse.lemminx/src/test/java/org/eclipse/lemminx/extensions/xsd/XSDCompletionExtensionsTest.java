@@ -186,6 +186,49 @@ public class XSDCompletionExtensionsTest extends AbstractCacheBasedTest {
 				c("TypeFromC", te(6, 20, 6, 20, "TypeFromC"), "TypeFromC"));
 	}
 
+	@Test
+	public void completionWithXSImportOnType() throws BadLocationException {
+		// SchemaA imports ImportedSchema (which defines 'ImportedType' complexType and
+		// 'ImportedSimpleType' simpleType in namespace "http://import")
+		String xml = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\r\n" + //
+				"<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"\r\n" + //
+				"           xmlns:imp=\"http://import\"\r\n" + //
+				"           targetNamespace=\"http://test\"\r\n" + //
+				"           xmlns:tns=\"http://test\">\r\n" + //
+				"	<xs:import schemaLocation=\"src/test/resources/xsd/ImportedSchema.xsd\" namespace=\"http://import\" />\r\n"
+				+ //
+				"	<xs:complexType name=\"LocalType\" />\r\n" + //
+				"	<xs:element name=\"elt\" type=\"|\" />\r\n" + //
+				"</xs:schema>";
+		XMLAssert.testCompletionFor(xml, null, "test.xml", null,
+				c("tns:LocalType", te(7, 30, 7, 30, "tns:LocalType"), "tns:LocalType"),
+				c("imp:ImportedType", te(7, 30, 7, 30, "imp:ImportedType"), "imp:ImportedType"),
+				c("imp:ImportedSimpleType", te(7, 30, 7, 30, "imp:ImportedSimpleType"), "imp:ImportedSimpleType"));
+	}
+
+	@Test
+	public void completionWithXSImportOnRef() throws BadLocationException {
+		// completion on xs:element/@ref should show elements from imported schema with
+		// correct namespace prefix
+		String xml = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\r\n" + //
+				"<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"\r\n" + //
+				"           xmlns:imp=\"http://import\"\r\n" + //
+				"           targetNamespace=\"http://test\"\r\n" + //
+				"           xmlns:tns=\"http://test\">\r\n" + //
+				"	<xs:import schemaLocation=\"src/test/resources/xsd/ImportedSchema.xsd\" namespace=\"http://import\" />\r\n"
+				+ //
+				"	<xs:element name=\"LocalElement\" />\r\n" + //
+				"	<xs:complexType name=\"MyType\">\r\n" + //
+				"		<xs:sequence>\r\n" + //
+				"			<xs:element ref=\"|\" />\r\n" + //
+				"		</xs:sequence>\r\n" + //
+				"	</xs:complexType>\r\n" + //
+				"</xs:schema>";
+		XMLAssert.testCompletionFor(xml, null, "test.xml", null,
+				c("tns:LocalElement", te(9, 20, 9, 20, "tns:LocalElement"), "tns:LocalElement"),
+				c("imp:ImportedElement", te(9, 20, 9, 20, "imp:ImportedElement"), "imp:ImportedElement"));
+	}
+
 	private void testCompletionFor(String xml, boolean enableItemDefaults, CompletionItem... expectedItems) throws BadLocationException {
 		XMLAssert.testCompletionFor(xml, null, enableItemDefaults, expectedItems);
 	}

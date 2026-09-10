@@ -13,8 +13,10 @@ package org.eclipse.lemminx.extensions.xsd.utils;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 import java.util.function.BiConsumer;
@@ -191,7 +193,8 @@ public class XSDUtils {
 			return;
 		}
 		visitedURIs.add(documentURI);
-		Set<String> externalURIS = null;
+		// Map of schemaLocation -> namespace prefix for external schemas (xs:include / xs:import)
+		Map<String, String> externalSchemas = null;
 		NodeList children = documentElement.getChildNodes();
 		for (int i = 0; i < children.getLength(); i++) {
 			Node node = children.item(i);
@@ -204,29 +207,53 @@ public class XSDUtils {
 					if (targetAttr != null && (!matchAttr || Objects.equal(originName, targetAttr.getValue()))) {
 						collector.accept(targetNamespacePrefix, targetAttr);
 					}
-				} else if (isXSInclude(targetElement) || isXSImport(targetElement)) {
-					// collect xs:include XML Schema location
+				} else if (isXSInclude(targetElement)) {
+					// xs:include shares the same targetNamespace, keep the current prefix
 					String schemaLocation = targetElement.getAttribute(SCHEMA_LOCATION_ATTR);
 					if (schemaLocation != null) {
-						if (externalURIS == null) {
-							externalURIS = new HashSet<>();
+						if (externalSchemas == null) {
+							externalSchemas = new HashMap<>();
 						}
-						externalURIS.add(schemaLocation);
+						externalSchemas.put(schemaLocation, targetNamespacePrefix);
+					}
+				} else if (isXSImport(targetElement)) {
+					// xs:import has a different namespace; resolve the xmlns prefix
+					// declared in the origin document for the imported namespace
+					String schemaLocation = targetElement.getAttribute(SCHEMA_LOCATION_ATTR);
+					if (schemaLocation != null) {
+						if (externalSchemas == null) {
+							externalSchemas = new HashMap<>();
+						}
+						String importPrefix = null;
+						String importedNamespace = targetElement.getAttribute(NAMESPACE_ATTR);
+						if (importedNamespace != null && !importedNamespace.isEmpty()) {
+							DOMElement originDocumentElement = originAttr.getOwnerDocument().getDocumentElement();
+							importPrefix = originDocumentElement.getPrefix(importedNamespace);
+						}
+						externalSchemas.put(schemaLocation, importPrefix);
 					}
 				}
 			}
 		}
-		if (searchInExternalSchema && externalURIS != null) {
-			// Search in xs:include XML Schema location
+		if (searchInExternalSchema && externalSchemas != null) {
+			// Search in xs:include / xs:import external schemas
 			URIResolverExtensionManager resolverExtensionManager = document.getResolverExtensionManager();
-			for (String externalURI : externalURIS) {
+			for (Map.Entry<String, String> entry : externalSchemas.entrySet()) {
+				String externalURI = entry.getKey();
+				String externalPrefix = entry.getValue();
 				String resourceURI = resolverExtensionManager.resolve(documentURI, null, externalURI);
 				if (URIUtils.isFileResource(resourceURI)) {
 					DOMDocument externalDocument = DOMUtils.loadDocument(resourceURI,
 							document.getResolverExtensionManager());
 					if (externalDocument != null) {
+						// Recompute originName for definition/highlighting (matchAttr=true),
+						// because the prefix in the typed value must match this schema's prefix
+						String externalOriginName = originName;
+						if (matchAttr) {
+							externalOriginName = getOriginName(originAttr.getValue(), externalPrefix);
+						}
 						searchXSTargetAttributes(originAttr, bindingType, matchAttr, collector,
-								externalDocument.getDocumentElement(), targetNamespacePrefix, originName, visitedURIs,
+								externalDocument.getDocumentElement(), externalPrefix, externalOriginName, visitedURIs,
 								searchInExternalSchema);
 					}
 				}
