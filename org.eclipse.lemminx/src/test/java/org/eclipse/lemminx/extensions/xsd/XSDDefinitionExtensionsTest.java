@@ -172,7 +172,7 @@ public class XSDDefinitionExtensionsTest extends AbstractCacheBasedTest {
 				"			<xs:element ref=\"TypeFr|omB\" />\r\n" + //
 				"		</xs:sequence>\r\n" + //
 				"	</xs:complexType>";
-		String schemaBPath = Paths.get("src/test/resources/xsd/SchemaB.xsd").toUri().toString();
+		String schemaBPath = getSchemaURI("src/test/resources/xsd/SchemaB.xsd");
 		testDefinitionFor(xml, ll(schemaBPath, r(6, 19, 6, 30), r(4, 18, 4, 29)));
 
 		// defintion from Schema A -> Schema C
@@ -186,7 +186,7 @@ public class XSDDefinitionExtensionsTest extends AbstractCacheBasedTest {
 				"			<xs:element ref=\"TypeFr|omC\" />\r\n" + //
 				"		</xs:sequence>\r\n" + //
 				"	</xs:complexType>";
-		String schemaCPath = Paths.get("src/test/resources/xsd/SchemaC.xsd").toUri().toString();
+		String schemaCPath = getSchemaURI("src/test/resources/xsd/SchemaC.xsd");
 		testDefinitionFor(xml, ll(schemaCPath, r(6, 19, 6, 30), r(3, 18, 3, 29)));
 
 	}
@@ -206,8 +206,48 @@ public class XSDDefinitionExtensionsTest extends AbstractCacheBasedTest {
 				"          <xs:element name=\"AdditionalField\" type=\"xs:string\" />\r\n" + //
 				"        </xs:sequence>\r\n" + "      </xs:extension>\r\n" + "    </xs:complexContent>\r\n" + //
 				"  </xs:complexType>\r\n" + "</xs:schema>";
-		String childPath = Paths.get("src/test/resources/xsd/Child.xsd").toUri().toString();
+		String childPath = getSchemaURI("src/test/resources/xsd/Child.xsd");
 		testDefinitionFor(xml, ll(childPath, r(10, 25, 10, 45), r(5, 23, 5, 40)));
+	}
+
+	@Test
+	public void definitionWithXSImportOnType() throws BadLocationException {
+		// definition on type="imp:Impor|tedType" should navigate to ImportedSchema.xsd
+		String xml = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\r\n" + //
+				"<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"\r\n" + //
+				"           xmlns:imp=\"http://import\"\r\n" + //
+				"           targetNamespace=\"http://test\"\r\n" + //
+				"           xmlns:tns=\"http://test\">\r\n" + //
+				"	<xs:import schemaLocation=\"src/test/resources/xsd/ImportedSchema.xsd\" namespace=\"http://import\" />\r\n"
+				+ //
+				"	<xs:element name=\"elt\" type=\"imp:Impor|tedType\" />\r\n" + //
+				"</xs:schema>";
+		String importedPath = getSchemaURI("src/test/resources/xsd/ImportedSchema.xsd");
+		testDefinitionFor(xml, ll(importedPath, r(6, 29, 6, 47), r(5, 22, 5, 36)));
+	}
+
+	@Test
+	public void definitionWithXSImportOnRef() throws BadLocationException {
+		// definition on ref="imp:Imported|Element" should navigate to ImportedSchema.xsd
+		String xml = "<?xml version=\"1.0\" encoding=\"utf-8\" ?>\r\n" + //
+				"<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"\r\n" + //
+				"           xmlns:imp=\"http://import\"\r\n" + //
+				"           targetNamespace=\"http://test\"\r\n" + //
+				"           xmlns:tns=\"http://test\">\r\n" + //
+				"	<xs:import schemaLocation=\"src/test/resources/xsd/ImportedSchema.xsd\" namespace=\"http://import\" />\r\n"
+				+ //
+				"	<xs:complexType name=\"MyType\">\r\n" + //
+				"		<xs:sequence>\r\n" + //
+				"			<xs:element ref=\"imp:Imported|Element\" />\r\n" + //
+				"		</xs:sequence>\r\n" + //
+				"	</xs:complexType>\r\n" + //
+				"</xs:schema>";
+		String importedPath = getSchemaURI("src/test/resources/xsd/ImportedSchema.xsd");
+		testDefinitionFor(xml, ll(importedPath, r(8, 19, 8, 40), r(11, 18, 11, 35)));
+	}
+
+	private static String getSchemaURI(String path) {
+		return Paths.get(path).toUri().toString();
 	}
 
 	private static void testDefinitionFor(String xml, LocationLink... expectedItems) throws BadLocationException {

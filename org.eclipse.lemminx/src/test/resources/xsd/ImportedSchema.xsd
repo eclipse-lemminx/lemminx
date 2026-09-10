@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://import"
+           elementFormDefault="qualified">
+
+	<xs:complexType name="ImportedType" />
+
+	<xs:simpleType name="ImportedSimpleType">
+		<xs:restriction base="xs:string" />
+	</xs:simpleType>
+
+	<xs:element name="ImportedElement">
+		<xs:complexType />
+	</xs:element>
+
+</xs:schema>
