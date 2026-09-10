@@ -143,7 +143,16 @@ public class DOMTextFormatter {
 		}
 		if (formatElementCategory != FormatElementCategory.IgnoreSpace && spaceEnd + 1 != text.length()) {
 			// Don't format final spaces if text is at the end of the file
-			if ((!containsNewLine || isJoinContentLines() || isMixedContent)
+			if (formatElementCategory == FormatElementCategory.NormalizeSpace
+					&& isMaxLineWidthSupported() && availableLineWidth < 0
+					&& spaceStart == -1
+					&& !Character.isWhitespace(text.charAt(textStart))) {
+				// NormalizeSpace (text-only) element where single-word text exceeds
+				// maxLineWidth: keep text inline to avoid zigzag effect where text is
+				// moved to a new line but the end tag stays inline.
+				// availableLineWidth intentionally stays negative so the parent element
+				// can wrap at the next word boundary.
+			} else if ((!containsNewLine || isJoinContentLines() || isMixedContent)
 					&& (!isMaxLineWidthSupported() || availableLineWidth >= 0)) {
 				// Replace spaces with single space in the case of:
 				// 1. there is no new line

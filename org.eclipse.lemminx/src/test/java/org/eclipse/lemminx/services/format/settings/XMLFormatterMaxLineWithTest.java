@@ -430,22 +430,11 @@ public class XMLFormatterMaxLineWithTest extends AbstractCacheBasedTest {
 				"  XML <alt>Extensible Markup Language</alt></acronym> namespaces are used to distinguish between\r\n" + //
 				"  different element sets. In the last few years, almost all new XML grammars have used their own\r\n" + //
 				"  namespace. It is easy to create compound documents that contain elements from different XML\r\n" + //
-				"  vocabularies. DocBook V5.0 is <emphasis>following</emphasis> this <emphasis>design</emphasis>/<emphasis>\r\n"
+				"  vocabularies. DocBook V5.0 is <emphasis>following</emphasis> this <emphasis>design</emphasis>/<emphasis>rule</emphasis>.\r\n"
 				+ //
-				"  rule</emphasis>. Using namespaces in your documents is very easy. Consider this simple article\r\n" + //
-				"  marked up in DocBook V4.5:</para>";
-		assertFormat(content, expected, settings, //
-				te(0, 104, 0, 104, "\r\n  "), //
-				te(0, 130, 1, 2, " "), //
-				te(1, 69, 1, 70, "\r\n  "),
-				te(1, 131, 2, 2, " "), //
-				te(2, 34, 2, 35, "\r\n  "), //
-				te(3, 31, 6, 2, " "), //
-				te(6, 37, 7, 2, " "), //
-				te(7, 40, 7, 40, "\r\n  "), //
-				te(7, 56, 9, 2, " "), //
-				te(9, 7, 10, 2, " "),
-				te(10, 73, 10, 74, "\r\n  "));
+				"  Using namespaces in your documents is very easy. Consider this simple article marked up in DocBook\r\n" + //
+				"  V4.5:</para>";
+		XMLAssert.assertFormat(null, content, expected, settings, "test.xml", Boolean.FALSE, (TextEdit[]) null);
 		assertFormat(expected, expected, settings);
 	}
 
@@ -637,6 +626,74 @@ public class XMLFormatterMaxLineWithTest extends AbstractCacheBasedTest {
 		assertFormat(content, expected, settings, //
 				te(0, 50, 0, 51, System.lineSeparator() + "  "), //
 				te(0, 104, 0, 105, System.lineSeparator() + "  "));
+		assertFormat(expected, expected, settings);
+	}
+
+	// https://github.com/redhat-developer/vscode-xml/issues/1131
+	@Test
+	public void noZigzagForNormalizeSpaceElements() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setTabSize(4);
+		settings.getFormattingSettings().setMaxLineWidth(60);
+		String content = "<root>" + System.lineSeparator() + //
+				"    <set>" + System.lineSeparator() + //
+				"        <if test=\"username != null\">username=#{username},</if>" + System.lineSeparator() + //
+				"        <if test=\"password != null\">password=#{password},</if>" + System.lineSeparator() + //
+				"    </set>" + System.lineSeparator() + //
+				"</root>";
+		String expected = content;
+		assertFormat(content, expected, settings);
+	}
+
+	// https://github.com/redhat-developer/vscode-xml/issues/1131
+	@Test
+	public void noZigzagSingleWordText() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setTabSize(4);
+		settings.getFormattingSettings().setMaxLineWidth(20);
+		String content = "<a attr=\"value\">text</a>";
+		String expected = content;
+		assertFormat(content, expected, settings);
+	}
+
+	// https://github.com/redhat-developer/vscode-xml/issues/1010
+	@Test
+	public void noZigzagHexBinaryData() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setMaxLineWidth(100);
+		String content = "<root>" + System.lineSeparator() + //
+				"  <atr>6f1087c8105312e302e30820408a00005001588306312e3021000000a5049f1c611a4d02156501ff</atr>" + System.lineSeparator() + //
+				"</root>";
+		String expected = content;
+		assertFormat(content, expected, settings);
+	}
+
+	// https://github.com/redhat-developer/vscode-xml/issues/1010
+	@Test
+	public void noZigzagHexBinaryDataNested() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setMaxLineWidth(100);
+		String content = "<root>" + System.lineSeparator() + //
+				"  <record>" + System.lineSeparator() + //
+				"    <atr>6f1087c8105312e302e30820408a00005001588306312e3021000000a5049f1c611a4d02156501ff</atr>" + System.lineSeparator() + //
+				"  </record>" + System.lineSeparator() + //
+				"</root>";
+		String expected = content;
+		assertFormat(content, expected, settings);
+	}
+
+	// https://github.com/redhat-developer/vscode-xml/issues/1131
+	@Test
+	public void multiWordTextStillWraps() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setTabSize(4);
+		settings.getFormattingSettings().setMaxLineWidth(20);
+		settings.getFormattingSettings().setJoinContentLines(true);
+		String content = "<a attr=\"value\">word1 word2</a>";
+		String expected = "<a attr=\"value\">word1" + System.lineSeparator() + //
+				"    word2</a>";
+		assertFormat(content, expected, settings, //
+				te(0, 21, 0, 22, System.lineSeparator() + "    "));
 		assertFormat(expected, expected, settings);
 	}
 
