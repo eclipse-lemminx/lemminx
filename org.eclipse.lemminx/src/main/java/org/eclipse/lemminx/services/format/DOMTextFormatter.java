@@ -133,13 +133,22 @@ public class DOMTextFormatter {
 					replaceLeftSpacesWithIndentationPreservedNewLines(spaceStart, spaceEnd,
 							indentLevel, edits);
 					containsNewLine = false;
-				} else if (isJoinContentLines() || !containsNewLine || isMixedContent) {
+				// Use case (#1026): <a>b  c</a> — don't collapse internal whitespace
+				// unless joinContentLines or mixedContent is on.
+				} else if (isJoinContentLines() || isMixedContent) {
 					replaceSpacesWithOneSpace(spaceStart, spaceEnd - 1, edits);
 					containsNewLine = false;
 				}
 				spaceStart = -1;
 				spaceEnd = -1;
 			}
+		}
+		// Fix single-char trailing newline (LF): when the text ends with a lone '\n'
+		// before the closing tag, only spaceStart is set. Without this, spaceEnd+1
+		// evaluates to 0 and the indentation edit is skipped.
+		// Use case: <doc>\nContent\n</doc> → </doc> must be indented.
+		if (spaceStart != -1 && spaceEnd == -1 && containsNewLine) {
+			spaceEnd = spaceStart;
 		}
 		if (formatElementCategory != FormatElementCategory.IgnoreSpace && spaceEnd + 1 != text.length()) {
 			// Don't format final spaces if text is at the end of the file

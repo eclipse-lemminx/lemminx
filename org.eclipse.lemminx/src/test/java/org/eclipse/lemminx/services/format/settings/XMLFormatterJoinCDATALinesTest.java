@@ -80,16 +80,18 @@ public class XMLFormatterJoinCDATALinesTest {
 	}
 
 	// From issue: https://github.com/eclipse/lemminx/issues/1193
+	// Use case (#1026): leading spaces "  x" in <a>  x  <![CDATA[...
+	// are preserved (not collapsed to " x") because internal whitespace
+	// must not be modified.
 	@Test
 	public void testJoinCDATALinesWithText() throws BadLocationException {
 		String content = "<a>  x  <![CDATA[\r\n" + //
 				"<\r\n" + //
 				"]]> y  </a>";
-		String expected = "<a> x <![CDATA[<]]> y </a>";
+		String expected = "<a>  x <![CDATA[<]]> y </a>";
 		SharedSettings settings = new SharedSettings();
 		settings.getFormattingSettings().setJoinCDATALines(true);
 		assertFormat(content, expected, settings, //
-				te(0, 3, 0, 5, " "), //
 				te(0, 6, 0, 8, " "), //
 				te(0, 17, 1, 0, ""), //
 				te(1, 1, 2, 0, ""), //
