@@ -14,6 +14,7 @@ package org.eclipse.lemminx.uriresolver;
 
 import static org.eclipse.lemminx.utils.ExceptionUtils.getRootCause;
 
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -26,6 +27,7 @@ import java.nio.channels.ReadableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -163,6 +165,16 @@ public class CacheResourcesManager {
 		if (!isDownloadExternalResources() && !isForceDownloadExternalResource(resourceURI)) {
 			throw new CacheResourceDownloadingException(resourceURI, resourceCachePath,
 					CacheResourceDownloadingError.DOWNLOAD_DISABLED, null, null);
+		}
+
+		URI resourceUriParsed = URI.create(resourceURI);
+		if ("file".equals(resourceUriParsed.getScheme())) {
+			// UNC path
+			Path path = Path.of(resourceUriParsed);
+			if (!Files.exists(path)) {
+				throw new CacheResourceFileNotFoundException(path.toString(), "The network-accessible file '" + path.toString() + "' doesn't exist");
+			}
+			return path;
 		}
 
 		if (!FilesUtils.isIncludedInDeployedPath(resourceCachePath)) {
@@ -309,6 +321,7 @@ public class CacheResourcesManager {
 	}
 
 	public static Path getResourceCachePath(URI uri) throws IOException {
+
 		// Eliminate all path traversals
 		URI normalizedUri = uri.normalize();
 
