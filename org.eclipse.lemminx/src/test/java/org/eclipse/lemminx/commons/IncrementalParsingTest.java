@@ -113,16 +113,15 @@ public class IncrementalParsingTest {
 		assertEquals(expectedText, document.getText());
 	}
 
+	// https://github.com/eclipse-lemminx/lemminx/issues/1509
 	@Test
 	public void testRangeLengthPreferredOverRangeEndPosition() {
-		// Note: In LSP4J 1.0.0, rangeLength parameter was removed.
-		// This test now uses the proper range end position instead.
-		String text = "<zzz>\r\n" + // /// <-- replacing 'zzz' with 'aaa' in tag name
+		String text = "<zzz>\r\n" + //
 				"  <b>\r\n" + //
 				"  </b>\r\n" + //
 				"</aaa>\r\n";
 
-		String expectedText = "<aaa>\r\n" + // /// <-- replaced 'zzz' with 'aaa' in tag name
+		String expectedText = "<aaa>\r\n" + //
 				"  <b>\r\n" + //
 				"  </b>\r\n" + //
 				"</aaa>\r\n";
@@ -130,9 +129,62 @@ public class IncrementalParsingTest {
 		TextDocument document = new TextDocument(text, "uri");
 		document.setIncremental(true);
 
-		// Use proper range end position (0, 4) to replace "zzz" with "aaa"
+		// range.end is deliberately wrong (same as start, i.e. zero-length range);
+		// rangeLength = 3 must take priority and replace "zzz".
+		Range range1 = new Range(new Position(0, 1), new Position(0, 1));
+		TextDocumentContentChangeEvent change1 = new TextDocumentContentChangeEvent(range1, "aaa");
+		change1.setRangeLength(3);
+
+		ArrayList<TextDocumentContentChangeEvent> changes = new ArrayList<>();
+		changes.add(change1);
+
+		document.update(changes);
+
+		assertEquals(expectedText, document.getText());
+	}
+
+	// https://github.com/eclipse-lemminx/lemminx/issues/1509
+	@Test
+	public void testNullRangeLengthFallsBackToRangeEndPosition() {
+		String text = "<zzz>\r\n" + //
+				"  <b>\r\n" + //
+				"  </b>\r\n" + //
+				"</aaa>\r\n";
+
+		String expectedText = "<aaa>\r\n" + //
+				"  <b>\r\n" + //
+				"  </b>\r\n" + //
+				"</aaa>\r\n";
+
+		TextDocument document = new TextDocument(text, "uri");
+		document.setIncremental(true);
+
+		// rangeLength is null (not set); length must be computed from range end - start.
 		Range range1 = new Range(new Position(0, 1), new Position(0, 4));
 		TextDocumentContentChangeEvent change1 = new TextDocumentContentChangeEvent(range1, "aaa");
+
+		ArrayList<TextDocumentContentChangeEvent> changes = new ArrayList<>();
+		changes.add(change1);
+
+		document.update(changes);
+
+		assertEquals(expectedText, document.getText());
+	}
+
+	// https://github.com/eclipse-lemminx/lemminx/issues/1509
+	@Test
+	public void testNullRangeReplacesWholeDocument() {
+		String text = "<aaa>\r\n" + //
+				"  <b/>\r\n" + //
+				"</aaa>\r\n";
+
+		String expectedText = "<root/>";
+
+		TextDocument document = new TextDocument(text, "uri");
+		document.setIncremental(true);
+
+		// range is null: the whole document is replaced.
+		TextDocumentContentChangeEvent change1 = new TextDocumentContentChangeEvent(expectedText);
 
 		ArrayList<TextDocumentContentChangeEvent> changes = new ArrayList<>();
 		changes.add(change1);
