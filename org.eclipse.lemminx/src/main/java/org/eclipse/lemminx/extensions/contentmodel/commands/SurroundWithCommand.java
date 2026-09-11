@@ -40,6 +40,7 @@ import org.eclipse.lsp4j.jsonrpc.CancelChecker;
  * <li>Surround with Tags (Wrap)</li>
  * <li>Surround with Comments</li>
  * <li>Surround with CDATA</li>
+ * <li>Ignore Formatting</li>
  * </ul>
  *
  */
@@ -73,7 +74,8 @@ public class SurroundWithCommand extends AbstractDOMDocumentCommandHandler {
 	public static enum SurroundWithKind {
 		tags, //
 		comments, //
-		cdata;
+		cdata, //
+		ignoreFormatting;
 
 		public static SurroundWithKind get(String kind) {
 			return valueOf(kind);
@@ -135,6 +137,16 @@ public class SurroundWithCommand extends AbstractDOMDocumentCommandHandler {
 					SnippetsBuilder.tabstops(1, startText);
 				}
 				endText = new StringBuilder("-->");
+				if (snippetsSupported) {
+					SnippetsBuilder.tabstops(0, endText);
+				}
+				break;
+			case ignoreFormatting:
+				startText = new StringBuilder("<!-- @formatter:off -->");
+				if (snippetsSupported && emptySelection) {
+					SnippetsBuilder.tabstops(1, startText);
+				}
+				endText = new StringBuilder("<!-- @formatter:on -->");
 				if (snippetsSupported) {
 					SnippetsBuilder.tabstops(0, endText);
 				}
