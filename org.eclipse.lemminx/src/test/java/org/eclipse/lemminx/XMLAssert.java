@@ -41,7 +41,7 @@ import org.eclipse.lemminx.client.CodeLensKindCapabilities;
 import org.eclipse.lemminx.client.ExtendedCodeLensCapabilities;
 import org.eclipse.lemminx.commons.BadLocationException;
 import org.eclipse.lemminx.commons.TextDocument;
-import org.eclipse.lemminx.customservice.AutoCloseTagResponse;
+import org.eclipse.lemminx.customservice.AutoInsertResponse;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMParser;
 import org.eclipse.lemminx.extensions.colors.settings.XMLColorsSettings;
@@ -471,7 +471,7 @@ public class XMLAssert {
 		Position position = document.positionAt(offset);
 		DOMDocument htmlDoc = DOMParser.getInstance().parse(document, ls.getResolverExtensionManager());
 
-		AutoCloseTagResponse response = ls.doTagComplete(htmlDoc, settings.getCompletionSettings(), position);
+		AutoInsertResponse response = ls.doTagComplete(htmlDoc, settings.getCompletionSettings(), position);
 		if (expected == null) {
 			assertNull(response);
 			return;
@@ -480,7 +480,7 @@ public class XMLAssert {
 		assertEquals(expected, actual);
 	}
 
-	public static void testTagCompletion(String value, AutoCloseTagResponse expected, SharedSettings settings)
+	public static void testTagCompletion(String value, AutoInsertResponse expected, SharedSettings settings)
 			throws BadLocationException {
 		int offset = value.indexOf('|');
 		value = value.substring(0, offset) + value.substring(offset + 1);
@@ -491,7 +491,54 @@ public class XMLAssert {
 		Position position = document.positionAt(offset);
 		DOMDocument htmlDoc = DOMParser.getInstance().parse(document, ls.getResolverExtensionManager());
 
-		AutoCloseTagResponse actual = ls.doTagComplete(htmlDoc, settings.getCompletionSettings(), position);
+		AutoInsertResponse actual = ls.doTagComplete(htmlDoc, settings.getCompletionSettings(), position);
+		if (expected == null) {
+			assertNull(actual);
+			return;
+		}
+		assertNotNull(actual);
+		assertEquals(expected.snippet, actual.snippet);
+		assertEquals(expected.range, actual.range);
+	}
+
+	public static void testAutoInsert(String value, String kind, String expected) throws BadLocationException {
+		testAutoInsert(value, kind, expected, new SharedSettings());
+	}
+
+	public static void testAutoInsert(String value, String kind, String expected, SharedSettings settings)
+			throws BadLocationException {
+		int offset = value.indexOf('|');
+		value = value.substring(0, offset) + value.substring(offset + 1);
+
+		XMLLanguageService ls = new XMLLanguageService();
+
+		TextDocument document = new TextDocument(value, "test://test/test.xml");
+		Position position = document.positionAt(offset);
+		DOMDocument xmlDoc = DOMParser.getInstance().parse(document, ls.getResolverExtensionManager());
+
+		AutoInsertResponse response = ls.doAutoInsert(xmlDoc, position, kind, settings, () -> {
+		});
+		if (expected == null) {
+			assertNull(response);
+			return;
+		}
+		assertNotNull(response);
+		assertEquals(expected, response.snippet);
+	}
+
+	public static void testAutoInsert(String value, String kind, AutoInsertResponse expected, SharedSettings settings)
+			throws BadLocationException {
+		int offset = value.indexOf('|');
+		value = value.substring(0, offset) + value.substring(offset + 1);
+
+		XMLLanguageService ls = new XMLLanguageService();
+
+		TextDocument document = new TextDocument(value, "test://test/test.xml");
+		Position position = document.positionAt(offset);
+		DOMDocument xmlDoc = DOMParser.getInstance().parse(document, ls.getResolverExtensionManager());
+
+		AutoInsertResponse actual = ls.doAutoInsert(xmlDoc, position, kind, settings, () -> {
+		});
 		if (expected == null) {
 			assertNull(actual);
 			return;

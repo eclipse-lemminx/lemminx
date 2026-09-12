@@ -12,17 +12,16 @@ package org.eclipse.lemminx.customservice;
 
 import org.eclipse.lsp4j.Range;
 
-/**
- * @deprecated Use {@link AutoInsertResponse} instead.
- */
-@Deprecated
-public class AutoCloseTagResponse extends AutoInsertResponse {
+public class AutoInsertResponse {
+	public String snippet;
+	public Range range;
 
-	public AutoCloseTagResponse(String snippet, Range range) {
-		super(snippet, range);
+	public AutoInsertResponse(String snippet, Range range) {
+		this.snippet = snippet;
+		this.range = range;
 	}
 
-	public AutoCloseTagResponse(String snippet) {
-		super(snippet);
+	public AutoInsertResponse(String snippet) {
+		this.snippet = snippet;
 	}
 }

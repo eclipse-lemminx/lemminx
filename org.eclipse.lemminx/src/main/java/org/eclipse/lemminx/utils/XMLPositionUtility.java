@@ -331,6 +331,9 @@ public class XMLPositionUtility {
 			}
 			DOMAttr attr = (DOMAttr) node;
 			Range valueRange = XMLPositionUtility.selectAttributeValue(attr);
+			if (valueRange == null) {
+				return false;
+			}
 			int valueStart = xmlDocument.offsetAt(valueRange.getStart());
 			int valueEnd = xmlDocument.offsetAt(valueRange.getEnd());
 			return valueStart < offset && offset <= valueEnd;

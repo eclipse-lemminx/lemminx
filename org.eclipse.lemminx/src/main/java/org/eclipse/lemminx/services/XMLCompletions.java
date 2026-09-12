@@ -27,7 +27,7 @@ import java.util.regex.Pattern;
 import org.eclipse.lemminx.commons.BadLocationException;
 import org.eclipse.lemminx.commons.TextDocument;
 import org.eclipse.lemminx.commons.snippets.SnippetRegistry;
-import org.eclipse.lemminx.customservice.AutoCloseTagResponse;
+import org.eclipse.lemminx.customservice.AutoInsertResponse;
 import org.eclipse.lemminx.dom.DOMAttr;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMElement;
@@ -562,7 +562,7 @@ public class XMLCompletions {
 		return true;
 	}
 
-	public AutoCloseTagResponse doTagComplete(DOMDocument xmlDocument, Position position,
+	public AutoInsertResponse doTagComplete(DOMDocument xmlDocument, Position position,
 			XMLCompletionSettings completionSettings, CancelChecker cancelChecker) {
 		int offset;
 		try {
@@ -600,7 +600,7 @@ public class XMLCompletions {
 	 * Handles auto-close when '>' is typed after a start tag (e.g. <a>|).
 	 * Inserts the matching closing tag (e.g. $0</a>).
 	 */
-	private AutoCloseTagResponse doAutoInsertClosingTag(DOMDocument xmlDocument, int offset) {
+	private AutoInsertResponse doAutoInsertClosingTag(DOMDocument xmlDocument, int offset) {
 		DOMNode node = xmlDocument.findNodeBefore(offset);
 		if (!(node instanceof DOMElement)) {
 			return null;
@@ -610,7 +610,7 @@ public class XMLCompletions {
 				&& !isEmptyElement(element.getTagName()) && element.getStart() < offset
 				&& (!element.hasEndTag() || (element.getTagName().equals(element.getParentNode().getNodeName())
 						&& !isBalanced(element)))) {
-			return new AutoCloseTagResponse("$0</" + element.getTagName() + ">");
+			return new AutoInsertResponse("$0</" + element.getTagName() + ">");
 		}
 		return null;
 	}
@@ -619,13 +619,13 @@ public class XMLCompletions {
 	 * Handles auto-close when '</' is typed (e.g. <a> </|).
 	 * Completes the end tag name (e.g. a>$0).
 	 */
-	private AutoCloseTagResponse doAutoCompleteEndTag(DOMDocument xmlDocument, int offset) {
+	private AutoInsertResponse doAutoCompleteEndTag(DOMDocument xmlDocument, int offset) {
 		DOMNode node = xmlDocument.findNodeBefore(offset);
 		while (node != null && (node.isClosed() || (node.isElement() && ((DOMElement) node).isOrphanEndTag()))) {
 			node = node.getParentNode();
 		}
 		if (node != null && node.isElement() && ((DOMElement) node).getTagName() != null) {
-			return new AutoCloseTagResponse(((DOMElement) node).getTagName() + ">$0");
+			return new AutoInsertResponse(((DOMElement) node).getTagName() + ">$0");
 		}
 		return null;
 	}
@@ -635,7 +635,7 @@ public class XMLCompletions {
 	 * to a self-closing tag (e.g. <a/| or <a/|></a>).
 	 * Removes the now-redundant end tag when applicable.
 	 */
-	private AutoCloseTagResponse doAutoSelfClose(DOMDocument xmlDocument, int offset, Position position,
+	private AutoInsertResponse doAutoSelfClose(DOMDocument xmlDocument, int offset, Position position,
 			XMLCompletionSettings completionSettings) {
 		DOMNode node = xmlDocument.findNodeBefore(offset);
 		if (!node.isElement() || node.getNodeName() == null) {
@@ -664,9 +664,9 @@ public class XMLCompletions {
 				if (end == null) {
 					return null;
 				}
-				return new AutoCloseTagResponse(">$0", new Range(position, end));
+				return new AutoInsertResponse(">$0", new Range(position, end));
 			}
-			return new AutoCloseTagResponse(">$0");
+			return new AutoInsertResponse(">$0");
 		}
 
 		// '>' exists after slash: find and remove the redundant end tag
@@ -680,7 +680,7 @@ public class XMLCompletions {
 				if (end == null) {
 					return null;
 				}
-				return new AutoCloseTagResponse(">$0", new Range(position, end));
+				return new AutoInsertResponse(">$0", new Range(position, end));
 			}
 		}
 
@@ -704,7 +704,7 @@ public class XMLCompletions {
 							if (end == null) {
 								return null;
 							}
-							return new AutoCloseTagResponse(">$0", new Range(position, end));
+							return new AutoInsertResponse(">$0", new Range(position, end));
 						}
 					}
 					ancestor = ancestor.getParentElement();
@@ -721,6 +721,54 @@ public class XMLCompletions {
 		} catch (BadLocationException e) {
 			return null;
 		}
+	}
+
+	public AutoInsertResponse doAutoQuote(DOMDocument xmlDocument, Position position,
+			SharedSettings sharedSettings, CancelChecker cancelChecker) {
+		int offset;
+		try {
+			offset = xmlDocument.offsetAt(position);
+		} catch (BadLocationException e) {
+			LOGGER.log(Level.SEVERE, "doAutoQuote failed", e);
+			return null;
+		}
+		if (offset <= 0) {
+			return null;
+		}
+		CharSequence text = xmlDocument.getTextSequence();
+		if (text.charAt(offset - 1) != '=') {
+			return null;
+		}
+		if (XMLPositionUtility.isInAttributeValue(xmlDocument, position)) {
+			return null;
+		}
+		String quotation = sharedSettings.getPreferences().getQuotationAsString();
+		String snippet = quotation + "$1" + quotation;
+		DOMNode node = xmlDocument.findNodeBefore(offset);
+		if (node == null || !node.isElement()) {
+			return null;
+		}
+		DOMElement element = (DOMElement) node;
+		if (element.isInEndTag(offset) || element.getStart() >= offset) {
+			return null;
+		}
+		Scanner scanner = XMLScanner.createScanner(text, element.getStart(), false);
+		TokenType token = scanner.scan();
+		while (token != TokenType.EOS && scanner.getTokenEnd() <= offset) {
+			if (token == TokenType.AttributeName && scanner.getTokenEnd() == offset - 1) {
+				token = scanner.scan();
+				if (token != TokenType.DelimiterAssign) {
+					return null;
+				}
+				token = scanner.scan();
+				if (token == TokenType.AttributeValue) {
+					return null;
+				}
+				return new AutoInsertResponse(snippet);
+			}
+			token = scanner.scan();
+		}
+		return null;
 	}
 
 	// ---------------- Tags completion
