@@ -31,6 +31,8 @@ import org.eclipse.lemminx.commons.ParentProcessWatcher.ProcessLanguageServer;
 import org.eclipse.lemminx.commons.progress.ProgressSupport;
 import org.eclipse.lemminx.customservice.ActionableNotification;
 import org.eclipse.lemminx.customservice.AutoCloseTagResponse;
+import org.eclipse.lemminx.customservice.AutoInsertParams;
+import org.eclipse.lemminx.customservice.AutoInsertResponse;
 import org.eclipse.lemminx.customservice.XMLLanguageClientAPI;
 import org.eclipse.lemminx.customservice.XMLLanguageServerAPI;
 import org.eclipse.lemminx.dom.DOMDocument;
@@ -290,10 +292,23 @@ public class XMLLanguageServer implements ProcessLanguageServer, XMLLanguageServ
 	}
 
 	@Override
+	public CompletableFuture<AutoInsertResponse> autoInsert(AutoInsertParams params) {
+		return xmlTextDocumentService.computeDOMAsync(params.getTextDocument(), (xmlDocument, cancelChecker) -> {
+			return getXMLLanguageService().doAutoInsert(xmlDocument, params.getPosition(), params.getKind(),
+					getSharedSettings(), cancelChecker);
+		});
+	}
+
+	@Deprecated
+	@Override
 	public CompletableFuture<AutoCloseTagResponse> closeTag(TextDocumentPositionParams params) {
 		return xmlTextDocumentService.computeDOMAsync(params.getTextDocument(), (xmlDocument, cancelChecker) -> {
-			return getXMLLanguageService().doAutoClose(xmlDocument, params.getPosition(),
+			AutoInsertResponse response = getXMLLanguageService().doAutoClose(xmlDocument, params.getPosition(),
 					getSharedSettings().getCompletionSettings(), cancelChecker);
+			if (response == null) {
+				return null;
+			}
+			return new AutoCloseTagResponse(response.snippet, response.range);
 		});
 	}
 

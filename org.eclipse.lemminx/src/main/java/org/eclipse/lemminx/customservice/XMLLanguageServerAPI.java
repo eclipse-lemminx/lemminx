@@ -27,10 +27,15 @@ import org.eclipse.lsp4j.jsonrpc.services.JsonSegment;
 public interface XMLLanguageServerAPI {
 
 	@JsonRequest
+	CompletableFuture<AutoInsertResponse> autoInsert(AutoInsertParams params);
+
+	/**
+	 * @deprecated Use {@link #autoInsert(AutoInsertParams)} instead.
+	 */
+	@Deprecated
+	@JsonRequest
 	CompletableFuture<AutoCloseTagResponse> closeTag(TextDocumentPositionParams params);
 
 	@JsonRequest
 	CompletableFuture<Position> matchingTagPosition(TextDocumentPositionParams params);
 }
-
-

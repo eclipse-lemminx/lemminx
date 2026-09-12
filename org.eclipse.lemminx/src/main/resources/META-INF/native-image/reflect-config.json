@@ -182,6 +182,14 @@
 		"allDeclaredFields": true
 	},
 	{
+		"name": "org.eclipse.lemminx.customservice.AutoInsertResponse",
+		"allDeclaredFields": true
+	},
+	{
+		"name": "org.eclipse.lemminx.customservice.AutoInsertParams",
+		"allDeclaredFields": true
+	},
+	{
 		"name": "org.eclipse.lemminx.customservice.XMLLanguageClientAPI",
 		"allDeclaredMethods": true
 	},

@@ -27,7 +27,7 @@ import java.util.List;
 
 import org.eclipse.lemminx.XMLAssert;
 import org.eclipse.lemminx.commons.BadLocationException;
-import org.eclipse.lemminx.customservice.AutoCloseTagResponse;
+import org.eclipse.lemminx.customservice.AutoInsertResponse;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMParser;
 import org.eclipse.lemminx.settings.SharedSettings;
@@ -221,7 +221,7 @@ public class XMLCompletionTest {
 				"<a/|\n" + //
 				"  <b />\n" + //
 				"</a>";
-		AutoCloseTagResponse closeTagResponse = new AutoCloseTagResponse(">$0", r(0, 3, 2, 4));
+		AutoInsertResponse closeTagResponse = new AutoInsertResponse(">$0", r(0, 3, 2, 4));
 
 		XMLAssert.testTagCompletion(value, closeTagResponse, settings);
 	}
@@ -236,7 +236,7 @@ public class XMLCompletionTest {
 				"<a/|\n" + //
 				"  <b />\n" + //
 				"</a>";
-		AutoCloseTagResponse closeTagResponse = new AutoCloseTagResponse(">$0");
+		AutoInsertResponse closeTagResponse = new AutoInsertResponse(">$0");
 
 		XMLAssert.testTagCompletion(value, closeTagResponse, settings);
 	}
@@ -252,7 +252,7 @@ public class XMLCompletionTest {
 				"  content\n" + //
 				"</a>";
 
-		XMLAssert.testTagCompletion(value, (AutoCloseTagResponse) null, settings);
+		XMLAssert.testTagCompletion(value, (AutoInsertResponse) null, settings);
 	}
 
 	@Test
@@ -269,11 +269,11 @@ public class XMLCompletionTest {
 		SharedSettings settings = new SharedSettings();
 		settings.getCompletionSettings().setAutoCloseTags(true);
 		String xml = "<aaa attr=\"value>|";
-		XMLAssert.testTagCompletion(xml, (AutoCloseTagResponse) null, settings);
+		XMLAssert.testTagCompletion(xml, (AutoInsertResponse) null, settings);
 		xml = "<aaa attr=\">|value";
-		XMLAssert.testTagCompletion(xml, (AutoCloseTagResponse) null, settings);
+		XMLAssert.testTagCompletion(xml, (AutoInsertResponse) null, settings);
 		xml = "<aaa attr=>|\"";
-		XMLAssert.testTagCompletion(xml, new AutoCloseTagResponse("$0</aaa>"), settings);
+		XMLAssert.testTagCompletion(xml, new AutoInsertResponse("$0</aaa>"), settings);
 	}
 
 	@Test
@@ -281,7 +281,7 @@ public class XMLCompletionTest {
 		SharedSettings settings = new SharedSettings();
 		settings.getCompletionSettings().setAutoCloseTags(true);
 		String xml = "<aaa attr=\"value/|";
-		XMLAssert.testTagCompletion(xml, (AutoCloseTagResponse) null, settings);
+		XMLAssert.testTagCompletion(xml, (AutoInsertResponse) null, settings);
 	}
 
 	@Test
@@ -289,7 +289,7 @@ public class XMLCompletionTest {
 		SharedSettings settings = new SharedSettings();
 		settings.getCompletionSettings().setAutoCloseTags(true);
 		String xml = "<aaa attr=\"value</|";
-		XMLAssert.testTagCompletion(xml, (AutoCloseTagResponse) null, settings);
+		XMLAssert.testTagCompletion(xml, (AutoInsertResponse) null, settings);
 	}
 
 	// -------------------Tools----------------------------------------------------------
@@ -339,7 +339,7 @@ public class XMLCompletionTest {
 		} catch (Exception e) {
 			fail("Couldn't get position at offset");
 		}
-		AutoCloseTagResponse response = languageService.doTagComplete(xmlDocument, settings.getCompletionSettings(), position);
+		AutoInsertResponse response = languageService.doTagComplete(xmlDocument, settings.getCompletionSettings(), position);
 		if (response == null) {
 			assertNull(expectedTextEdit);
 			assertNull(range);

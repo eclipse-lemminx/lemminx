@@ -19,7 +19,7 @@ import java.util.function.Consumer;
 
 import org.eclipse.lemminx.commons.BadLocationException;
 import org.eclipse.lemminx.commons.TextDocument;
-import org.eclipse.lemminx.customservice.AutoCloseTagResponse;
+import org.eclipse.lemminx.customservice.AutoInsertResponse;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMParser;
 import org.eclipse.lemminx.extensions.contentmodel.settings.XMLValidationRootSettings;
@@ -323,17 +323,41 @@ public class XMLLanguageService extends XMLExtensionsRegistry implements IXMLFul
 		return codeActions.resolveCodeAction(unresolved, document, sharedSettings, cancelChecker);
 	}
 
-	public AutoCloseTagResponse doTagComplete(DOMDocument xmlDocument, XMLCompletionSettings completionSettings,
+	public AutoInsertResponse doAutoInsert(DOMDocument xmlDocument, Position position, String kind,
+			SharedSettings sharedSettings, CancelChecker cancelChecker) {
+		try {
+			int offset = xmlDocument.offsetAt(position);
+			if (offset <= 0) {
+				return null;
+			}
+			CharSequence text = xmlDocument.getTextSequence();
+			char c = text.charAt(offset - 1);
+			if ("autoQuote".equals(kind)) {
+				if (c == '=') {
+					return completions.doAutoQuote(xmlDocument, position, sharedSettings, cancelChecker);
+				}
+			} else if ("autoClose".equals(kind)) {
+				if (c == '>' || c == '/') {
+					return doTagComplete(xmlDocument, position, sharedSettings.getCompletionSettings(), cancelChecker);
+				}
+			}
+			return null;
+		} catch (BadLocationException e) {
+			return null;
+		}
+	}
+
+	public AutoInsertResponse doTagComplete(DOMDocument xmlDocument, XMLCompletionSettings completionSettings,
 			Position position) {
 		return doTagComplete(xmlDocument, position, completionSettings, NULL_CHECKER);
 	}
 
-	public AutoCloseTagResponse doTagComplete(DOMDocument xmlDocument, Position position,
+	public AutoInsertResponse doTagComplete(DOMDocument xmlDocument, Position position,
 			XMLCompletionSettings completionSettings, CancelChecker cancelChecker) {
 		return completions.doTagComplete(xmlDocument, position, completionSettings, cancelChecker);
 	}
 
-	public AutoCloseTagResponse doAutoClose(DOMDocument xmlDocument, Position position,
+	public AutoInsertResponse doAutoClose(DOMDocument xmlDocument, Position position,
 			XMLCompletionSettings completionSettings, CancelChecker cancelChecker) {
 		try {
 			int offset = xmlDocument.offsetAt(position);
