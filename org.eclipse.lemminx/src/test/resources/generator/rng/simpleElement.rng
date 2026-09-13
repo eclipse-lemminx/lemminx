@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<element name="root" xmlns="http://relaxng.org/ns/structure/1.0">
+    <element name="item1">
+        <text/>
+    </element>
+    <element name="item2">
+        <text/>
+    </element>
+</element>

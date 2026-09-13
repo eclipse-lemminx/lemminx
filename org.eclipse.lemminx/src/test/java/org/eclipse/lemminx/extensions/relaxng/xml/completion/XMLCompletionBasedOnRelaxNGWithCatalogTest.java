@@ -114,7 +114,7 @@ public class XMLCompletionBasedOnRelaxNGWithCatalogTest extends BaseFileTempTest
 				"</TEI>";
 		testCompletionWithCatalogFor(xml, //
 				c("rend", te(0, 41, 0, 41, "rend=\"\""), "rend"), //
-				c("xml:space", te(0, 41, 0, 41, "xml:space=\"\""), "xml:space"));
+				c("xml:space", te(0, 41, 0, 41, "xml:space=\"default\""), "xml:space"));
 	}
 
 	@Test

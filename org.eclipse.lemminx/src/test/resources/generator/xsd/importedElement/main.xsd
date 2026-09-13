@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://example.com/main"
+           xmlns:tns="http://example.com/main"
+           xmlns:product="http://example.com/product"
+           elementFormDefault="qualified">
+    <xs:import namespace="http://example.com/product" schemaLocation="product.xsd" />
+    <xs:element name="root">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="title" type="xs:string" />
+                <xs:element ref="product:QuestionValue" minOccurs="0" />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

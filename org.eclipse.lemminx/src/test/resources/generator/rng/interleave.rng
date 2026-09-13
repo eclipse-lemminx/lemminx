@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<grammar xmlns="http://relaxng.org/ns/structure/1.0">
+  <start>
+    <ref name="record"/>
+  </start>
+  <define name="record">
+    <element name="record">
+      <interleave>
+        <element name="field1">
+          <text/>
+        </element>
+        <element name="field2">
+          <text/>
+        </element>
+      </interleave>
+    </element>
+  </define>
+</grammar>

@@ -27,7 +27,7 @@ import org.eclipse.lemminx.dom.DOMNode;
 import org.eclipse.lemminx.extensions.contentmodel.model.CMDocument;
 import org.eclipse.lemminx.extensions.contentmodel.model.CMElementDeclaration;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
-import org.eclipse.lemminx.extensions.contentmodel.utils.XMLGenerator;
+import org.eclipse.lemminx.extensions.contentmodel.generator.XMLElementGenerator;
 import org.eclipse.lemminx.services.data.DataEntryField;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionParticipant;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionRequest;
@@ -82,7 +82,7 @@ public class required_elements_missing_expectedCodeAction implements ICodeAction
 			}
 
 			DOMElement element = (DOMElement) node;
-			XMLGenerator generator = request.getXMLGenerator();
+			XMLElementGenerator generator = request.getXMLGenerator();
 			ContentModelManager contentModelManager = request.getComponent(ContentModelManager.class);
 
 			for (CMDocument cmDocument : contentModelManager.findCMDocument(element)) {

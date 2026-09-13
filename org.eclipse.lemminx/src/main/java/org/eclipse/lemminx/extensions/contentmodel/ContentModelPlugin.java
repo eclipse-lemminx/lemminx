@@ -19,6 +19,9 @@ import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.extensions.contentmodel.commands.AssociateGrammarCommand;
 import org.eclipse.lemminx.extensions.contentmodel.commands.CheckBoundGrammarCommand;
 import org.eclipse.lemminx.extensions.contentmodel.commands.CheckFilePatternCommand;
+import org.eclipse.lemminx.commons.progress.ProgressSupport;
+import org.eclipse.lemminx.extensions.contentmodel.commands.GenerateXMLFromGrammarCommand;
+import org.eclipse.lemminx.extensions.contentmodel.commands.ListRootElementsCommand;
 import org.eclipse.lemminx.extensions.contentmodel.commands.SurroundWithCommand;
 import org.eclipse.lemminx.extensions.contentmodel.commands.XMLValidationAllFilesCommand;
 import org.eclipse.lemminx.extensions.contentmodel.commands.XMLValidationFileCommand;
@@ -90,6 +93,8 @@ public class ContentModelPlugin implements IXMLExtension {
 
 	private ContentModelFormatterParticipant formatterParticipant;
 
+	private GenerateXMLFromGrammarCommand generateCommand;
+
 	public ContentModelPlugin() {
 		completionParticipant = new ContentModelCompletionParticipant();
 		hoverParticipant = new ContentModelHoverParticipant();
@@ -128,6 +133,9 @@ public class ContentModelPlugin implements IXMLExtension {
 			updateSettings(cmSettings, saveContext);
 		} else {
 			currentValidationSettings = null;
+		}
+		if (generateCommand != null) {
+			generateCommand.updateContentModelSettings(cmSettings);
 		}
 	}
 
@@ -234,6 +242,11 @@ public class ContentModelPlugin implements IXMLExtension {
 			commandService.registerCommand(CheckFilePatternCommand.COMMAND_ID, new CheckFilePatternCommand());
 			commandService.registerCommand(SurroundWithCommand.COMMAND_ID,
 					new SurroundWithCommand(documentProvider, contentModelManager));
+			ProgressSupport progressSupport = registry.getProgressSupport();
+			commandService.registerCommand(ListRootElementsCommand.COMMAND_ID,
+					new ListRootElementsCommand(contentModelManager, progressSupport));
+			generateCommand = new GenerateXMLFromGrammarCommand(contentModelManager, progressSupport);
+			commandService.registerCommand(GenerateXMLFromGrammarCommand.COMMAND_ID, generateCommand);
 		}
 	}
 
@@ -259,6 +272,8 @@ public class ContentModelPlugin implements IXMLExtension {
 			commandService.unregisterCommand(CheckBoundGrammarCommand.COMMAND_ID);
 			commandService.unregisterCommand(CheckFilePatternCommand.COMMAND_ID);
 			commandService.unregisterCommand(SurroundWithCommand.COMMAND_ID);
+			commandService.unregisterCommand(ListRootElementsCommand.COMMAND_ID);
+			commandService.unregisterCommand(GenerateXMLFromGrammarCommand.COMMAND_ID);
 		}
 	}
 

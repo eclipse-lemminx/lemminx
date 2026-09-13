@@ -29,9 +29,19 @@ import org.w3c.dom.Entity;
 public interface CMDocument {
 
 	/**
+	 * Returns the target namespace of this grammar document, or {@code null} if the
+	 * grammar has no target namespace (e.g., a no-namespace XSD or a DTD).
+	 *
+	 * @return the target namespace URI, or {@code null}.
+	 */
+	default String getNamespace() {
+		return null;
+	}
+
+	/**
 	 * Returns true if the model document defines the given namespace and false
 	 * otherwise.
-	 * 
+	 *
 	 * @param namespaceURI
 	 * @return true if the model document defines the given namespace and false
 	 *         otherwise.

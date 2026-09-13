@@ -14,6 +14,7 @@ package org.eclipse.lemminx.extensions.xsd.contentmodel;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -30,6 +31,7 @@ import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelProvider;
 import org.eclipse.lemminx.extensions.xerces.AbstractLSPErrorReporter;
 import org.eclipse.lemminx.extensions.xerces.LSPXMLEntityManager;
 import org.eclipse.lemminx.extensions.xerces.ReflectionUtils;
+import org.eclipse.lemminx.extensions.contentmodel.model.InvalidGrammarException;
 import org.eclipse.lemminx.uriresolver.CacheResourceDownloadingException;
 import org.eclipse.lemminx.uriresolver.URIResolverExtensionManager;
 import org.eclipse.lemminx.utils.DOMUtils;
@@ -106,11 +108,14 @@ public class CMXSDContentModelProvider implements ContentModelProvider {
 
 	@Override
 	public CMDocument createCMDocument(String key, boolean resolveExternalEntities) {
-		XSLoaderImpl loader = getLoader();
+		List<String> errors = new ArrayList<>();
+		XSLoaderImpl loader = getLoader(errors);
 		XSModel model = loader.loadURI(key);
 		if (model != null) {
-			// XML Schema can be loaded
 			return new CMXSDDocument(model, loader);
+		}
+		if (!errors.isEmpty()) {
+			throw new InvalidGrammarException(errors);
 		}
 		return null;
 	}
@@ -121,6 +126,10 @@ public class CMXSDContentModelProvider implements ContentModelProvider {
 	}
 
 	public XSLoaderImpl getLoader() {
+		return getLoader(null);
+	}
+
+	private XSLoaderImpl getLoader(List<String> errors) {
 		LSPXMLEntityManager entityManager = new LSPXMLEntityManager(null, null);
 		entityManager.setEntityResolver(resolverExtensionManager);
 
@@ -133,6 +142,9 @@ public class CMXSDContentModelProvider implements ContentModelProvider {
 			public boolean handleError(DOMError error) {
 				if (error.getRelatedException() instanceof CacheResourceDownloadingException) {
 					throw ((CacheResourceDownloadingException) error.getRelatedException());
+				}
+				if (errors != null && error.getMessage() != null) {
+					errors.add(error.getMessage());
 				}
 				return false;
 			}

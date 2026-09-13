@@ -72,12 +72,19 @@ public class CMXSDAttributeDeclaration implements CMAttributeDeclaration {
 	@Override
 	public String getDefaultValue() {
 		XSValue xsValue = attributeUse.getValueConstraintValue();
-		if (xsValue == null) {
-			if (CMXSDDocument.isBooleanType(getAttrDeclaration().getTypeDefinition())) {
-				return "false";
-			}
+		if (xsValue != null) {
+			return xsValue.getNormalizedValue().toString();
 		}
-		return xsValue != null ? xsValue.getNormalizedValue().toString() : null;
+		return null;
+	}
+
+	@Override
+	public String getTypeAwareDefaultValue() {
+		String explicitDefault = getDefaultValue();
+		if (explicitDefault != null) {
+			return explicitDefault;
+		}
+		return CMXSDDocument.getTypeDefaultValue(getAttrDeclaration().getTypeDefinition());
 	}
 
 	@Override

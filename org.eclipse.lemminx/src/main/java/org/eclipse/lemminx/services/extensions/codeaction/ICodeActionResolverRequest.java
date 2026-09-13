@@ -12,7 +12,7 @@
 package org.eclipse.lemminx.services.extensions.codeaction;
 
 import org.eclipse.lemminx.commons.BadLocationException;
-import org.eclipse.lemminx.extensions.contentmodel.utils.XMLGenerator;
+import org.eclipse.lemminx.extensions.contentmodel.generator.XMLElementGenerator;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.Range;
 
@@ -58,6 +58,6 @@ public interface ICodeActionResolverRequest extends IBaseCodeActionRequest {
 	 * 
 	 * @return the XML generator and null otherwise.
 	 */
-	XMLGenerator getXMLGenerator(Range range) throws BadLocationException;
+	XMLElementGenerator getXMLGenerator(Range range) throws BadLocationException;
 
 }

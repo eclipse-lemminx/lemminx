@@ -1,0 +1,4 @@
+start = container
+container = element container {
+  (element optionA { text } | element optionB { text })
+}

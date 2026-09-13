@@ -18,7 +18,7 @@ import org.eclipse.lemminx.extensions.contentmodel.model.CMAttributeDeclaration;
 import org.eclipse.lemminx.extensions.contentmodel.model.CMDocument;
 import org.eclipse.lemminx.extensions.contentmodel.model.CMElementDeclaration;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
-import org.eclipse.lemminx.extensions.contentmodel.utils.XMLGenerator;
+import org.eclipse.lemminx.extensions.contentmodel.generator.XMLElementGenerator;
 import org.eclipse.lemminx.services.extensions.completion.AbstractAttributeCompletionResolver;
 import org.eclipse.lemminx.services.extensions.completion.ICompletionItemResolverRequest;
 import org.eclipse.lemminx.uriresolver.CacheResourceDownloadingException;
@@ -62,7 +62,7 @@ public class AttributeNameCompletionResolver extends AbstractAttributeCompletion
 			ICompletionItemResolverRequest request) {
 		CMAttributeDeclaration cmAttribute = cmElement.findCMAttribute(attributeName, null);
 		if (cmAttribute != null) {
-			return XMLGenerator.createMarkupContent(cmAttribute, cmElement,
+			return XMLElementGenerator.createMarkupContent(cmAttribute, cmElement,
 					request);
 		}
 		return null;

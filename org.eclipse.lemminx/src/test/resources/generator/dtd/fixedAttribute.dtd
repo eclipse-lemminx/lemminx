@@ -1,0 +1,4 @@
+<!ELEMENT document (title)>
+<!ELEMENT title (#PCDATA)>
+<!ATTLIST document
+    version CDATA #FIXED "1.0">

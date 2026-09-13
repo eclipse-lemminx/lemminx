@@ -14,7 +14,7 @@ package org.eclipse.lemminx.services.extensions.completion;
 
 import java.util.Collection;
 
-import org.eclipse.lemminx.extensions.contentmodel.utils.XMLGenerator;
+import org.eclipse.lemminx.extensions.contentmodel.generator.XMLElementGenerator;
 import org.eclipse.lemminx.settings.SharedSettings;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionItemKind;
@@ -46,7 +46,7 @@ public class AttributeCompletionItem extends CompletionItem {
 		StringBuilder attributeContent = new StringBuilder(attrName);
 		if (generateValue) {
 			// Generate attribute value content
-			String attributeValue = XMLGenerator.generateAttributeValue(defaultValue, enumerationValues,
+			String attributeValue = XMLElementGenerator.generateAttributeValue(defaultValue, enumerationValues,
 					canSupportSnippets, 1, true, sharedSettings);
 			attributeContent.append(attributeValue);
 		}

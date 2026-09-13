@@ -39,6 +39,8 @@ public class XMLBuilder {
 
 	private final Collection<IFormatterParticipant> formatterParticipants;
 
+	private int initialLineWidth;
+
 	private static final Logger LOGGER = Logger.getLogger(XMLBuilder.class.getName());
 
 	public XMLBuilder(SharedSettings sharedSettings, String whitespacesIndent, String lineDelimiter) {
@@ -52,6 +54,10 @@ public class XMLBuilder {
 		this.lineDelimiter = lineDelimiter;
 		this.formatterParticipants = formatterParticipants;
 		this.xml = new StringBuilder();
+	}
+
+	public void setInitialLineWidth(int initialLineWidth) {
+		this.initialLineWidth = initialLineWidth;
 	}
 
 	public XMLBuilder appendSpace() {
@@ -172,9 +178,12 @@ public class XMLBuilder {
 	 * @return
 	 */
 	public XMLBuilder addAttribute(String name, String value, int level, boolean surroundWithQuotes) {
-		if (getSplitAttributes()== SplitAttributes.splitNewLine) {
+		if (getSplitAttributes() == SplitAttributes.splitNewLine) {
 			linefeed();
 			indent(level + sharedSettings.getFormattingSettings().getSplitAttributesIndentSize());
+		} else if (isMaxLineWidthExceeded(name, value, surroundWithQuotes)) {
+			linefeed();
+			indent(level + 1);
 		} else {
 			appendSpace();
 		}
@@ -258,6 +267,28 @@ public class XMLBuilder {
 		if (quote != null) {
 			append(quote);
 		}
+	}
+
+	private boolean isMaxLineWidthExceeded(String name, String value, boolean surroundWithQuotes) {
+		int maxLineWidth = sharedSettings.getFormattingSettings().getMaxLineWidth();
+		if (maxLineWidth <= 0) {
+			return false;
+		}
+		int currentWidth = getCurrentLineWidth();
+		int quoteSize = surroundWithQuotes ? 2 : 0;
+		int valueLength = value != null ? value.length() : 0;
+		// space + name + = + quotes + value
+		int attrWidth = 1 + name.length() + 1 + quoteSize + valueLength;
+		return currentWidth + attrWidth > maxLineWidth;
+	}
+
+	private int getCurrentLineWidth() {
+		for (int i = xml.length() - 1; i >= 0; i--) {
+			if (xml.charAt(i) == '\n') {
+				return xml.length() - i - 1;
+			}
+		}
+		return initialLineWidth + xml.length();
 	}
 
 	public void append(String str) {

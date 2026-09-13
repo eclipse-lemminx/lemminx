@@ -85,10 +85,22 @@ public interface CMElementDeclaration {
 
 	/**
 	 * Returns the children declared element of this declared element.
-	 * 
+	 *
 	 * @return the children declared element of this declared element.
 	 */
 	Collection<CMElementDeclaration> getElements();
+
+	/**
+	 * Returns the children elements that form valid content for this element.
+	 * Unlike {@link #getElements()} which returns all possible children
+	 * (including all choice alternatives), this method resolves choice groups
+	 * by returning only the first alternative.
+	 *
+	 * @return the children elements for valid content.
+	 */
+	default Collection<CMElementDeclaration> getContentElements() {
+		return getElements();
+	}
 
 	/**
 	 * Returns the possible declared elements at the given offset of the given
@@ -158,8 +170,30 @@ public interface CMElementDeclaration {
 	boolean isNillable();
 
 	/**
+	 * Returns the explicit default value from the schema declaration, or null
+	 * if none is declared. Does NOT include type-inferred defaults.
+	 *
+	 * @return the explicit default value, or null.
+	 */
+	default String getDefaultValue() {
+		return null;
+	}
+
+	/**
+	 * Returns a type-aware default value suitable for document generation.
+	 * For XSD elements, this returns type-inferred defaults (e.g., "0" for
+	 * xs:integer, "2026-01-01" for xs:date). For other grammars, defaults
+	 * to {@link #getDefaultValue()}.
+	 *
+	 * @return the type-aware default value, or null.
+	 */
+	default String getTypeAwareDefaultValue() {
+		return getDefaultValue();
+	}
+
+	/**
 	 * Return the enumeration values.
-	 * 
+	 *
 	 * @return the enumeration values.
 	 */
 	Collection<String> getEnumerationValues();

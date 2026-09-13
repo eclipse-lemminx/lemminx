@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+  <xs:element name="record">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="name" type="xs:string" />
+        <xs:element name="active" type="xs:boolean" />
+        <xs:element name="count" type="xs:integer" />
+        <xs:element name="score" type="xs:decimal" />
+        <xs:element name="ratio" type="xs:float" />
+        <xs:element name="precision" type="xs:double" />
+        <xs:element name="birthDate" type="xs:date" />
+        <xs:element name="createdAt" type="xs:dateTime" />
+        <xs:element name="startTime" type="xs:time" />
+        <xs:element name="age" type="xs:int" />
+        <xs:element name="code" type="xs:long" />
+        <xs:element name="rank" type="xs:positiveInteger" />
+        <xs:element name="offset" type="xs:negativeInteger" />
+        <xs:element name="duration" type="xs:duration" />
+      </xs:sequence>
+      <xs:attribute name="id" type="xs:integer" use="required" />
+      <xs:attribute name="timestamp" type="xs:dateTime" use="required" />
+      <xs:attribute name="enabled" type="xs:boolean" use="required" />
+    </xs:complexType>
+  </xs:element>
+
+</xs:schema>

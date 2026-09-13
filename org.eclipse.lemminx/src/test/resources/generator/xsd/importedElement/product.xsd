@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://example.com/product"
+           xmlns:tns="http://example.com/product"
+           elementFormDefault="qualified">
+    <xs:element name="QuestionValue">
+        <xs:complexType>
+            <xs:attribute name="name" type="xs:string" use="required" />
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

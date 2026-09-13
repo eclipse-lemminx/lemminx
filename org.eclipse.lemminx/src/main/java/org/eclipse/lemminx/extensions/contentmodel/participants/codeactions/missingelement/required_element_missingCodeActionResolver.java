@@ -20,7 +20,7 @@ import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMElement;
 import org.eclipse.lemminx.dom.DOMNode;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
-import org.eclipse.lemminx.extensions.contentmodel.utils.XMLGenerator;
+import org.eclipse.lemminx.extensions.contentmodel.generator.XMLElementGenerator;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionResolverRequest;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionResolvesParticipant;
 import org.eclipse.lsp4j.CodeAction;
@@ -59,7 +59,7 @@ public class required_element_missingCodeActionResolver implements ICodeActionRe
 			Position childElementPositionEndTag = document.positionAt(element.getEndTagOpenOffset());
 
 			Range targetRange = new Range(childElementPositionStartTag, childElementPositionEndTag);
-			XMLGenerator generator = request.getXMLGenerator(targetRange);
+			XMLElementGenerator generator = request.getXMLGenerator(targetRange);
 
 			ContentModelManager contentModelManager = request.getComponent(ContentModelManager.class);
 

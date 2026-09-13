@@ -25,7 +25,7 @@ import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMElement;
 import org.eclipse.lemminx.dom.DOMNode;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
-import org.eclipse.lemminx.extensions.contentmodel.utils.XMLGenerator;
+import org.eclipse.lemminx.extensions.contentmodel.generator.XMLElementGenerator;
 import org.eclipse.lemminx.services.data.DataEntryField;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionParticipant;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionRequest;
@@ -78,7 +78,7 @@ public class required_element_missingCodeAction implements ICodeActionParticipan
 			}
 
 			DOMElement element = (DOMElement) node;
-			XMLGenerator generator = request.getXMLGenerator();
+			XMLElementGenerator generator = request.getXMLGenerator();
 
 			String insertStrRequired = null;
 			String insertStrAll = null;

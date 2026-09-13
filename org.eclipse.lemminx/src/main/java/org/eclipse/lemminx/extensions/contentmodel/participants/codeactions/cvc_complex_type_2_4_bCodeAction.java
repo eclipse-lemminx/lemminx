@@ -20,7 +20,7 @@ import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMElement;
 import org.eclipse.lemminx.dom.DOMNode;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
-import org.eclipse.lemminx.extensions.contentmodel.utils.XMLGenerator;
+import org.eclipse.lemminx.extensions.contentmodel.generator.XMLElementGenerator;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionParticipant;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionRequest;
 import org.eclipse.lsp4j.CodeAction;
@@ -65,7 +65,7 @@ public class cvc_complex_type_2_4_bCodeAction implements ICodeActionParticipant 
 			Position childElementPositionEndTag = document.positionAt(element.getEndTagOpenOffset());
 
 			Range targetRange = new Range(childElementPositionStartTag, childElementPositionEndTag);
-			XMLGenerator generator = request.getXMLGenerator();
+			XMLElementGenerator generator = request.getXMLGenerator();
 
 			String insertStrAll = generator.generateMissingElements(request.getComponent(ContentModelManager.class), element, false);
 			String insertStrRequired = generator.generateMissingElements(request.getComponent(ContentModelManager.class), element, true);

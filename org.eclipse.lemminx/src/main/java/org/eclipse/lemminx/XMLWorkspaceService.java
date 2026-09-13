@@ -66,6 +66,13 @@ public class XMLWorkspaceService implements WorkspaceService, IXMLCommandService
 					throw new ResponseErrorException(
 							new ResponseError(ResponseErrorCode.UnknownErrorCode, e.getMessage(), e));
 				}
+			}).thenCompose(result -> {
+				if (result instanceof CompletableFuture<?>) {
+					@SuppressWarnings("unchecked")
+					CompletableFuture<Object> future = (CompletableFuture<Object>) result;
+					return future;
+				}
+				return CompletableFuture.completedFuture(result);
 			});
 		}
 	}

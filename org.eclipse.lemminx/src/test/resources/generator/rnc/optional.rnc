@@ -1,0 +1,7 @@
+start = config
+
+config = element config {
+    element required1 { text },
+    element optional1 { text }?,
+    element required2 { text }
+}

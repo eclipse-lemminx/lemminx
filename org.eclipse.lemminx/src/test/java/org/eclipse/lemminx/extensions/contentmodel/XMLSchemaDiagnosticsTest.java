@@ -349,20 +349,16 @@ public class XMLSchemaDiagnosticsTest extends AbstractCacheBasedTest {
 		testDiagnosticsFor(xml, d);
 		testCodeActionsFor(xml, d, ca(d, te(1, 82, 1, 82, //
 				"\r\n" + //
-						"\t<a>\r\n" + //
-						"\t</a>\r\n" + //
-						"\t<b>\r\n" + //
-						"\t</b>\r\n" + //
-						"\t<c>\r\n" + //
-						"\t</c>\r\n" + //
+						"\t<a></a>\r\n" + //
+						"\t<b></b>\r\n" + //
+						"\t<c></c>\r\n" + //
 						"\t<d age=\"\">\r\n" + //
 						"\t\t<d1></d1>\r\n" + //
 						"\t</d>\r\n" + //
 						"\t<e></e>\r\n")),
 				ca(d, te(1, 82, 1, 82, //
 						"\r\n" + //
-								"\t<a>\r\n" + //
-								"\t</a>\r\n" + //
+								"\t<a></a>\r\n" + //
 								"\t<d age=\"\"></d>\r\n" + //
 								"\t<e></e>\r\n")));
 	}

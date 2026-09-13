@@ -90,7 +90,7 @@ public class required_attribute_missingCodeAction implements ICodeActionParticip
 						return;
 					}
 
-					// Build the attribute insertion text. XMLGenerator.generate()
+					// Build the attribute insertion text. XMLElementGenerator.generate()
 					// filters by isRequired() internally, which drops context-aware
 					// attributes from choice branches. Build the text directly.
 					StringBuilder xmlAttributes = new StringBuilder();

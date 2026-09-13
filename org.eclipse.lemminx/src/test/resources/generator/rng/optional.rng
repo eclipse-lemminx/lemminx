@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<grammar xmlns="http://relaxng.org/ns/structure/1.0">
+    <start>
+        <ref name="config" />
+    </start>
+    <define name="config">
+        <element name="config">
+            <element name="required1">
+                <text />
+            </element>
+            <optional>
+                <element name="optional1">
+                    <text />
+                </element>
+            </optional>
+            <element name="required2">
+                <text />
+            </element>
+        </element>
+    </define>
+</grammar>

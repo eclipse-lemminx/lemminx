@@ -76,11 +76,26 @@ public interface CMAttributeDeclaration {
 	}
 
 	/**
-	 * Returns the default value of the declared attribute and null otherwise.
-	 * 
-	 * @return the default value of the declared attribute and null otherwise.
+	 * Returns the explicit default value of the declared attribute (from schema
+	 * {@code default} or {@code fixed} constraints) and null otherwise. Does NOT
+	 * include type-inferred defaults.
+	 *
+	 * @return the explicit default value of the declared attribute and null
+	 *         otherwise.
 	 */
 	String getDefaultValue();
+
+	/**
+	 * Returns a type-aware default value suitable for document generation.
+	 * For XSD attributes, this returns type-inferred defaults (e.g., "0" for
+	 * xs:decimal) when no explicit default exists. For other grammars, defaults
+	 * to {@link #getDefaultValue()}.
+	 *
+	 * @return the type-aware default value, or null.
+	 */
+	default String getTypeAwareDefaultValue() {
+		return getDefaultValue();
+	}
 
 	/**
 	 * Returns enumeration values of the declared attribute and empty collection

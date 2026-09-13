@@ -100,7 +100,7 @@ public class XMLCompletionBasedOnRelaxNGTest extends BaseFileTempTest {
 						COMMENT_SNIPPETS /* Comment snippets */ + //
 						CATALOG_SNIPPETS /* Catalog snippets */ , //
 				c("rootelt", te(1, 0, 1, 0,
-						"<rootelt xmlns:lmx=\"https://github.com/eclipse/lemminx\" xml:lang=\"\" lmx:type=\"\"></rootelt>"),
+						"<rootelt xmlns:lmx=\"https://github.com/eclipse/lemminx\" xml:lang=\"en\" lmx:type=\"dtd\"></rootelt>"),
 						"rootelt"));
 	}
 
@@ -117,7 +117,7 @@ public class XMLCompletionBasedOnRelaxNGTest extends BaseFileTempTest {
 						COMMENT_SNIPPETS /* Comment snippets */ + //
 						CDATA_SNIPPETS /* CDATA snippets */ , //
 				c("child", te(2, 0, 2, 0,
-						"<child xmlns:vx=\"https://github.com/redhat-developer/vscode-xml\" vx:type=\"\"></child>"),
+						"<child xmlns:vx=\"https://github.com/redhat-developer/vscode-xml\" vx:type=\"java\"></child>"),
 						"child"));
 
 		xml = "<?xml-model href=\"simple.rng\"?>\r\n" + //
@@ -129,7 +129,7 @@ public class XMLCompletionBasedOnRelaxNGTest extends BaseFileTempTest {
 						COMMENT_SNIPPETS /* Comment snippets */ + //
 						CDATA_SNIPPETS /* CDATA snippets */ , //
 				c("child", te(2, 0, 2, 1,
-						"<child xmlns:vx=\"https://github.com/redhat-developer/vscode-xml\" vx:type=\"\"></child>"),
+						"<child xmlns:vx=\"https://github.com/redhat-developer/vscode-xml\" vx:type=\"java\"></child>"),
 						"<child"));
 	}
 
@@ -146,7 +146,7 @@ public class XMLCompletionBasedOnRelaxNGTest extends BaseFileTempTest {
 						REGION_SNIPPETS /* #region */ + //
 						COMMENT_SNIPPETS /* Comment snippets */ + //
 						CDATA_SNIPPETS /* CDATA snippets */ , //
-				c("child", te(2, 0, 2, 0, "<child myvx:type=\"\"></child>"), "child"));
+				c("child", te(2, 0, 2, 0, "<child myvx:type=\"java\"></child>"), "child"));
 
 		xml = "<?xml-model href=\"simple.rng\"?>\r\n" + //
 				"<rootelt xmlns:lmx=\"https://github.com/eclipse/lemminx\" xmlns:myvx=\"https://github.com/redhat-developer/vscode-xml\" xml:lang=\"\" lmx:type=\"\">\r\n"
@@ -157,7 +157,7 @@ public class XMLCompletionBasedOnRelaxNGTest extends BaseFileTempTest {
 				3 + //
 						COMMENT_SNIPPETS /* Comment snippets */ + //
 						CDATA_SNIPPETS /* CDATA snippets */ , //
-				c("child", te(2, 0, 2, 1, "<child myvx:type=\"\"></child>"), "<child"));
+				c("child", te(2, 0, 2, 1, "<child myvx:type=\"java\"></child>"), "<child"));
 	}
 
 	@Test
@@ -170,7 +170,7 @@ public class XMLCompletionBasedOnRelaxNGTest extends BaseFileTempTest {
 		testCompletionFor(xml, //
 				30, //
 				c("role", te(2, 19, 2, 19, "role=\"\""), "role"), //
-				c("xlink:actuate", te(2, 19, 2, 19, "xlink:actuate=\"\""),
+				c("xlink:actuate", te(2, 19, 2, 19, "xlink:actuate=\"onLoad\""),
 						Arrays.asList(te(1, 43, 1, 43, " xmlns:xlink=\"http://www.w3.org/1999/xlink\"")), //
 						"xlink:actuate"));
 	}
@@ -184,7 +184,7 @@ public class XMLCompletionBasedOnRelaxNGTest extends BaseFileTempTest {
 				+ "</book>";
 		testCompletionFor(xml, //
 				30, //
-				c("xlink:actuate", te(2, 19, 2, 19, "xlink:actuate=\"\""),
+				c("xlink:actuate", te(2, 19, 2, 19, "xlink:actuate=\"onLoad\""),
 						Arrays.asList(te(1, 43, 1, 43, " xmlns:xlink=\"http://www.w3.org/1999/xlink\"")), //
 						"xlink:actuate"));
 		
@@ -194,7 +194,7 @@ public class XMLCompletionBasedOnRelaxNGTest extends BaseFileTempTest {
 				+ "</book>";
 		testCompletionFor(xml, //
 				30, //
-				c("xlink:actuate", te(2, 19, 2, 19, "xlink:actuate=\"\""),
+				c("xlink:actuate", te(2, 19, 2, 19, "xlink:actuate=\"onLoad\""),
 						Arrays.asList(te(1, 43, 1, 43, " xmlns:xlink=\"http://www.w3.org/1999/xlink\"")), //
 						"xlink:actuate"));
 		
@@ -204,7 +204,7 @@ public class XMLCompletionBasedOnRelaxNGTest extends BaseFileTempTest {
 				+ "</book>";
 		testCompletionFor(xml, //
 				30, //
-				c("xlink:actuate", te(2, 19, 2, 19, "xlink:actuate=\"\""),
+				c("xlink:actuate", te(2, 19, 2, 19, "xlink:actuate=\"onLoad\""),
 						Arrays.asList(te(1, 5, 1, 5, " xmlns:xlink=\"http://www.w3.org/1999/xlink\"")), //
 						"xlink:actuate"));
 	}
@@ -251,7 +251,7 @@ public class XMLCompletionBasedOnRelaxNGTest extends BaseFileTempTest {
 		// Without snippet
 		testCompletionFor(xml, //
 				null, //
-				c("key", te(2, 2, 2, 3, "<key name=\"\" type=\"\"></key>"), "<key"));
+				c("key", te(2, 2, 2, 3, "<key name=\"\" type=\"dict\"></key>"), "<key"));
 		// With snippet
 		testCompletionSnippetSupportFor(xml, //
 				null, //
@@ -267,7 +267,7 @@ public class XMLCompletionBasedOnRelaxNGTest extends BaseFileTempTest {
 		// Without snippet
 		testCompletionFor(xml, //
 				1, //
-				c("type", te(2, 18, 2, 18, "type=\"\""), "type"));
+				c("type", te(2, 18, 2, 18, "type=\"dict\""), "type"));
 		// With snippet
 		testCompletionSnippetSupportFor(xml, //
 				1, //
@@ -320,7 +320,7 @@ public class XMLCompletionBasedOnRelaxNGTest extends BaseFileTempTest {
 				"</Items>";
 		testCompletionFor(xml, //
 				3, //
-				c("Type", te(2, 8, 2, 8, "Type=\"\""), "Type"), //
+				c("Type", te(2, 8, 2, 8, "Type=\"Foo\""), "Type"), //
 				c("FooAttr", te(2, 8, 2, 8, "FooAttr=\"\""), "FooAttr"), //
 				c("BarAttr", te(2, 8, 2, 8, "BarAttr=\"\""), "BarAttr"));
 	}

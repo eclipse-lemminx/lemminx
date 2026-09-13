@@ -1,0 +1,2 @@
+<!ELEMENT folder (name, folder*)>
+<!ELEMENT name (#PCDATA)>

@@ -14,7 +14,7 @@ package org.eclipse.lemminx.services;
 import org.eclipse.lemminx.commons.BadLocationException;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.LineIndentInfo;
-import org.eclipse.lemminx.extensions.contentmodel.utils.XMLGenerator;
+import org.eclipse.lemminx.extensions.contentmodel.generator.XMLElementGenerator;
 import org.eclipse.lemminx.services.data.DataEntryField;
 import org.eclipse.lemminx.services.extensions.IComponentProvider;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionResolverRequest;
@@ -36,7 +36,7 @@ public class ResolveCodeActionRequest extends BaseCodeActionRequest implements I
 
 	private Range range;
 
-	private XMLGenerator generator;
+	private XMLElementGenerator generator;
 
 	private LineIndentInfo indentInfo;
 
@@ -62,10 +62,10 @@ public class ResolveCodeActionRequest extends BaseCodeActionRequest implements I
 		return DataEntryField.getProperty(unresolved.getData(), property);
 	}
 
-	public XMLGenerator getXMLGenerator(Range range) throws BadLocationException {
+	public XMLElementGenerator getXMLGenerator(Range range) throws BadLocationException {
 		if (generator == null) {
 			this.range = range;
-			generator = new XMLGenerator(getSharedSettings(),
+			generator = new XMLElementGenerator(getSharedSettings(),
 					getSharedSettings().getCompletionSettings().isAutoCloseTags(),
 					getLineIndentInfo().getWhitespacesIndent(), getLineIndentInfo().getLineDelimiter(),
 					false, Integer.MAX_VALUE, null);

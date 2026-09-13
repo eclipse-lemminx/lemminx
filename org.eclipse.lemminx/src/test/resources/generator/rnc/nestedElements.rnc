@@ -1,0 +1,14 @@
+start = catalog
+
+catalog = element catalog {
+    category
+}
+
+category = element category {
+    item
+}
+
+item = element item {
+    element name { text },
+    element price { text }
+}

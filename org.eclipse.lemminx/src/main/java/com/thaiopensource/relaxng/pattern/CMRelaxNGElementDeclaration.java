@@ -175,6 +175,11 @@ public class CMRelaxNGElementDeclaration implements CMElementDeclaration {
 	}
 
 	@Override
+	public Collection<CMElementDeclaration> getContentElements() {
+		return new CMRelaxNGContentElementCollector(cmDocument, pattern.getContent()).getElements();
+	}
+
+	@Override
 	public Collection<CMElementDeclaration> getPossibleElements(DOMElement parentElement, int offset) {
 		PatternMatcher matcher = new PatternMatcher(pattern, new ValidatorPatternBuilder(new SchemaPatternBuilder()));
 		matcher.matchStartDocument();

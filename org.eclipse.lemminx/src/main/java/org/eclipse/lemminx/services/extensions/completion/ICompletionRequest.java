@@ -13,7 +13,7 @@
 package org.eclipse.lemminx.services.extensions.completion;
 
 import org.eclipse.lemminx.commons.BadLocationException;
-import org.eclipse.lemminx.extensions.contentmodel.utils.XMLGenerator;
+import org.eclipse.lemminx.extensions.contentmodel.generator.XMLElementGenerator;
 import org.eclipse.lemminx.services.extensions.IPositionRequest;
 import org.eclipse.lemminx.services.extensions.ISharedSettingsRequest;
 import org.eclipse.lsp4j.InsertTextFormat;
@@ -39,7 +39,7 @@ public interface ICompletionRequest extends IPositionRequest, ISharedSettingsReq
 	 */
 	Range getReplaceRangeForTagName();
 
-	XMLGenerator getXMLGenerator() throws BadLocationException;
+	XMLElementGenerator getXMLGenerator() throws BadLocationException;
 
 	String getFilterForStartTagName(String tagName);
 

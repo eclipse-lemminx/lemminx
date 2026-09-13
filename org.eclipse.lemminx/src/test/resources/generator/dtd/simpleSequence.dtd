@@ -1,0 +1,3 @@
+<!ELEMENT root (item1, item2)>
+<!ELEMENT item1 (#PCDATA)>
+<!ELEMENT item2 (#PCDATA)>
