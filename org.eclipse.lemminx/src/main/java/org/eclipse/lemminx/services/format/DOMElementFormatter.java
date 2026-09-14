@@ -315,7 +315,14 @@ public class DOMElementFormatter {
 
 		switch (formatElementCategory) {
 		case PreserveSpace:
-			// Preserve existing spaces
+			// If the end tag follows a newline with no existing indentation, indent it
+			if (endTagOpenOffset > startTagCloseOffset + 1) {
+				char c = formatterDocument.getTextSequence().charAt(endTagOpenOffset - 1);
+				if (c == '\n' || c == '\r') {
+					replaceLeftSpacesWithIndentation(indentLevel, endTagOpenOffset, endTagOpenOffset, false, edits);
+					width += indentLevel * getTabSize();
+				}
+			}
 			break;
 		case MixedContent:
 			// Remove spaces and indent if the last child is an element, not text

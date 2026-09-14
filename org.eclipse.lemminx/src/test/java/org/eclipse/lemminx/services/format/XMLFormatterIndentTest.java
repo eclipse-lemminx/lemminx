@@ -83,9 +83,8 @@ public class XMLFormatterIndentTest extends AbstractCacheBasedTest {
 	@Test
 	public void textSpaces() throws BadLocationException {
 		String content = "<a>b  c</a>";
-		String expected = "<a>b c</a>";
-		assertFormat(content, expected, //
-				te(0, 4, 0, 6, " "));
+		String expected = "<a>b  c</a>";
+		assertFormat(content, expected);
 		assertFormat(expected, expected);
 	}
 
@@ -316,12 +315,13 @@ public class XMLFormatterIndentTest extends AbstractCacheBasedTest {
 				"      <xs:documentation xml:space=\"preserve\">\r\n" + //
 				"    Content that spans\r\n" + //
 				"    multiple lines.\r\n" + //
-				"</xs:documentation>\r\n" + //
+				"      </xs:documentation>\r\n" + //
 				"    </xs:annotation>\r\n" + //
 				"  </xs:complexType>\r\n" + //
 				"</xs:schema>";
 		assertFormat(content, expected, settings, //
 				te(2, 19, 3, 11, "\r\n      "), //
+				te(6, 0, 6, 0, "      "), //
 				te(6, 19, 7, 11, "\r\n    "), //
 				te(7, 27, 8, 11, "\r\n  "));
 		assertFormat(expected, expected, settings);

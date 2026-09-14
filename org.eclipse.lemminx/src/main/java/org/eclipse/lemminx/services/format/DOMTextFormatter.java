@@ -133,7 +133,7 @@ public class DOMTextFormatter {
 					replaceLeftSpacesWithIndentationPreservedNewLines(spaceStart, spaceEnd,
 							indentLevel, edits);
 					containsNewLine = false;
-				} else if (isJoinContentLines() || !containsNewLine || isMixedContent) {
+				} else if (isJoinContentLines() || isMixedContent) {
 					replaceSpacesWithOneSpace(spaceStart, spaceEnd - 1, edits);
 					containsNewLine = false;
 				}

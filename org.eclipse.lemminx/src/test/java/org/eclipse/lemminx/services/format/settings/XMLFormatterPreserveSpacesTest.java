@@ -30,9 +30,8 @@ public class XMLFormatterPreserveSpacesTest {
 	@Test
 	public void noPreserveSpaces() throws BadLocationException {
 		String content = "<a>b  c</a>";
-		String expected = "<a>b c</a>";
-		assertFormat(content, expected, //
-				te(0, 4, 0, 6, " "));
+		String expected = "<a>b  c</a>";
+		assertFormat(content, expected);
 		assertFormat(expected, expected);
 	}
 
@@ -215,6 +214,37 @@ public class XMLFormatterPreserveSpacesTest {
 				te(1, 5, 1, 9, " "), //
 				te(1, 12, 1, 14, " "), //
 				te(1, 37, 1, 42, "\n"));
+		assertFormat(expected, expected);
+	}
+
+	// https://github.com/eclipse-lemminx/lemminx/issues/1301
+	@Test
+	public void preserveSpaceEndTagIndentation() throws BadLocationException {
+		String content = "<root>\r\n" + //
+				"  <doc xml:space=\"preserve\">\r\n" + //
+				"Content\r\n" + //
+				"multiple lines.\r\n" + //
+				"</doc>\r\n" + //
+				"</root>";
+		String expected = "<root>\r\n" + //
+				"  <doc xml:space=\"preserve\">\r\n" + //
+				"Content\r\n" + //
+				"multiple lines.\r\n" + //
+				"  </doc>\r\n" + //
+				"</root>";
+		assertFormat(content, expected, //
+				te(4, 0, 4, 0, "  "));
+		assertFormat(expected, expected);
+	}
+
+	// https://github.com/eclipse-lemminx/lemminx/issues/1301
+	@Test
+	public void preserveSpaceEndTagIndentationSameLine() throws BadLocationException {
+		String content = "<root>\r\n" + //
+				"  <doc xml:space=\"preserve\">Content</doc>\r\n" + //
+				"</root>";
+		String expected = content;
+		assertFormat(content, expected);
 		assertFormat(expected, expected);
 	}
 
