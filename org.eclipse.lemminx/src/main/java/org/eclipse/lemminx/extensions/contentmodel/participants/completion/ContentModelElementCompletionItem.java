@@ -12,7 +12,7 @@
 package org.eclipse.lemminx.extensions.contentmodel.participants.completion;
 
 import org.eclipse.lemminx.extensions.contentmodel.model.CMElementDeclaration;
-import org.eclipse.lemminx.extensions.contentmodel.utils.XMLGenerator;
+import org.eclipse.lemminx.extensions.contentmodel.generator.XMLElementGenerator;
 import org.eclipse.lemminx.services.extensions.completion.AbstractElementCompletionItem;
 import org.eclipse.lemminx.services.extensions.completion.ICompletionRequest;
 import org.eclipse.lsp4j.MarkupContent;
@@ -23,10 +23,10 @@ import org.eclipse.lsp4j.MarkupContent;
  *
  */
 public class ContentModelElementCompletionItem
-		extends AbstractElementCompletionItem<CMElementDeclaration, XMLGenerator> {
+		extends AbstractElementCompletionItem<CMElementDeclaration, XMLElementGenerator> {
 
 	public ContentModelElementCompletionItem(String tagName, CMElementDeclaration elementDeclaration,
-			XMLGenerator generator, ICompletionRequest request) {
+			XMLElementGenerator generator, ICompletionRequest request) {
 		super(tagName, elementDeclaration, generator, request);
 	}
 
@@ -34,7 +34,7 @@ public class ContentModelElementCompletionItem
 	protected MarkupContent generateDocumentation() {
 		CMElementDeclaration elementDeclaration = getSourceElement();
 		ICompletionRequest request = getRequest();
-		return XMLGenerator.createMarkupContent(elementDeclaration, request);
+		return XMLElementGenerator.createMarkupContent(elementDeclaration, request);
 	}
 
 	@Override
@@ -46,7 +46,7 @@ public class ContentModelElementCompletionItem
 		if (index != -1) {
 			prefix = tagName.substring(0, index);
 		}
-		XMLGenerator generator = getGenerator();
+		XMLElementGenerator generator = getGenerator();
 		return generator.generate(elementDeclaration, prefix, generateEndTag);
 	}
 }

@@ -1,0 +1,5 @@
+<!ELEMENT catalog (category)>
+<!ELEMENT category (item)>
+<!ELEMENT item (name, price)>
+<!ELEMENT name (#PCDATA)>
+<!ELEMENT price (#PCDATA)>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<grammar xmlns="http://relaxng.org/ns/structure/1.0">
+    <start>
+        <ref name="bookContent" />
+    </start>
+    <define name="bookContent">
+        <element name="book">
+            <ref name="chapterContent" />
+        </element>
+    </define>
+    <define name="chapterContent">
+        <element name="chapter">
+            <element name="title">
+                <text/>
+            </element>
+        </element>
+    </define>
+</grammar>

@@ -315,14 +315,9 @@ public class MissingChildElementCodeActionTest extends AbstractCacheBasedTest {
 		testCodeActionsFor(xml, d, ca(d, te(1, 9, 2, 0, //
 				"\r\n" + //
 						"\t<title></title>\r\n")),
-				// Generate all elements will generate duplicate elemenst in this case. Needs
-				// fix in future.
 				ca(d, te(1, 9, 2, 0, //
 						"\r\n" + //
-								"\t<title></title>\r\n" + //
-								"\t<title>\r\n" + //
-								"\t\t<line></line>\r\n" + //
-								"\t</title>\r\n")));
+								"\t<title></title>\r\n")));
 	}
 
 	@Test

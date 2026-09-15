@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <xs:element name="root">
+        <xs:complexType>
+            <xs:sequence maxOccurs="unbounded">
+                <xs:element name="Character" type="Character" />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <xs:complexType name="Character" abstract="true">
+        <xs:attribute name="Name" type="xs:string" use="required" />
+    </xs:complexType>
+
+    <xs:complexType name="Teacher">
+        <xs:complexContent>
+            <xs:extension base="Character">
+                <xs:sequence>
+                    <xs:element name="Secret" type="xs:string" maxOccurs="unbounded" />
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+
+    <xs:complexType name="Student">
+        <xs:complexContent>
+            <xs:extension base="Character">
+                <xs:sequence>
+                    <xs:element name="School" type="xs:string" />
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+</xs:schema>

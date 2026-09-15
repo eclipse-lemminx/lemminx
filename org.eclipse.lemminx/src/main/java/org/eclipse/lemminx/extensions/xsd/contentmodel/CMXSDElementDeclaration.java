@@ -379,6 +379,52 @@ public class CMXSDElementDeclaration implements CMElementDeclaration {
 		}
 	}
 
+	@Override
+	public Collection<CMElementDeclaration> getContentElements() {
+		Collection<CMElementDeclaration> contentElements = new ArrayList<>();
+		if (typeDefinition != null
+				&& typeDefinition.getTypeCategory() == XSTypeDefinition.COMPLEX_TYPE) {
+			XSParticle particle = ((XSComplexTypeDefinition) typeDefinition).getParticle();
+			if (particle != null) {
+				collectContentElements(particle, contentElements);
+			}
+		}
+		return contentElements;
+	}
+
+	private void collectContentElements(XSParticle particle, Collection<CMElementDeclaration> elements) {
+		if (particle == null) {
+			return;
+		}
+		XSTerm term = particle.getTerm();
+		switch (term.getType()) {
+		case XSConstants.WILDCARD:
+			break;
+		case XSConstants.MODEL_GROUP:
+			XSModelGroup group = (XSModelGroup) term;
+			XSObjectList childParticles = group.getParticles();
+			if (group.getCompositor() == XSModelGroup.COMPOSITOR_CHOICE) {
+				boolean isRepeatable = particle.getMaxOccursUnbounded() || particle.getMaxOccurs() > 1;
+				if (isRepeatable) {
+					for (int i = 0; i < childParticles.getLength(); i++) {
+						collectContentElements((XSParticle) childParticles.item(i), elements);
+					}
+				} else if (childParticles.getLength() > 0) {
+					collectContentElements((XSParticle) childParticles.item(0), elements);
+				}
+			} else {
+				for (int i = 0; i < childParticles.getLength(); i++) {
+					collectContentElements((XSParticle) childParticles.item(i), elements);
+				}
+			}
+			break;
+		case XSConstants.ELEMENT_DECLARATION:
+			XSElementDeclaration elementDecl = (XSElementDeclaration) term;
+			document.collectElement(elementDecl, elements);
+			break;
+		}
+	}
+
 	@SuppressWarnings("unchecked")
 	private void collectElementsDeclaration(XSTerm term, Collection<CMElementDeclaration> elements) {
 		if (term == null) {
@@ -511,6 +557,20 @@ public class CMXSDElementDeclaration implements CMElementDeclaration {
 	}
 
 	@Override
+	public String getTypeAwareDefaultValue() {
+		if (typeDefinition != null) {
+			XSSimpleTypeDefinition simpleDefinition = null;
+			if (typeDefinition.getTypeCategory() == XSTypeDefinition.SIMPLE_TYPE) {
+				simpleDefinition = (XSSimpleTypeDefinition) typeDefinition;
+			} else if (typeDefinition.getTypeCategory() == XSTypeDefinition.COMPLEX_TYPE) {
+				simpleDefinition = ((XSComplexTypeDefinition) typeDefinition).getSimpleType();
+			}
+			return CMXSDDocument.getTypeDefaultValue(simpleDefinition);
+		}
+		return null;
+	}
+
+	@Override
 	public Collection<String> getEnumerationValues() {
 		if (typeDefinition != null) {
 			XSSimpleTypeDefinition simpleDefinition = null;
@@ -633,11 +693,48 @@ public class CMXSDElementDeclaration implements CMElementDeclaration {
 	@Override
 	public Set<CMElementDeclaration> getRequiredElements() {
 		Set<CMElementDeclaration> requiredElements = new LinkedHashSet<>();
-		for (CMElementDeclaration element : elements) {
-			if (!isOptional(element.getLocalName())) {
-				requiredElements.add(element);
+		if (typeDefinition != null
+				&& typeDefinition.getTypeCategory() == XSTypeDefinition.COMPLEX_TYPE) {
+			XSParticle particle = ((XSComplexTypeDefinition) typeDefinition).getParticle();
+			if (particle != null) {
+				collectRequiredElements(particle, requiredElements);
 			}
 		}
 		return requiredElements;
+	}
+
+	private void collectRequiredElements(XSParticle particle, Set<CMElementDeclaration> elements) {
+		if (particle == null) {
+			return;
+		}
+		XSTerm term = particle.getTerm();
+		switch (term.getType()) {
+		case XSConstants.WILDCARD:
+			break;
+		case XSConstants.MODEL_GROUP:
+			XSModelGroup group = (XSModelGroup) term;
+			XSObjectList childParticles = group.getParticles();
+			if (group.getCompositor() == XSModelGroup.COMPOSITOR_CHOICE) {
+				boolean isRepeatable = particle.getMaxOccursUnbounded() || particle.getMaxOccurs() > 1;
+				if (isRepeatable) {
+					for (int i = 0; i < childParticles.getLength(); i++) {
+						collectRequiredElements((XSParticle) childParticles.item(i), elements);
+					}
+				} else if (childParticles.getLength() > 0) {
+					collectRequiredElements((XSParticle) childParticles.item(0), elements);
+				}
+			} else {
+				for (int i = 0; i < childParticles.getLength(); i++) {
+					collectRequiredElements((XSParticle) childParticles.item(i), elements);
+				}
+			}
+			break;
+		case XSConstants.ELEMENT_DECLARATION:
+			if (particle.getMinOccurs() > 0) {
+				XSElementDeclaration elementDecl = (XSElementDeclaration) term;
+				document.collectElement(elementDecl, elements);
+			}
+			break;
+		}
 	}
 }

@@ -1,0 +1,4 @@
+element root {
+    element item1 { text },
+    element item2 { text }
+}

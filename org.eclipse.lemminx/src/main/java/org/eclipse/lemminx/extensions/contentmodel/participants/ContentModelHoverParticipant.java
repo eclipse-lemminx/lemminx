@@ -25,7 +25,7 @@ import org.eclipse.lemminx.extensions.contentmodel.model.CMAttributeDeclaration;
 import org.eclipse.lemminx.extensions.contentmodel.model.CMDocument;
 import org.eclipse.lemminx.extensions.contentmodel.model.CMElementDeclaration;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
-import org.eclipse.lemminx.extensions.contentmodel.utils.XMLGenerator;
+import org.eclipse.lemminx.extensions.contentmodel.generator.XMLElementGenerator;
 import org.eclipse.lemminx.extensions.xsi.XSISchemaModel;
 import org.eclipse.lemminx.services.extensions.ISharedSettingsRequest;
 import org.eclipse.lemminx.services.extensions.hover.HoverParticipantAdapter;
@@ -59,7 +59,7 @@ public class ContentModelHoverParticipant extends HoverParticipantAdapter {
 			for (CMDocument cmDocument : cmDocuments) {
 				CMElementDeclaration cmElement = cmDocument.findCMElement(element);
 				if (cmElement != null) {
-					MarkupContent content = XMLGenerator.createMarkupContent(cmElement, hoverRequest);
+					MarkupContent content = XMLElementGenerator.createMarkupContent(cmElement, hoverRequest);
 					fillHoverContent(content, contentValues);
 				}
 			}
@@ -87,7 +87,7 @@ public class ContentModelHoverParticipant extends HoverParticipantAdapter {
 				if (cmElement != null) {
 					CMAttributeDeclaration cmAttribute = cmElement.findCMAttribute(attribute);
 					if (cmAttribute != null) {
-						MarkupContent content = XMLGenerator.createMarkupContent(cmAttribute, cmElement, hoverRequest);
+						MarkupContent content = XMLElementGenerator.createMarkupContent(cmAttribute, cmElement, hoverRequest);
 						fillHoverContent(content, contentValues);
 					}
 				}
@@ -126,7 +126,7 @@ public class ContentModelHoverParticipant extends HoverParticipantAdapter {
 				if (cmElement != null) {
 					CMAttributeDeclaration cmAttribute = cmElement.findCMAttribute(attribute);
 					if (cmAttribute != null) {
-						MarkupContent content = XMLGenerator.createMarkupContent(cmAttribute, attributeValue, cmElement,
+						MarkupContent content = XMLElementGenerator.createMarkupContent(cmAttribute, attributeValue, cmElement,
 								hoverRequest);
 						fillHoverContent(content, contentValues);
 					}
@@ -161,7 +161,7 @@ public class ContentModelHoverParticipant extends HoverParticipantAdapter {
 			for (CMDocument cmDocument : cmDocuments) {
 				CMElementDeclaration cmElement = cmDocument.findCMElement(element);
 				if (cmElement != null) {
-					MarkupContent content = XMLGenerator.createMarkupContent(cmElement, textContent, hoverRequest);
+					MarkupContent content = XMLElementGenerator.createMarkupContent(cmElement, textContent, hoverRequest);
 					fillHoverContent(content, contentValues);
 				}
 			}

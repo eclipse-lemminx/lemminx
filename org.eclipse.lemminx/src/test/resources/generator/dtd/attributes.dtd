@@ -1,0 +1,5 @@
+<!ELEMENT entry EMPTY>
+<!ATTLIST entry
+    id CDATA #REQUIRED
+    name CDATA #REQUIRED
+    optional CDATA #IMPLIED>

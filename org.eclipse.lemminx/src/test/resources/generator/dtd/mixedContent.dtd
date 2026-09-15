@@ -1,0 +1,3 @@
+<!ELEMENT paragraph (#PCDATA | bold | italic)*>
+<!ELEMENT bold (#PCDATA)>
+<!ELEMENT italic (#PCDATA)>

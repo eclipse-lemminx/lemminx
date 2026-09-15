@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<grammar xmlns="http://relaxng.org/ns/structure/1.0"
+  datatypeLibrary="http://www.w3.org/2001/XMLSchema-datatypes"
+  ns="https://google.ca">
+  <start>
+    <ref name="root-element"/>
+  </start>
+  <define name="root-element">
+      <element name="root-element">
+        <ref name="child-element"></ref>
+      </element>
+  </define>
+  <define name="child-element">
+    <element name="child-element">
+      <attribute name="my-attr">
+        <choice>
+          <value>en</value>
+          <value>de</value>
+        </choice>
+      </attribute>
+    </element>
+  </define>
+</grammar>

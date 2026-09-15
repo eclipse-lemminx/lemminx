@@ -15,7 +15,7 @@ package org.eclipse.lemminx.services;
 import org.eclipse.lemminx.commons.BadLocationException;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMNode;
-import org.eclipse.lemminx.extensions.contentmodel.utils.XMLGenerator;
+import org.eclipse.lemminx.extensions.contentmodel.generator.XMLElementGenerator;
 import org.eclipse.lemminx.services.extensions.XMLExtensionsRegistry;
 import org.eclipse.lemminx.services.extensions.completion.ICompletionRequest;
 import org.eclipse.lemminx.settings.SharedSettings;
@@ -38,7 +38,7 @@ class CompletionRequest extends AbstractPositionRequest implements ICompletionRe
 
 	private Range replaceRangeForTagName;
 
-	private XMLGenerator generator;
+	private XMLElementGenerator generator;
 
 	private boolean hasOpenBracket;
 
@@ -77,9 +77,9 @@ class CompletionRequest extends AbstractPositionRequest implements ICompletionRe
 		return replaceRangeForTagName;
 	}
 
-	public XMLGenerator getXMLGenerator() throws BadLocationException {
+	public XMLElementGenerator getXMLGenerator() throws BadLocationException {
 		if (generator == null) {
-			generator = new XMLGenerator(getSharedSettings(), isAutoCloseTags(),
+			generator = new XMLElementGenerator(getSharedSettings(), isAutoCloseTags(),
 					getLineIndentInfo().getWhitespacesIndent(), getLineIndentInfo().getLineDelimiter(),
 					isCompletionSnippetsSupported(), 0, getNode());
 		}

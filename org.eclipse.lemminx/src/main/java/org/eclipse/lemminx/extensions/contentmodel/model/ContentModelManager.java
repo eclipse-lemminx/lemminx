@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.concurrent.CompletableFuture;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -346,24 +347,28 @@ public class ContentModelManager {
 		if (cmDocument != null) {
 			return cmDocument;
 		}
-		if (cacheResolverExtension.canUseCache(resolvedUri)) {
-			// The DTD/XML Schema comes from http://, ftp:// etc and cache manager is
-			// activated
-			// Try to load the DTD/XML Schema with the cache manager
-			try {
-				Path file = cacheResolverExtension.getCachedResource(resolvedUri);
-				if (file != null) {
-					cmDocument = modelProvider.createCMDocument(file.toUri().toString(), isResolveExternalEntities());
+		try {
+			if (cacheResolverExtension.canUseCache(resolvedUri)) {
+				// The DTD/XML Schema comes from http://, ftp:// etc and cache manager is
+				// activated
+				// Try to load the DTD/XML Schema with the cache manager
+				try {
+					Path file = cacheResolverExtension.getCachedResource(resolvedUri);
+					if (file != null) {
+						cmDocument = modelProvider.createCMDocument(file.toUri().toString(), isResolveExternalEntities());
+					}
+				} catch (CacheResourceDownloadingException e) {
+					// the DTD/XML Schema is downloading
+					return null;
+				} catch (Exception e) {
+					// other error like network which is not available
+					cmDocument = modelProvider.createCMDocument(resolvedUri, isResolveExternalEntities());
 				}
-			} catch (CacheResourceDownloadingException e) {
-				// the DTD/XML Schema is downloading
-				return null;
-			} catch (Exception e) {
-				// other error like network which is not available
+			} else {
 				cmDocument = modelProvider.createCMDocument(resolvedUri, isResolveExternalEntities());
 			}
-		} else {
-			cmDocument = modelProvider.createCMDocument(resolvedUri, isResolveExternalEntities());
+		} catch (InvalidGrammarException e) {
+			return null;
 		}
 		// Cache the document
 		if (cmDocument != null) {
@@ -388,6 +393,104 @@ public class ContentModelManager {
 		synchronized (cmDocumentCache) {
 			cmDocumentCache.put(key, cmDocument);
 		}
+	}
+
+	/**
+	 * Loads and returns the content model document for the given grammar URI
+	 * (XSD, DTD, RelaxNG, etc.) and null otherwise.
+	 *
+	 * @param grammarURI the grammar file URI.
+	 * @return the content model document for the given grammar URI and null
+	 *         otherwise.
+	 */
+	public CMDocument loadCMDocument(String grammarURI) {
+		ContentModelProvider modelProvider = getModelProviderByURI(grammarURI);
+		if (modelProvider == null) {
+			return null;
+		}
+		CMDocument cmDocument = getCMDocumentFromCache(grammarURI);
+		if (cmDocument != null) {
+			return cmDocument;
+		}
+		try {
+			if (cacheResolverExtension.canUseCache(grammarURI)) {
+				try {
+					Path file = cacheResolverExtension.getCachedResource(grammarURI);
+					if (file != null) {
+						cmDocument = modelProvider.createCMDocument(file.toUri().toString(),
+								isResolveExternalEntities());
+					}
+				} catch (CacheResourceDownloadingException e) {
+					return null;
+				} catch (Exception e) {
+					cmDocument = modelProvider.createCMDocument(grammarURI, isResolveExternalEntities());
+				}
+			} else {
+				cmDocument = modelProvider.createCMDocument(grammarURI, isResolveExternalEntities());
+			}
+		} catch (InvalidGrammarException e) {
+			return null;
+		}
+		if (cmDocument != null) {
+			cache(grammarURI, cmDocument);
+		}
+		return cmDocument;
+	}
+
+	/**
+	 * Loads and returns the content model document for the given grammar URI
+	 * asynchronously. If the grammar needs to be downloaded, returns a future
+	 * that completes when the download finishes.
+	 *
+	 * @param grammarURI the grammar file URI.
+	 * @return a future that resolves to the content model document or null.
+	 */
+	public CompletableFuture<CMDocument> loadCMDocumentAsync(String grammarURI) {
+		ContentModelProvider modelProvider = getModelProviderByURI(grammarURI);
+		if (modelProvider == null) {
+			return CompletableFuture.completedFuture(null);
+		}
+		CMDocument cmDocument = getCMDocumentFromCache(grammarURI);
+		if (cmDocument != null) {
+			return CompletableFuture.completedFuture(cmDocument);
+		}
+		if (cacheResolverExtension.canUseCache(grammarURI)) {
+			try {
+				Path file = cacheResolverExtension.getCachedResource(grammarURI);
+				if (file != null) {
+					cmDocument = modelProvider.createCMDocument(file.toUri().toString(),
+							isResolveExternalEntities());
+					if (cmDocument != null) {
+						cache(grammarURI, cmDocument);
+					}
+					return CompletableFuture.completedFuture(cmDocument);
+				}
+			} catch (CacheResourceDownloadingException e) {
+				CompletableFuture<Path> future = e.getFuture();
+				if (future != null) {
+					return future.thenApply(file -> {
+						if (file == null) {
+							return null;
+						}
+						CMDocument doc = modelProvider.createCMDocument(file.toUri().toString(),
+								isResolveExternalEntities());
+						if (doc != null) {
+							cache(grammarURI, doc);
+						}
+						return doc;
+					});
+				}
+				return CompletableFuture.completedFuture(null);
+			} catch (Exception e) {
+				cmDocument = modelProvider.createCMDocument(grammarURI, isResolveExternalEntities());
+			}
+		} else {
+			cmDocument = modelProvider.createCMDocument(grammarURI, isResolveExternalEntities());
+		}
+		if (cmDocument != null) {
+			cache(grammarURI, cmDocument);
+		}
+		return CompletableFuture.completedFuture(cmDocument);
 	}
 
 	/**

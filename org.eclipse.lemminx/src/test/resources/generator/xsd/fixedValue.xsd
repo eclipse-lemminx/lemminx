@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="document">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="title" type="xs:string" />
+            </xs:sequence>
+            <xs:attribute name="version" type="xs:string" fixed="1.0" />
+        </xs:complexType>
+    </xs:element>
+</xs:schema>

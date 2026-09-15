@@ -30,7 +30,7 @@ import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
 import org.eclipse.lemminx.extensions.contentmodel.participants.completion.AttributeNameCompletionResolver;
 import org.eclipse.lemminx.extensions.contentmodel.participants.completion.AttributeValueCompletionResolver;
 import org.eclipse.lemminx.extensions.contentmodel.participants.completion.ContentModelElementCompletionItem;
-import org.eclipse.lemminx.extensions.contentmodel.utils.XMLGenerator;
+import org.eclipse.lemminx.extensions.contentmodel.generator.XMLElementGenerator;
 import org.eclipse.lemminx.extensions.xsi.XSISchemaModel;
 import org.eclipse.lemminx.services.data.DataEntryField;
 import org.eclipse.lemminx.services.extensions.completion.AttributeCompletionItem;
@@ -214,7 +214,7 @@ public class ContentModelCompletionParticipant extends CompletionParticipantAdap
 	private static void fillWithChildrenElementDeclaration(DOMElement element, Collection<CMDocument> cmDocuments,
 			Collection<CMElementDeclaration> cmElements, String defaultPrefix, boolean forceUseOfPrefix,
 			ICompletionRequest request, ICompletionResponse response) throws BadLocationException {
-		XMLGenerator generator = request.getXMLGenerator();
+		XMLElementGenerator generator = request.getXMLGenerator();
 		if (cmDocuments != null) {
 			// xs:any case
 			Set<String> tags = new HashSet<>();
@@ -240,7 +240,7 @@ public class ContentModelCompletionParticipant extends CompletionParticipantAdap
 
 	private static void fillCompletionItem(Collection<CMElementDeclaration> elements, DOMElement element,
 			String defaultPrefix, boolean forceUseOfPrefix, ICompletionRequest request, ICompletionResponse response,
-			XMLGenerator generator, Set<String> tags, Set<CMElementDeclaration> processedElements) {
+			XMLElementGenerator generator, Set<String> tags, Set<CMElementDeclaration> processedElements) {
 		for (CMElementDeclaration child : elements) {
 			if (!processedElements.contains(child)) {
 				processedElements.add(child);
@@ -285,7 +285,7 @@ public class ContentModelCompletionParticipant extends CompletionParticipantAdap
 
 	private static void addTagCompletionItem(CMElementDeclaration elementDeclaration, DOMElement parentElement,
 			String defaultPrefix, boolean forceUseOfPrefix, ICompletionRequest request, ICompletionResponse response,
-			XMLGenerator generator, Set<String> tags) {
+			XMLElementGenerator generator, Set<String> tags) {
 		String prefix = forceUseOfPrefix ? defaultPrefix
 				: (parentElement != null ? parentElement.getPrefix(elementDeclaration.getNamespace()) : null);
 		String tagName = elementDeclaration.getName(prefix);
@@ -399,7 +399,7 @@ public class ContentModelCompletionParticipant extends CompletionParticipantAdap
 				if (request.isResolveDocumentationSupported()) {
 					addResolveData(request, item, AttributeNameCompletionResolver.PARTICIPANT_ID);
 				} else {
-					MarkupContent documentation = XMLGenerator.createMarkupContent(attributeDeclaration,
+					MarkupContent documentation = XMLElementGenerator.createMarkupContent(attributeDeclaration,
 							elementDeclaration,
 							request);
 					item.setDocumentation(documentation);
@@ -455,7 +455,7 @@ public class ContentModelCompletionParticipant extends CompletionParticipantAdap
 				if (request.isResolveDocumentationSupported()) {
 					addResolveData(request, item, AttributeValueCompletionResolver.PARTICIPANT_ID);
 				} else {
-					item.setDocumentation(XMLGenerator.createMarkupContent(cmAttribute, value, cmElement,
+					item.setDocumentation(XMLElementGenerator.createMarkupContent(cmAttribute, value, cmElement,
 							request));
 				}
 				response.addCompletionItem(item);
@@ -498,7 +498,7 @@ public class ContentModelCompletionParticipant extends CompletionParticipantAdap
 							item.setKind(CompletionItemKind.Value);
 							item.setFilterText(tokenStart + insertText);
 							item.setTextEdit(Either.forLeft(new TextEdit(fullRange, insertText)));
-							MarkupContent documentation = XMLGenerator.createMarkupContent(cmElement, value, request);
+							MarkupContent documentation = XMLElementGenerator.createMarkupContent(cmElement, value, request);
 							item.setDocumentation(documentation);
 							response.addCompletionItem(item);
 						});

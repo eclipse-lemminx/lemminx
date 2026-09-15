@@ -1,0 +1,5 @@
+element entry {
+    attribute id { text },
+    attribute name { text },
+    empty
+}

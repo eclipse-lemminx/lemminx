@@ -24,7 +24,7 @@ import org.eclipse.lemminx.extensions.contentmodel.model.CMAttributeDeclaration;
 import org.eclipse.lemminx.extensions.contentmodel.model.CMDocument;
 import org.eclipse.lemminx.extensions.contentmodel.model.CMElementDeclaration;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
-import org.eclipse.lemminx.extensions.contentmodel.utils.XMLGenerator;
+import org.eclipse.lemminx.extensions.contentmodel.generator.XMLElementGenerator;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionParticipant;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionRequest;
 import org.eclipse.lemminx.settings.SharedSettings;
@@ -74,7 +74,7 @@ public class cvc_complex_type_4CodeAction implements ICodeActionParticipant {
 					// CodeAction doesn't support snippet ->
 					// https://github.com/Microsoft/language-server-protocol/issues/592
 					boolean supportSnippet = false;
-					XMLGenerator generator = new XMLGenerator(sharedSettings, "", "", supportSnippet, 0);
+					XMLElementGenerator generator = new XMLElementGenerator(sharedSettings, "", "", supportSnippet, 0);
 					String xmlAttributes = generator.generate(requiredAttributes, element.getTagName());
 
 					// Insert after the last existing attribute (if any),

@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+
+    <!-- Simple choice: only one alternative should be generated -->
+    <xs:element name="payment">
+        <xs:complexType>
+            <xs:choice>
+                <xs:element name="cash" type="xs:string" />
+                <xs:element name="card" type="xs:string" />
+                <xs:element name="transfer" type="xs:string" />
+            </xs:choice>
+        </xs:complexType>
+    </xs:element>
+
+    <!-- Sequence containing a choice -->
+    <xs:element name="order">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="id" type="xs:integer" />
+                <xs:choice>
+                    <xs:element name="pickup" type="xs:string" />
+                    <xs:element name="delivery" type="xs:string" />
+                </xs:choice>
+                <xs:element name="total" type="xs:decimal" />
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+    <!-- Nested choice inside sequence inside choice -->
+    <xs:element name="notification">
+        <xs:complexType>
+            <xs:choice>
+                <xs:sequence>
+                    <xs:element name="email" type="xs:string" />
+                    <xs:element name="subject" type="xs:string" />
+                </xs:sequence>
+                <xs:element name="sms" type="xs:string" />
+            </xs:choice>
+        </xs:complexType>
+    </xs:element>
+
+    <!-- Choice with maxOccurs="unbounded": all alternatives should be generated -->
+    <xs:element name="container">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="name" type="xs:string" />
+                <xs:choice minOccurs="0" maxOccurs="unbounded">
+                    <xs:element name="itemA" type="xs:string" />
+                    <xs:element name="itemB" type="xs:string" />
+                    <xs:element name="itemC" type="xs:string" />
+                </xs:choice>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+
+</xs:schema>

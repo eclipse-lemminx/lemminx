@@ -122,6 +122,21 @@ public class CMXSDDocument implements CMDocument, XSElementDeclHelper {
 	}
 
 	@Override
+	public String getNamespace() {
+		XSNamespaceItemList namespaces = model.getNamespaceItems();
+		for (int i = 0; i < namespaces.getLength(); i++) {
+			String ns = namespaces.item(i).getSchemaNamespace();
+			if ("http://www.w3.org/2001/XMLSchema".equals(ns)) {
+				continue;
+			}
+			// First non-XSD namespace item is the main schema's targetNamespace
+			// (may be null for no-namespace schemas)
+			return ns;
+		}
+		return null;
+	}
+
+	@Override
 	public boolean hasNamespace(String namespaceURI) {
 		if (namespaceURI == null || model.getNamespaces() == null) {
 			return false;
@@ -524,6 +539,76 @@ public class CMXSDDocument implements CMDocument, XSElementDeclHelper {
 			return ((XSSimpleType) typeDefinition).getPrimitiveKind() == XSSimpleType.PRIMITIVE_BOOLEAN;
 		}
 		return false;
+	}
+
+	private static final String XSD_NAMESPACE = "http://www.w3.org/2001/XMLSchema";
+
+	static String getTypeDefaultValue(XSSimpleTypeDefinition typeDefinition) {
+		if (typeDefinition == null) {
+			return null;
+		}
+		XSSimpleTypeDefinition current = typeDefinition;
+		while (current != null) {
+			if (XSD_NAMESPACE.equals(current.getNamespace())) {
+				return getBuiltInTypeDefaultValue(current.getName());
+			}
+			XSTypeDefinition base = current.getBaseType();
+			if (base instanceof XSSimpleTypeDefinition && base != current) {
+				current = (XSSimpleTypeDefinition) base;
+			} else {
+				break;
+			}
+		}
+		return null;
+	}
+
+	private static String getBuiltInTypeDefaultValue(String typeName) {
+		if (typeName == null) {
+			return null;
+		}
+		switch (typeName) {
+		case "date":
+			return "2026-01-01";
+		case "dateTime":
+			return "2026-01-01T00:00:00";
+		case "time":
+			return "00:00:00";
+		case "gYear":
+			return "2026";
+		case "gMonth":
+			return "--01";
+		case "gDay":
+			return "---01";
+		case "gYearMonth":
+			return "2026-01";
+		case "gMonthDay":
+			return "--01-01";
+		case "duration":
+			return "P1D";
+		case "integer":
+		case "int":
+		case "long":
+		case "short":
+		case "byte":
+		case "nonNegativeInteger":
+		case "nonPositiveInteger":
+		case "unsignedLong":
+		case "unsignedInt":
+		case "unsignedShort":
+		case "unsignedByte":
+		case "decimal":
+		case "float":
+		case "double":
+			return "0";
+		case "positiveInteger":
+			return "1";
+		case "negativeInteger":
+			return "-1";
+		case "boolean":
+			return "false";
+		default:
+			return null;
+		}
 	}
 
 	static XSObjectList getEnumerationAnnotations(XSSimpleTypeDefinition simpleTypeDefinition, String value) {

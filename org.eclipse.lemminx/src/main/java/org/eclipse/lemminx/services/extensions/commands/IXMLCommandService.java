@@ -35,12 +35,19 @@ public interface IXMLCommandService {
 	public interface IDelegateCommandHandler {
 
 		/**
-		 * Executes a command
-		 * 
+		 * Executes a command.
+		 *
+		 * The return value can be either a direct result object, or a
+		 * {@link CompletableFuture} for asynchronous commands (e.g. when
+		 * downloading a remote resource). When a {@code CompletableFuture} is
+		 * returned, the framework will resolve it before sending the response
+		 * to the client.
+		 *
 		 * @param params        command execution parameters
 		 * @param sharedSettings the shared settings.
 		 * @param cancelChecker check if cancel has been requested
-		 * @return the result of the command
+		 * @return the result of the command, or a {@link CompletableFuture}
+		 *         that resolves to the result for async commands
 		 * @throws Exception the unhandled exception will be wrapped in
 		 *                   <code>org.eclipse.lsp4j.jsonrpc.ResponseErrorException</code>
 		 *                   and be wired back to the JSON-RPC protocol caller

@@ -179,7 +179,7 @@ public class CMDTDElementDeclaration extends XMLElementDecl implements CMElement
 	@Override
 	public Set<CMElementDeclaration> getRequiredElements() {
 		Set<CMElementDeclaration> requiredElements = new LinkedHashSet<>();
-		for (CMElementDeclaration element : elements) {
+		for (CMElementDeclaration element : getElements()) {
 			// cannot be used, isOptional is not implemented
 			if (!isOptional(element.getLocalName())) {
 				requiredElements.add(element);

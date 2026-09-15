@@ -282,7 +282,7 @@ public class XMLSchemaCompletionExtensionsTest extends BaseFileTempTest {
 				"<beans xmlns=\"http://www.springframework.org/schema/beans\" xsi:schemaLocation=\"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\r\n"
 				+ //
 				"	<bean |/>";
-		testCompletionWithCatalogFor(xml, c("abstract", "abstract=\"false\""), c("autowire", "autowire=\"default\""),
+		testCompletionWithCatalogFor(xml, c("abstract", "abstract=\"true\""), c("autowire", "autowire=\"default\""),
 				c("class", "class=\"\""));
 	}
 
@@ -293,7 +293,7 @@ public class XMLSchemaCompletionExtensionsTest extends BaseFileTempTest {
 				"	xsi:noNamespaceSchemaLocation=\"xsd/dressSize.xsd\"\r\n" + //
 				"	s| />";
 		XMLAssert.testCompletionItemResolveFor(xml, null, "src/test/resources/dress.xml", 5, //
-				c("size", te(3, 1, 3, 2, "size=\"\""), "size", //
+				c("size", te(3, 1, 3, 2, "size=\"small\""), "size", //
 						"Size Type documentation" + //
 								System.lineSeparator() + //
 								System.lineSeparator() + //
@@ -304,7 +304,7 @@ public class XMLSchemaCompletionExtensionsTest extends BaseFileTempTest {
 				c("xsi:type", te(3, 1, 3, 2, "xsi:type=\"\""), "xsi:type"), //
 				c("xsi:schemaLocation", te(3, 1, 3, 2, "xsi:schemaLocation=\"\""), "xsi:schemaLocation"));
 		XMLAssert.testCompletionItemUnresolvedFor(xml, null, "src/test/resources/dress.xml", 5, //
-				c("size", te(3, 1, 3, 2, "size=\"\""), "size"), //
+				c("size", te(3, 1, 3, 2, "size=\"small\""), "size"), //
 				c("xmlns", te(3, 1, 3, 2, "xmlns=\"\""), "xmlns"), //
 				c("xsi:nil", te(3, 1, 3, 2, "xsi:nil=\"true\""), "xsi:nil"), //
 				c("xsi:type", te(3, 1, 3, 2, "xsi:type=\"\""), "xsi:type"), //
@@ -1793,7 +1793,7 @@ public class XMLSchemaCompletionExtensionsTest extends BaseFileTempTest {
 				c("default", te(4, 25, 4, 25, "default=\"\""), "default"), //
 				c("type", te(4, 25, 4, 25, "type=\"\""), "type"), //
 				c("value", te(4, 25, 4, 25, "value=\"\""), "value"), //
-				c("required", te(4, 25, 4, 25, "required=\"false\""), "required"));
+				c("required", te(4, 25, 4, 25, "required=\"true\""), "required"));
 	}
 
 	@Test

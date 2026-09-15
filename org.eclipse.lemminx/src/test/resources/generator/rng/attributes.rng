@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<element name="entry" xmlns="http://relaxng.org/ns/structure/1.0">
+    <attribute name="id" />
+    <attribute name="name" />
+    <empty/>
+</element>

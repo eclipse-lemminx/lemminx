@@ -12,6 +12,7 @@
  */
 package org.eclipse.lemminx.extensions.contentmodel.settings;
 
+import org.eclipse.lemminx.extensions.contentmodel.generator.XMLGenerationSettings;
 import org.eclipse.lemminx.utils.JSONUtility;
 
 /**
@@ -31,6 +32,8 @@ public class ContentModelSettings {
 	private XMLValidationRootSettings validation;
 
 	private XMLSymbolsSettings symbols;
+
+	private XMLGenerationSettings generation;
 
 	/**
 	 * Returns true if cache to download XML Schema, DTD must be activated and false
@@ -116,6 +119,24 @@ public class ContentModelSettings {
 
 	public void setDownloadExternalResources(XMLDownloadExternalResourcesSettings downloadExternalResources) {
 		this.downloadExternalResources = downloadExternalResources;
+	}
+
+	/**
+	 * Returns the XML generation settings.
+	 *
+	 * @return the XML generation settings.
+	 */
+	public XMLGenerationSettings getGeneration() {
+		return generation;
+	}
+
+	/**
+	 * Sets the XML generation settings.
+	 *
+	 * @param generation the XML generation settings.
+	 */
+	public void setGeneration(XMLGenerationSettings generation) {
+		this.generation = generation;
 	}
 
 }

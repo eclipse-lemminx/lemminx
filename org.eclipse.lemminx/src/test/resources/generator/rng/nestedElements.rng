@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<element name="catalog" xmlns="http://relaxng.org/ns/structure/1.0">
+    <element name="category">
+        <element name="item">
+            <element name="name">
+                <text/>
+            </element>
+        </element>
+    </element>
+</element>
