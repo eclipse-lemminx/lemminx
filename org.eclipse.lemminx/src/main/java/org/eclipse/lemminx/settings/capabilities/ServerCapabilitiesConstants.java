@@ -21,6 +21,7 @@ import org.eclipse.lsp4j.CodeLensOptions;
 import org.eclipse.lsp4j.ColorProviderOptions;
 import org.eclipse.lsp4j.CompletionOptions;
 import org.eclipse.lsp4j.DocumentLinkOptions;
+import org.eclipse.lsp4j.DocumentOnTypeFormattingOptions;
 import org.eclipse.lsp4j.RenameOptions;
 import org.eclipse.lsp4j.TextDocumentSyncKind;
 
@@ -93,6 +94,8 @@ public class ServerCapabilitiesConstants {
 	public static final ColorProviderOptions DEFAULT_COLOR_OPTIONS = new ColorProviderOptions();
 	public static final CodeLensOptions DEFAULT_CODELENS_OPTIONS = new CodeLensOptions();
 	public static final CodeActionOptions DEFAULT_CODEACTION_OPTIONS = createDefaultCodeActionOptions();
+	public static final DocumentOnTypeFormattingOptions DEFAULT_ON_TYPE_FORMATTING_OPTIONS = new DocumentOnTypeFormattingOptions(
+			"\n", Arrays.asList("<", "/"));
 
 	private static CodeActionOptions createDefaultCodeActionOptions() {
 		CodeActionOptions options = new CodeActionOptions();

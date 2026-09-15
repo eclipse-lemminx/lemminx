@@ -16,6 +16,7 @@ import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConsta
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.DEFAULT_CODELENS_OPTIONS;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.DEFAULT_COMPLETION_OPTIONS;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.DEFAULT_LINK_OPTIONS;
+import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.DEFAULT_ON_TYPE_FORMATTING_OPTIONS;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.DEFAULT_RENAME_OPTIONS;
 
 import org.eclipse.lsp4j.ServerCapabilities;
@@ -83,6 +84,9 @@ public class ServerCapabilitiesInitializer {
 		}
 		if (!clientCapabilities.isRenameDynamicRegistrationSupported()) {
 			serverCapabilities.setRenameProvider(DEFAULT_RENAME_OPTIONS);
+		}
+		if (!clientCapabilities.isOnTypeFormattingDynamicRegistrationSupported()) {
+			serverCapabilities.setDocumentOnTypeFormattingProvider(DEFAULT_ON_TYPE_FORMATTING_OPTIONS);
 		}
 		return serverCapabilities;
 	}

@@ -26,6 +26,7 @@ import org.eclipse.lemminx.services.extensions.XMLExtensionsRegistry;
 import org.eclipse.lemminx.services.extensions.format.IFormatterParticipant;
 import org.eclipse.lemminx.services.format.XMLFormatterDocumentOld;
 import org.eclipse.lemminx.services.format.XMLFormatterDocument;
+import org.eclipse.lemminx.services.format.XMLFormatterOnType;
 import org.eclipse.lemminx.settings.SharedSettings;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
@@ -39,9 +40,11 @@ class XMLFormatter {
 	private static final Logger LOGGER = Logger.getLogger(XMLFormatter.class.getName());
 
 	private final XMLExtensionsRegistry extensionsRegistry;
+	private final XMLFormatterOnType formatterOnType;
 
 	public XMLFormatter(XMLExtensionsRegistry extensionsRegistry) {
 		this.extensionsRegistry = extensionsRegistry;
+		this.formatterOnType = new XMLFormatterOnType();
 	}
 
 	/**
@@ -63,7 +66,7 @@ class XMLFormatter {
 			XMLFormatterDocument formatterDocument = new XMLFormatterDocument(xmlDocument, range,
 					sharedSettings, getFormatterParticipants());
 			List<? extends TextEdit> result =  formatterDocument.format();
-			
+
 			// For large files, merge all TextEdits into a single one to avoid OutOfMemory
 			// This is more memory efficient as we don't keep thousands of TextEdit objects
 			if (range == null && shouldMergeEdits(result, xmlDocument)) {
@@ -76,7 +79,7 @@ class XMLFormatter {
 		}
 		return null;
 	}
-	
+
 	/**
 	 * Determines if TextEdits should be merged into a single edit.
 	 * Merging is beneficial for large files to reduce memory consumption.
@@ -91,7 +94,7 @@ class XMLFormatter {
 		int documentSize = xmlDocument.getTextDocument().getTextSequence().length();
 		return editCount > 1000 || documentSize > 100_000;
 	}
-	
+
 	/**
 	 * Returns the full document range.
 	 *
@@ -104,6 +107,20 @@ class XMLFormatter {
 		Position start = new Position(0, 0);
 		Position end = textDocument.positionAt(textDocument.getTextSequence().length());
 		return new Range(start, end);
+	}
+
+	/**
+	 * Formats the document after a character has been typed (on type formatting).
+	 *
+	 * @param xmlDocument    the XML document
+	 * @param position       the position where the character was typed
+	 * @param ch             the character that was typed
+	 * @param sharedSettings the shared settings
+	 * @return list of text edits to apply
+	 */
+	public List<? extends TextEdit> formatOnType(DOMDocument xmlDocument, Position position, String ch,
+			SharedSettings sharedSettings) {
+		return formatterOnType.formatOnType(xmlDocument, position, ch, sharedSettings);
 	}
 
 	/**

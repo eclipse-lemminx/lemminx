@@ -140,6 +140,11 @@ public class XMLLanguageService extends XMLExtensionsRegistry implements IXMLFul
 		return formatter.format(xmlDocument, range, sharedSettings);
 	}
 
+	public List<? extends TextEdit> formatOnType(DOMDocument xmlDocument, Position position, String ch,
+			SharedSettings sharedSettings) {
+		return formatter.formatOnType(xmlDocument, position, ch, sharedSettings);
+	}
+
 	@Override
 	public String minify(String text, String uri, SharedSettings sharedSettings, CancelChecker cancelChecker) {
 		DOMDocument xmlDocument = DOMParser.getInstance().parse(new TextDocument(text, uri), null);

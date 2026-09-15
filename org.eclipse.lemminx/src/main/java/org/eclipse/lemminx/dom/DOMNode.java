@@ -646,6 +646,23 @@ public abstract class DOMNode implements Node, DOMRange {
 		return null;
 	}
 
+	/**
+	 * Returns the indent level of this node by counting ancestor elements.
+	 *
+	 * @return the indent level (0 for root elements).
+	 */
+	public int getIndentLevel() {
+		int level = 0;
+		DOMNode node = this;
+		while (node != null) {
+			node = node.getParentElement();
+			if (node != null) {
+				level++;
+			}
+		}
+		return level;
+	}
+
 	public boolean isComment() {
 		return getNodeType() == DOMNode.COMMENT_NODE;
 	}

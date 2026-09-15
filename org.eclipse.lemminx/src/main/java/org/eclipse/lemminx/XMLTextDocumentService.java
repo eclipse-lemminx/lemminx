@@ -76,6 +76,7 @@ import org.eclipse.lsp4j.DocumentColorParams;
 import org.eclipse.lsp4j.DocumentFormattingParams;
 import org.eclipse.lsp4j.DocumentHighlight;
 import org.eclipse.lsp4j.DocumentHighlightParams;
+import org.eclipse.lsp4j.DocumentOnTypeFormattingParams;
 import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentLinkParams;
 import org.eclipse.lsp4j.DocumentRangeFormattingParams;
@@ -365,6 +366,14 @@ public class XMLTextDocumentService implements TextDocumentService {
 		return computeDOMAsync(params.getTextDocument(), (xmlDocument, cancelChecker) -> {
 			CompositeSettings settings = new CompositeSettings(getSharedSettings(), params.getOptions());
 			return getXMLLanguageService().format(xmlDocument, params.getRange(), settings);
+		});
+	}
+
+	@Override
+	public CompletableFuture<List<? extends TextEdit>> onTypeFormatting(DocumentOnTypeFormattingParams params) {
+		return computeDOMAsync(params.getTextDocument(), (xmlDocument, cancelChecker) -> {
+			CompositeSettings settings = new CompositeSettings(getSharedSettings(), params.getOptions());
+			return getXMLLanguageService().formatOnType(xmlDocument, params.getPosition(), params.getCh(), settings);
 		});
 	}
 
