@@ -158,23 +158,9 @@
 					</configuration>
 				</plugin>
 				<plugin>
-					<groupId>org.apache.felix</groupId>
-					<artifactId>maven-bundle-plugin</artifactId>
-					<version>5.1.9</version>
-					<executions>
-						<execution>
-							<id>bundle-manifest</id>
-							<phase>process-classes</phase>
-							<goals>
-								<goal>manifest</goal>
-							</goals>
-							<configuration>
-								<instructions>
-									<Bundle-SymbolicName>${project.artifactId}</Bundle-SymbolicName>
-								</instructions>
-							</configuration>
-						</execution>
-					</executions>
+				    <groupId>biz.aQute.bnd</groupId>
+				    <artifactId>bnd-maven-plugin</artifactId>
+				    <version>6.4.0</version>
 				</plugin>
 				<plugin>
 					<groupId>org.apache.maven.plugins</groupId>
