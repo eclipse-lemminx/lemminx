@@ -26,6 +26,8 @@ public class XMLValidationSettings {
 	private XMLNamespacesSettings namespaces;
 
 	private XMLSchemaSettings schema;
+	
+	private XMLDTDSettings dtd;
 
 	private boolean disallowDocTypeDecl;
 
@@ -50,6 +52,7 @@ public class XMLValidationSettings {
 		setResolveExternalEntities(false);
 		setNamespaces(new XMLNamespacesSettings());
 		setSchema(new XMLSchemaSettings());
+		setDtd(new XMLDTDSettings());
 		setXInclude(new XMLXIncludeSettings());
 	}
 
@@ -107,6 +110,24 @@ public class XMLValidationSettings {
 		this.schema = schema;
 	}
 
+	/**
+	 * Returns the XML DTD validation settings.
+	 *
+	 * @return the XML DTD validation settings.
+	 */
+	public XMLDTDSettings getDtd() {
+		return dtd;
+	}
+	
+	/**
+	 * Set the XML DTD validation settings.
+	 *
+	 * @param schema the XML DTD validation settings.
+	 */
+	public void setDtd(XMLDTDSettings dtd) {
+		this.dtd = dtd;
+	}
+	
 	public void setNoGrammar(String noGrammar) {
 		this.noGrammar = noGrammar;
 	}
@@ -203,6 +224,7 @@ public class XMLValidationSettings {
 		if (settings != null) {
 			this.namespaces = settings.namespaces;
 			this.schema = settings.schema;
+			this.dtd = settings.dtd;
 			this.enabled = settings.enabled;
 			this.noGrammar = settings.noGrammar;
 			this.disallowDocTypeDecl = settings.disallowDocTypeDecl;
@@ -231,6 +253,7 @@ public class XMLValidationSettings {
 		result = prime * result + ((noGrammar == null) ? 0 : noGrammar.hashCode());
 		result = prime * result + (resolveExternalEntities ? 1231 : 1237);
 		result = prime * result + ((schema == null) ? 0 : schema.hashCode());
+		result = prime * result + ((dtd == null) ? 0 : dtd.hashCode());
 		result = prime * result + ((xInclude == null) ? 0 : xInclude.hashCode());
 		return result;
 	}
@@ -286,6 +309,13 @@ public class XMLValidationSettings {
 				return false;
 			}
 		} else if (!schema.equals(other.schema)) {
+			return false;
+		}
+		if (dtd == null) {
+			if (other.dtd != null) {
+				return false;
+			}
+		} else if (!dtd.equals(other.dtd)) {
 			return false;
 		}
 		return true;
