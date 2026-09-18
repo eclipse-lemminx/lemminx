@@ -1,0 +1,2 @@
+Field <org.eclipse.lemminx.extensions.contentmodel.participants.diagnostics.LSPXMLGrammarPool$Entry.desc> has raw type reside in a package 'org.apache.xerces..' in (LSPXMLGrammarPool.java:0)
+Field <org.eclipse.lemminx.extensions.contentmodel.participants.diagnostics.LSPXMLGrammarPool$Entry.grammar> has raw type reside in a package 'org.apache.xerces..' in (LSPXMLGrammarPool.java:0)

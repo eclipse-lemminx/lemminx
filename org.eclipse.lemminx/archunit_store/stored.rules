@@ -1,0 +1,5 @@
+#
+#Fri Aug 07 20:19:39 CEST 2020
+no\ classes\ that\ are\ public\ should\ implement\ reside\ in\ a\ package\ 'org.apache.xerces..'\ or\ should\ be\ assignable\ from\ reside\ in\ a\ package\ 'org.apache.xerces..'=03d54e21-4bad-41ed-a858-93f729a1f687
+no\ fields\ that\ are\ public\ should\ have\ raw\ type\ reside\ in\ a\ package\ 'org.apache.xerces..'=1697f49d-6810-4a9f-a01e-b5a44e9061cd
+no\ methods\ that\ are\ public\ should\ have\ raw\ return\ type\ reside\ in\ a\ package\ 'org.apache.xerces..'\ or\ should\ have\ raw\ parameter\ types\ any\ element\ that\ reside\ in\ a\ package\ 'org.apache.xerces..'=0e6d0e60-9a9e-4e43-b5b0-fbc42451524c
