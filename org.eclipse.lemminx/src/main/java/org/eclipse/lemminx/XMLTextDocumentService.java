@@ -273,7 +273,7 @@ public class XMLTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<CompletionItem> resolveCompletionItem(CompletionItem unresolved) {
-		return computeDOMAsync(unresolved.getData(), (xmlDocument, cancelChecker) -> {
+		return computeDOMAsync(unresolved, unresolved.getData(), (xmlDocument, cancelChecker) -> {
 			return getXMLLanguageService().resolveCompletionItem(unresolved, xmlDocument, sharedSettings,
 					cancelChecker);
 		});
@@ -535,7 +535,7 @@ public class XMLTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<CodeAction> resolveCodeAction(CodeAction unresolved) {
-		return computeDOMAsync(unresolved.getData(), (xmlDocument, cancelChecker) -> {
+		return computeDOMAsync(unresolved, unresolved.getData(), (xmlDocument, cancelChecker) -> {
 			return getXMLLanguageService().resolveCodeAction(unresolved, xmlDocument, sharedSettings, cancelChecker);
 		});
 	}
@@ -809,10 +809,11 @@ public class XMLTextDocumentService implements TextDocumentService {
 		return document != null;
 	}
 
-	private <R> CompletableFuture<R> computeDOMAsync(Object data, BiFunction<DOMDocument, CancelChecker, R> code) {
+	private <R> CompletableFuture<R> computeDOMAsync(R unresolved, Object data,
+			BiFunction<DOMDocument, CancelChecker, R> code) {
 		String uri = DataEntryField.getUri(data);
 		if (uri == null) {
-			return CompletableFuture.completedFuture(null);
+			return CompletableFuture.completedFuture(unresolved);
 		}
 		TextDocumentIdentifier identifier = new TextDocumentIdentifier(uri);
 		return computeDOMAsync(identifier, code);
