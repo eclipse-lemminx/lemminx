@@ -25,7 +25,9 @@ import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConsta
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.DOCUMENT_HIGHLIGHT_ID;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.DOCUMENT_SYMBOL_ID;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.FOLDING_RANGE_ID;
+import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.DEFAULT_ON_TYPE_FORMATTING_OPTIONS;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.FORMATTING_ID;
+import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.FORMATTING_ON_TYPE_ID;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.FORMATTING_RANGE_ID;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.HOVER_ID;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.INLINE_COMPLETION_ID;
@@ -46,6 +48,7 @@ import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConsta
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_LINK;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_INLINE_COMPLETION;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_LINKED_EDITING_RANGE;
+import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_ON_TYPE_FORMATTING;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_REFERENCES;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_RENAME;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_SELECTION_RANGE;
@@ -236,6 +239,11 @@ public class XMLCapabilityManager {
 		if (this.getClientCapabilities().isRangeFormattingDynamicRegistrationSupported()) {
 			toggleCapability(formattingPreferences.isEnabled(), FORMATTING_RANGE_ID,
 					ServerCapabilitiesConstants.TEXT_DOCUMENT_RANGE_FORMATTING, null);
+		}
+
+		if (this.getClientCapabilities().isOnTypeFormattingDynamicRegistrationSupported()) {
+			toggleCapability(formattingPreferences.isEnabled(), FORMATTING_ON_TYPE_ID,
+					TEXT_DOCUMENT_ON_TYPE_FORMATTING, DEFAULT_ON_TYPE_FORMATTING_OPTIONS);
 		}
 
 		if (this.getClientCapabilities().isSelectionRangeDynamicRegistered()) {

@@ -50,7 +50,7 @@ import org.w3c.dom.Text;
  * @author Angelo ZERR
  * 
  */
-public class XMLFormatterDocument {
+public class XMLFormatterDocument extends XMLFormatterIndent {
 
 	private static final Logger LOGGER = Logger.getLogger(XMLFormatterDocument.class.getName());
 
@@ -62,11 +62,7 @@ public class XMLFormatterDocument {
 
 	private final DOMDocument xmlDocument;
 	private final TextDocument textDocument;
-	private final String lineDelimiter;
 	private final SharedSettings sharedSettings;
-	
-	// Reusable StringBuilder for indentation to reduce object allocation
-	private final StringBuilder indentBuilder;
 
 	private final DOMProcessingInstructionFormatter processingInstructionFormatter;
 
@@ -111,9 +107,11 @@ public class XMLFormatterDocument {
 	 */
 	public XMLFormatterDocument(DOMDocument xmlDocument, Range range, SharedSettings sharedSettings,
 			Collection<IFormatterParticipant> formatterParticipants) {
+		super(sharedSettings.getFormattingSettings().getTabSize(),
+				sharedSettings.getFormattingSettings().isInsertSpaces(),
+				computeLineDelimiter(xmlDocument.getTextDocument()));
 		this.xmlDocument = xmlDocument;
 		this.textDocument = xmlDocument.getTextDocument();
-		this.lineDelimiter = computeLineDelimiter(textDocument);
 		if (range != null) {
 			try {
 				startOffset = textDocument.offsetAt(range.getStart());
@@ -132,8 +130,6 @@ public class XMLFormatterDocument {
 		this.commentFormatter = new DOMCommentFormatter(this);
 		this.cDATAFormatter = new DOMCDATAFormatter(this);
 		this.formattingContext = new HashMap<>();
-		// Pre-allocate reusable StringBuilder for indentation (max reasonable indent: 100 levels * 4 spaces)
-		this.indentBuilder = new StringBuilder(400);
 	}
 
 	private static String computeLineDelimiter(TextDocument textDocument) {
@@ -207,7 +203,7 @@ public class XMLFormatterDocument {
 						Position pos = textDocument.positionAt(endDocument);
 						pos.setCharacter(pos.getCharacter() + 1);
 						Range range = new Range(pos, pos);
-						edits.add(new TextEdit(range, lineDelimiter));
+						edits.add(new TextEdit(range, getLineDelimiter()));
 					} catch (BadLocationException e) {
 						LOGGER.log(Level.SEVERE, e.getMessage(), e);
 					}
@@ -314,15 +310,7 @@ public class XMLFormatterDocument {
 	 */
 	private XMLFormattingConstraints getNodeConstraints(DOMNode node) {
 		XMLFormattingConstraints result = new XMLFormattingConstraints();
-		// Compute the indent level according to the parent node.
-		int indentLevel = 0;
-		while (node != null) {
-			node = node.getParentElement();
-			if (node != null) {
-				indentLevel++;
-			}
-		}
-		result.setIndentLevel(indentLevel);
+		result.setIndentLevel(node.getIndentLevel());
 		return result;
 	}
 
@@ -498,7 +486,7 @@ public class XMLFormatterDocument {
 			int indentLevel, List<TextEdit> edits) {
 		int preservedNewLines = getFormattingSettings().getPreservedNewlines();
 		int currentNewLineCount = XMLFormatterDocument.getExistingNewLineCount(
-				textDocument.getTextSequence(), spaceEnd, lineDelimiter);
+				textDocument.getTextSequence(), spaceEnd, getLineDelimiter());
 		if (currentNewLineCount > preservedNewLines) {
 			replaceLeftSpacesWithIndentationWithMultiNewLines(indentLevel, spaceStart,
 					spaceEnd, preservedNewLines + 1, edits);
@@ -609,7 +597,7 @@ public class XMLFormatterDocument {
 	}
 
 	void insertLineBreak(int start, int end, List<TextEdit> edits) {
-		createTextEditIfNeeded(start, end, lineDelimiter, edits);
+		createTextEditIfNeeded(start, end, getLineDelimiter(), edits);
 	}
 
 	void replaceSpacesWithOneSpace(int spaceStart, int spaceEnd, List<TextEdit> edits) {
@@ -702,80 +690,6 @@ public class XMLFormatterDocument {
 		return true;
 	}
 
-	private String getIndentSpaces(int level, boolean addLineSeparator) {
-		// Reuse StringBuilder to avoid object allocation
-		indentBuilder.setLength(0);
-		if (addLineSeparator) {
-			indentBuilder.append(lineDelimiter);
-		}
-
-		for (int i = 0; i < level; i++) {
-			if (isInsertSpaces()) {
-				for (int j = 0; j < getTabSize(); j++) {
-					indentBuilder.append(" ");
-				}
-			} else {
-				indentBuilder.append("\t");
-			}
-		}
-		return indentBuilder.toString();
-	}
-
-	/**
-	 * Return the expected indent spaces and new lines with the specified number of
-	 * new lines.
-	 * 
-	 * @param level        the indent level.
-	 * @param newLineCount the number of new lines to be added.
-	 * 
-	 * @return the expected indent spaces and new lines with the specified number of
-	 *         new lines.
-	 */
-	private String getIndentSpacesWithMultiNewLines(int level, int newLineCount) {
-		// Reuse StringBuilder to avoid object allocation
-		indentBuilder.setLength(0);
-		while (newLineCount != 0) {
-			indentBuilder.append(lineDelimiter);
-			newLineCount--;
-		}
-
-		for (int i = 0; i < level; i++) {
-			if (isInsertSpaces()) {
-				for (int j = 0; j < getTabSize(); j++) {
-					indentBuilder.append(" ");
-				}
-			} else {
-				indentBuilder.append("\t");
-			}
-		}
-		return indentBuilder.toString();
-	}
-
-	private String getIndentSpacesWithOffsetSpaces(int spaceCount, boolean addLineSeparator) {
-		// Reuse StringBuilder to avoid object allocation
-		indentBuilder.setLength(0);
-		if (addLineSeparator) {
-			indentBuilder.append(lineDelimiter);
-		}
-		int spaceOffset = spaceCount % getTabSize();
-
-		for (int i = 0; i < spaceCount / getTabSize(); i++) {
-			if (isInsertSpaces()) {
-				for (int j = 0; j < getTabSize(); j++) {
-					indentBuilder.append(" ");
-				}
-			} else {
-				indentBuilder.append("\t");
-			}
-		}
-
-		for (int i = 0; i < spaceOffset; i++) {
-			indentBuilder.append(" ");
-		}
-
-		return indentBuilder.toString();
-	}
-
 	private void trimFinalNewlines(boolean insertFinalNewline, List<TextEdit> edits) {
 		CharSequence xml = textDocument.getTextSequence();
 		int end = xml.length() - 1;
@@ -852,14 +766,6 @@ public class XMLFormatterDocument {
 		return getFormattingSettings().getMaxLineWidth();
 	}
 
-	private int getTabSize() {
-		return getFormattingSettings().getTabSize();
-	}
-
-	private boolean isInsertSpaces() {
-		return getFormattingSettings().isInsertSpaces();
-	}
-
 	private boolean isTrimFinalNewlines() {
 		return getFormattingSettings().isTrimFinalNewlines();
 	}
@@ -882,10 +788,6 @@ public class XMLFormatterDocument {
 
 	SharedSettings getSharedSettings() {
 		return sharedSettings;
-	}
-
-	String getLineDelimiter() {
-		return lineDelimiter;
 	}
 
 	CharSequence getTextSequence() {

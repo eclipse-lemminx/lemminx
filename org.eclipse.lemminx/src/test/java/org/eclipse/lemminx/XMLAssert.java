@@ -2180,6 +2180,73 @@ public class XMLAssert {
 		return new ColorPresentation(label, textEdit);
 	}
 
+	// ------------------- OnType Formatting assert
+
+	/**
+	 * Assert on-type formatting using {@code |} to mark the cursor position.
+	 *
+	 * @param contentWithPipe   the content with {@code |} marking cursor position.
+	 * @param expectedWithPipe  the expected result with {@code |} marking cursor
+	 *                          position.
+	 * @param ch                the trigger character.
+	 * @param settings          the shared settings.
+	 * @param checkWithFormat   true to verify the result is stable after full
+	 *                          format.
+	 */
+	public static void assertOnTypeFormatting(String contentWithPipe, String expectedWithPipe, String ch,
+			SharedSettings settings, boolean checkWithFormat) throws BadLocationException {
+		int pipeOffset = contentWithPipe.indexOf('|');
+		if (pipeOffset == -1) {
+			throw new IllegalArgumentException("content must contain '|' to mark cursor position");
+		}
+		String content = contentWithPipe.substring(0, pipeOffset) + contentWithPipe.substring(pipeOffset + 1);
+		String expected = expectedWithPipe.replace("|", "");
+		TextDocument tempDoc = new TextDocument(content, "test://test.xml");
+		Position position = tempDoc.positionAt(pipeOffset);
+		assertOnTypeFormatting(content, expected, position.getLine(), position.getCharacter(), ch, settings,
+				checkWithFormat);
+	}
+
+	public static void assertOnTypeFormatting(String content, String expected, int line, int character,
+			SharedSettings settings) throws BadLocationException {
+		assertOnTypeFormatting(content, expected, line, character, "\n", settings, true);
+	}
+
+	public static void assertOnTypeFormatting(String content, String expected, int line, int character, String ch,
+			SharedSettings settings) throws BadLocationException {
+		assertOnTypeFormatting(content, expected, line, character, ch, settings, true);
+	}
+
+	public static void assertOnTypeFormatting(String content, String expected, int line, int character, String ch,
+			SharedSettings settings, boolean checkWithFormat) throws BadLocationException {
+		TextDocument document = new TextDocument(content, "test://test.xml");
+		document.setIncremental(true);
+		DOMDocument xmlDocument = DOMParser.getInstance().parse(document, null);
+
+		XMLLanguageService languageService = new XMLLanguageService();
+		Position position = new Position(line, character);
+		List<? extends TextEdit> edits = languageService.formatOnType(xmlDocument, position, ch, settings);
+
+		String formatted = content;
+		if (edits != null && !edits.isEmpty()) {
+			formatted = applyEdits(document, edits);
+		}
+		assertEquals(expected, formatted);
+
+		if (checkWithFormat) {
+			TextDocument formattedDocument = new TextDocument(formatted, "test://test.xml");
+			formattedDocument.setIncremental(true);
+			DOMDocument formattedXmlDocument = DOMParser.getInstance().parse(formattedDocument, null);
+			List<? extends TextEdit> formatEdits = languageService.format(formattedXmlDocument, null, settings);
+			String reformatted = formatted;
+			if (formatEdits != null && !formatEdits.isEmpty()) {
+				reformatted = applyEdits(formattedDocument, formatEdits);
+			}
+			assertEquals(formatted, reformatted,
+					"On-type formatting result should be stable after full document formatting");
+		}
+	}
+
 	// ------------------- Inline Completion assert
 
 	// ------------------- Inline Completion assert
