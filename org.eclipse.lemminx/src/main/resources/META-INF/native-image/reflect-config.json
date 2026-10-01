@@ -642,6 +642,14 @@
 		}]
 	},
 	{
+		"name": "org.eclipse.lsp4j.CodeActionTagSupportCapabilities",
+		"allDeclaredFields": true,
+		"methods": [{
+			"name": "<init>",
+			"parameterTypes": []
+		}]
+	},
+	{
 		"name": "org.eclipse.lsp4j.CodeLens",
 		"allDeclaredFields": true,
 		"methods": [{
@@ -667,6 +675,14 @@
 	},
 	{
 		"name": "org.eclipse.lsp4j.CodeLensParams",
+		"allDeclaredFields": true,
+		"methods": [{
+			"name": "<init>",
+			"parameterTypes": []
+		}]
+	},
+	{
+		"name": "org.eclipse.lsp4j.CodeLensResolveSupportCapabilities",
 		"allDeclaredFields": true,
 		"methods": [{
 			"name": "<init>",
@@ -1335,6 +1351,14 @@
 	},
 	{
 		"name": "org.eclipse.lsp4j.FileOperationsWorkspaceCapabilities",
+		"allDeclaredFields": true,
+		"methods": [{
+			"name": "<init>",
+			"parameterTypes": []
+		}]
+	},
+	{
+		"name": "org.eclipse.lsp4j.FiltersCapabilities",
 		"allDeclaredFields": true,
 		"methods": [{
 			"name": "<init>",
@@ -2044,6 +2068,14 @@
 	},
 	{
 		"name": "org.eclipse.lsp4j.TextDocumentClientCapabilities",
+		"allDeclaredFields": true,
+		"methods": [{
+			"name": "<init>",
+			"parameterTypes": []
+		}]
+	},
+	{
+		"name": "org.eclipse.lsp4j.TextDocumentContentCapabilities",
 		"allDeclaredFields": true,
 		"methods": [{
 			"name": "<init>",
