@@ -17,26 +17,85 @@ import org.eclipse.lemminx.dom.DOMText;
 import org.eclipse.lsp4j.TextEdit;
 
 /**
- * DOM text formatter.
- * 
- * @author Angelo ZERR
+ * Formats text nodes within XML elements according to their parent's
+ * {@link FormatElementCategory}.
  *
+ * <p>
+ * Text formatting behavior varies by category:
+ * </p>
+ * <ul>
+ * <li><b>PreserveSpace</b> — text is kept as-is; only trailing whitespace
+ * on empty lines is trimmed when {@code trimTrailingWhitespace} is enabled.
+ * Use case: {@code <pre>  keep  spaces  </pre>} → unchanged.</li>
+ *
+ * <li><b>NormalizeSpace</b> — consecutive whitespace is collapsed to a
+ * single space. Line breaks are preserved (unless {@code joinContentLines}).
+ * When {@code maxLineWidth} is exceeded, text wraps to a new line.
+ * Use case: {@code <p>  hello   world  </p>} → {@code <p>hello world</p>}.</li>
+ *
+ * <li><b>MixedContent</b> — inline whitespace between text and child
+ * elements is collapsed to one space. Text wraps at {@code maxLineWidth}.
+ * Use case: {@code <p>text <b>bold</b> more</p>} → whitespace preserved
+ * around child elements.</li>
+ *
+ * <li><b>IgnoreSpace</b> — text nodes (typically whitespace-only between
+ * elements) are handled by element indentation, not here.</li>
+ * </ul>
+ *
+ * <p>
+ * The formatter tracks {@code availableLineWidth} through each text token.
+ * When the remaining width goes negative, the next whitespace gap is
+ * replaced with a newline + indentation (text wrapping).
+ * </p>
+ *
+ * @author Angelo ZERR
  */
 public class DOMTextFormatter {
 
+	/** The parent formatter document that provides settings, text access, and edit helpers. */
 	private final XMLFormatterDocument formatterDocument;
 
+	/**
+	 * Creates a new text formatter.
+	 *
+	 * @param formatterDocument the parent formatter document (provides settings and edit helpers).
+	 */
 	public DOMTextFormatter(XMLFormatterDocument formatterDocument) {
 		this.formatterDocument = formatterDocument;
 	}
 
+	/**
+	 * Formats a text node: normalizes whitespace, wraps at
+	 * {@code maxLineWidth}, and trims trailing spaces.
+	 *
+	 * <p>Use case (NormalizeSpace):</p>
+	 * <pre>
+	 * &lt;p&gt;  hello   world  &lt;/p&gt;  →  &lt;p&gt;hello world&lt;/p&gt;
+	 * </pre>
+	 *
+	 * <p>Use case (maxLineWidth wrapping):</p>
+	 * <pre>
+	 * &lt;p&gt;aaa bbb ccc ddd&lt;/p&gt;  (maxLineWidth=10)
+	 * →
+	 * &lt;p&gt;aaa bbb
+	 *   ccc ddd&lt;/p&gt;
+	 * </pre>
+	 *
+	 * @param textNode          the text node to format.
+	 * @param parentConstraints the parent's formatting constraints (modified:
+	 *                          {@code availableLineWidth} is updated).
+	 * @param start             start offset of the formatting range.
+	 * @param end               end offset of the formatting range (-1 for no limit).
+	 * @param edits             the list of text edits to populate.
+	 */
 	public void formatText(DOMText textNode, XMLFormattingConstraints parentConstraints, int start, int end,
 			List<TextEdit> edits) {
 		if ((textNode.getStart() > end && end != -1) || textNode.getEnd() < start) {
 			return;
 		}
-		// Don't format the spacing in text for case of preserve empty content setting
 		FormatElementCategory formatElementCategory = parentConstraints.getFormatElementCategory();
+		// PreserveSpace with trimTrailingWhitespace: only trim trailing
+		// spaces on empty lines, keep all other whitespace.
 		if (formatElementCategory == FormatElementCategory.PreserveSpace && isTrimTrailingWhitespace()) {
 			CharSequence text = formatterDocument.getTextSequence();
 			int i = text.length() - 1;
@@ -105,7 +164,6 @@ public class DOMTextFormatter {
 				}
 				int contentEnd = i + 1;
 				if (isMaxLineWidthSupported()) {
-					int maxLineWidth = getMaxLineWidth();
 					availableLineWidth -= contentEnd - contentStart;
 					if (textStart != contentStart && availableLineWidth >= 0
 							&& (isJoinContentLines() || !containsNewLine || isMixedContent)) {
@@ -118,15 +176,15 @@ public class DOMTextFormatter {
 								: parentConstraints.getMixedContentIndentLevel();
 						replaceLeftSpacesWithIndentation(mixedContentIndentLevel, spaceStart, contentStart,
 								true, edits);
-						availableLineWidth = maxLineWidth - (contentEnd - contentStart)
-								- mixedContentIndentLevel * getTabSize();
+						availableLineWidth = formatterDocument.getNewLineAvailableWidth(mixedContentIndentLevel)
+								- (contentEnd - contentStart);
 						containsNewLine = false;
 						spaceStart = -1;
 						spaceEnd = -1;
 						continue;
 					} else if (containsNewLine && !isJoinContentLines() && !isMixedContent) {
-						availableLineWidth = maxLineWidth - (contentEnd - contentStart)
-								- indentLevel * getTabSize();
+						availableLineWidth = formatterDocument.getNewLineAvailableWidth(indentLevel)
+								- (contentEnd - contentStart);
 					}
 				}
 				if (containsNewLine && !isJoinContentLines() && !isMixedContent) {
@@ -179,7 +237,7 @@ public class DOMTextFormatter {
 						: parentConstraints.getMixedContentIndentLevel();
 				replaceLeftSpacesWithIndentationPreservedNewLines(textStart, textStart, mixedContentIndentLevel,
 						edits);
-				availableLineWidth = getMaxLineWidth() - (textEnd - textStart) - mixedContentIndentLevel * getTabSize();
+				availableLineWidth = formatterDocument.getNewLineAvailableWidth(mixedContentIndentLevel) - (textEnd - textStart);
 			} else {
 				if (formatElementCategory == FormatElementCategory.NormalizeSpace) {
 					// Decrement indent level if is mixed content and text content is the last child
@@ -188,7 +246,7 @@ public class DOMTextFormatter {
 				replaceLeftSpacesWithIndentationPreservedNewLines(spaceStart, spaceEnd + 1, indentLevel,
 						edits);
 				if (isMaxLineWidthSupported()) {
-					availableLineWidth = getMaxLineWidth() - (textEnd - textStart) - indentLevel * getTabSize();
+					availableLineWidth = formatterDocument.getNewLineAvailableWidth(indentLevel) - (textEnd - textStart);
 				}
 			}
 		} else if (isTrimTrailingWhitespace()) {
@@ -199,45 +257,62 @@ public class DOMTextFormatter {
 		}
 	}
 
+	/** Returns true if the character is a line separator ({@code \r} or {@code \n}). */
 	private static boolean isLineSeparator(char c) {
 		return c == '\r' || c == '\n';
 	}
 
+	/** Returns the configured maximum line width, or 0 if disabled. */
 	private int getMaxLineWidth() {
 		return formatterDocument.getMaxLineWidth();
 	}
 
+	/** Returns the tab size (number of spaces per indent level). */
 	private int getTabSize() {
 		return formatterDocument.getSharedSettings().getFormattingSettings().getTabSize();
 	}
 
+	/** Delegates to {@link XMLFormatterDocument#replaceSpacesWithOneSpace}. */
+	/** Delegates to {@link XMLFormatterDocument#replaceSpacesWithOneSpace}. */
 	private void replaceSpacesWithOneSpace(int spaceStart, int spaceEnd, List<TextEdit> edits) {
 		formatterDocument.replaceSpacesWithOneSpace(spaceStart, spaceEnd, edits);
 	}
 
+	/** Delegates to {@link XMLFormatterDocument#replaceLeftSpacesWithIndentation}. */
+	/** Delegates to {@link XMLFormatterDocument#replaceLeftSpacesWithIndentation}. */
 	private int replaceLeftSpacesWithIndentation(int indentLevel, int from, int to, boolean addLineSeparator,
 			List<TextEdit> edits) {
 		return formatterDocument.replaceLeftSpacesWithIndentation(indentLevel, from, to, addLineSeparator, edits);
 	}
 
+	/** Delegates to {@link XMLFormatterDocument#replaceLeftSpacesWithIndentationPreservedNewLines}. */
+	/** Delegates to {@link XMLFormatterDocument#replaceLeftSpacesWithIndentationPreservedNewLines}. */
 	private void replaceLeftSpacesWithIndentationPreservedNewLines(int spaceStart, int spaceEnd,
 			int indentLevel, List<TextEdit> edits) {
 		formatterDocument.replaceLeftSpacesWithIndentationPreservedNewLines(spaceStart, spaceEnd, indentLevel,
 				edits);
 	}
 
+	/** Removes whitespace by delegating to {@link XMLFormatterDocument#replaceLeftSpacesWith} with empty replacement. */
+	/** Removes whitespace by replacing with an empty string. */
 	private void removeLeftSpaces(int leftLimit, int to, List<TextEdit> edits) {
 		formatterDocument.replaceLeftSpacesWith(leftLimit, to, "", edits);
 	}
 
+	/** Returns true if content line breaks should be joined into one line. */
+	/** Returns true if content lines should be joined (whitespace-only lines removed). */
 	private boolean isJoinContentLines() {
 		return formatterDocument.getSharedSettings().getFormattingSettings().isJoinContentLines();
 	}
 
+	/** Returns true if trailing whitespace on lines should be removed. */
+	/** Returns true if trailing whitespace should be trimmed. */
 	private boolean isTrimTrailingWhitespace() {
 		return formatterDocument.getSharedSettings().getFormattingSettings().isTrimTrailingWhitespace();
 	}
 
+	/** Returns true if {@code maxLineWidth} is set (non-zero). */
+	/** Returns true if {@code maxLineWidth} is set (non-zero). */
 	private boolean isMaxLineWidthSupported() {
 		return formatterDocument.isMaxLineWidthSupported();
 	}
