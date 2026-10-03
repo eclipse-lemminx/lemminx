@@ -24,41 +24,107 @@ import org.eclipse.lemminx.utils.StringUtils;
 import org.eclipse.lsp4j.TextEdit;
 
 /**
- * DOM element formatter.
+ * Formats DOM elements according to their {@link FormatElementCategory}.
+ *
+ * <p>
+ * Each element is classified into one of four categories that determine how
+ * its start tag, children, and end tag are formatted:
+ * </p>
+ * <ul>
+ * <li><b>IgnoreSpace</b> — element contains only other elements (no text).
+ * Children are indented on new lines.
+ * Use case: {@code <root><child/></root>} → each child on its own line.</li>
+ *
+ * <li><b>NormalizeSpace</b> — element contains only text (no child elements).
+ * Whitespace within text is normalized.
+ * Use case: {@code <p>  hello   world  </p>} → {@code <p>hello world</p>}.</li>
+ *
+ * <li><b>MixedContent</b> — element contains both text and child elements.
+ * Inline flow is preserved; elements only wrap to new lines when
+ * maxLineWidth is exceeded or indentation needs normalizing.
+ * Use case: {@code <p>text <b>bold</b> more</p>}.</li>
+ *
+ * <li><b>PreserveSpace</b> — element has {@code xml:space="preserve"}.
+ * All whitespace is kept as-is.
+ * Use case: {@code <pre>  keep  spaces  </pre>}.</li>
+ * </ul>
+ *
+ * <p>
+ * The formatter tracks {@code availableLineWidth} to enforce
+ * {@code maxLineWidth}. Each formatted token decrements the remaining width;
+ * when it goes negative, subsequent elements are moved to new lines.
+ * </p>
  *
  * @author Angelo ZERR
- *
  */
 public class DOMElementFormatter {
 
+	/** The parent formatter document that provides settings, text access, and edit helpers. */
 	private final XMLFormatterDocument formatterDocument;
 
+	/** The attribute formatter used to format element attributes. */
 	private final DOMAttributeFormatter attributeFormatter;
 
+	/**
+	 * Creates a new element formatter.
+	 *
+	 * @param formatterDocument the parent formatter document (provides settings and edit helpers).
+	 * @param attributeFormatter the formatter for element attributes.
+	 */
 	public DOMElementFormatter(XMLFormatterDocument formatterDocument, DOMAttributeFormatter attributeFormatter) {
 		this.formatterDocument = formatterDocument;
 		this.attributeFormatter = attributeFormatter;
 	}
 
+	/**
+	 * Formats a DOM element: start tag, children, and end tag.
+	 *
+	 * <p>
+	 * Formatting proceeds in three phases:
+	 * </p>
+	 * <ol>
+	 * <li><b>Start tag</b> — indentation, attributes, and closing bracket
+	 * ({@code >} or {@code />}). Updates {@code parentConstraints.availableLineWidth}.</li>
+	 * <li><b>Children</b> — formatted recursively with a copy of the parent
+	 * constraints (indent level incremented by 1).</li>
+	 * <li><b>End tag</b> — indentation of {@code </tagName>}. Updates
+	 * {@code parentConstraints.availableLineWidth} from the child constraints.</li>
+	 * </ol>
+	 *
+	 * <p>Use case (IgnoreSpace):</p>
+	 * <pre>
+	 * &lt;root&gt;&lt;child/&gt;&lt;/root&gt;
+	 * →
+	 * &lt;root&gt;
+	 *   &lt;child /&gt;
+	 * &lt;/root&gt;
+	 * </pre>
+	 *
+	 * @param element           the DOM element to format.
+	 * @param parentConstraints the formatting constraints from the parent element.
+	 *                          Modified in place: availableLineWidth is updated.
+	 * @param start             the start offset of the formatting range (-1 for no limit).
+	 * @param end               the end offset of the formatting range (-1 for no limit).
+	 * @param edits             the list of text edits to populate.
+	 */
 	public void formatElement(DOMElement element, XMLFormattingConstraints parentConstraints, int start, int end,
 			List<TextEdit> edits) {
 		FormatElementCategory formatElementCategory = getFormatElementCategory(element, parentConstraints);
 		EmptyElements emptyElements = getEmptyElements(element, formatElementCategory);
 
-		// Format start tag element with proper indentation
 		int indentLevel = parentConstraints.getIndentLevel();
 		int width = formatStartTagElement(element, parentConstraints, emptyElements, start, end, edits);
 		parentConstraints.setAvailableLineWidth(parentConstraints.getAvailableLineWidth() - width);
 
-		// Set indent level for text in mixed content
-		int mixedIndentLevel = parentConstraints.getMixedContentIndentLevel();
-		if (mixedIndentLevel == 0
+		// Track indent level for text nodes in mixed content so they
+		// can be indented consistently with their parent element.
+		if (parentConstraints.getMixedContentIndentLevel() == 0
 				&& parentConstraints.getFormatElementCategory() == FormatElementCategory.MixedContent) {
 			parentConstraints.setMixedContentIndentLevel(indentLevel);
 		}
 
 		if (emptyElements == EmptyElements.ignore) {
-			// Format children of the element
+			// Format children with a copy of the constraints (indent +1)
 			XMLFormattingConstraints constraints = new XMLFormattingConstraints();
 			constraints.copyConstraints(parentConstraints);
 			if ((element.isClosed())) {
@@ -68,7 +134,6 @@ public class DOMElementFormatter {
 
 			formatChildren(element, constraints, start, end, edits);
 
-			// Format end tag element with proper indentation
 			if (element.hasEndTag() && (element.getEndTagOpenOffset() > start
 					&& (end == -1 || element.getEndTagCloseOffset() < end))) {
 				width = formatEndTagElement(element, parentConstraints, constraints, edits);
@@ -77,57 +142,99 @@ public class DOMElementFormatter {
 		}
 	}
 
+	/**
+	 * Formats the start tag of an element: handles indentation based on
+	 * {@link FormatElementCategory}, formats attributes, and closes the tag.
+	 *
+	 * <p>
+	 * Returns the width consumed by the closing portion of the start tag
+	 * ({@code >}, {@code />}, or expanded {@code ></tag>}). The tag name
+	 * width is applied directly to {@code parentConstraints.availableLineWidth}
+	 * inside this method (line 196).
+	 * </p>
+	 *
+	 * @param element           the element whose start tag to format.
+	 * @param parentConstraints the parent's formatting constraints (modified in place).
+	 * @param emptyElements     how to handle empty elements (expand, collapse, ignore).
+	 * @param start             start offset of formatting range (-1 for no limit).
+	 * @param end               end offset of formatting range (-1 for no limit).
+	 * @param edits             the list of text edits to populate.
+	 * @return the width of the closing portion of the start tag.
+	 */
 	private int formatStartTagElement(DOMElement element, XMLFormattingConstraints parentConstraints,
 			EmptyElements emptyElements, int start, int end, List<TextEdit> edits) {
 		if (!element.hasStartTag()) {
-			// ex : </
+			// Malformed element with only an end tag (e.g., "</" fragment)
 			return element.getEnd() - element.getStart();
 		}
 		int indentLevel = parentConstraints.getIndentLevel();
+		// width starts as '<' + tagName length (e.g., "<div" = 4)
 		int width = element.getTagName() != null ? element.getTagName().length() + 1 : 0;
 		FormatElementCategory formatElementCategory = parentConstraints.getFormatElementCategory();
 		int startTagOpenOffset = element.getStartTagOpenOffset();
 		int startTagCloseOffset = element.getStartTagCloseOffset();
 
-		if (end != -1 && startTagOpenOffset > end
-				|| start != -1 && startTagCloseOffset != -1 && startTagCloseOffset < start
-				|| start != -1 && element.isSelfClosed() && element.getEnd() < start) {
+		if (isElementOutsideRange(element, startTagOpenOffset, startTagCloseOffset, start, end)) {
 			return 0;
 		}
+
 		switch (formatElementCategory) {
 		case PreserveSpace:
-			// Preserve existing spaces
+			// xml:space="preserve" — keep all whitespace as-is
 			break;
-		case MixedContent:
-			// Remove spaces and indent if the content between start tag and parent start
-			// tag is some white spaces
-			// before formatting: <a> [space][space] <b> </b> example text </a>
-			// after formatting: <a>\n <b> </b> example text </a>
-			int parentStartCloseOffset = element.getParentElement() != null ? element.getParentElement().getStartTagCloseOffset() + 1 : 0;
-			if ((parentStartCloseOffset != startTagOpenOffset
-					&& StringUtils.isWhitespace(formatterDocument.getTextSequence(), parentStartCloseOffset,
-							startTagOpenOffset))) {
-				replaceLeftSpacesWithIndentationPreservedNewLines(parentStartCloseOffset, startTagOpenOffset,
+
+		case MixedContent: {
+			// Phase 1: overflow handling (#1797, #1131)
+			// Move overflowing elements to new lines when maxLineWidth is enabled.
+			boolean moved = false;
+			if (isMaxLineWidthSupported()) {
+				int parentContentStart = getParentContentStartOffset(element);
+				if (shouldMoveOverflowingMixedContentElement(element, parentConstraints,
+						width, parentContentStart, startTagOpenOffset)) {
+					int replaced = replaceLeftSpacesWithIndentation(indentLevel, parentContentStart,
+							startTagOpenOffset, true, true, edits);
+					if (replaced == 0) {
+						insertIndentation(indentLevel, startTagOpenOffset, edits);
+					}
+					resetLineWidth(parentConstraints, indentLevel);
+					moved = true;
+				}
+			}
+			// Phase 2: indentation normalization
+			// Fix inconsistent indentation without moving elements between lines.
+			if (!moved && shouldNormalizeMixedContentIndentation(element, startTagOpenOffset)) {
+				DOMNode prevSibling = element.getPreviousSibling();
+				int leftLimit = prevSibling != null
+						? prevSibling.getEnd()
+						: getParentContentStartOffset(element);
+				replaceLeftSpacesWithIndentationPreservedNewLines(leftLimit, startTagOpenOffset,
 						indentLevel, edits);
-				parentConstraints.setAvailableLineWidth(getMaxLineWidth());
-				width += indentLevel * getTabSize();
+				resetLineWidth(parentConstraints, indentLevel);
 			}
 			break;
+		}
+
 		case IgnoreSpace:
-			if (element.getParentNode().isOwnerDocument() && element.getParentNode().getFirstChild() == element) {
-				// If the element is at the start of the file, remove new lines and spaces
+			if (isFirstChildOfDocument(element)) {
+				// Root element at start of file — remove leading whitespace/newlines
+				// Use case: "\n  <root>" → "<root>"
 				replaceLeftSpacesWithIndentation(indentLevel, 0, startTagOpenOffset, false, edits);
 				break;
 			}
+			// Non-root elements — indent on new line
+			// Use case: "<root><child/></root>" → "<root>\n  <child />\n</root>"
 			replaceLeftSpacesWithIndentationPreservedNewLines(0, startTagOpenOffset,
 					indentLevel, edits);
-			width += indentLevel * getTabSize();
-			parentConstraints.setAvailableLineWidth(getMaxLineWidth());
+			resetLineWidth(parentConstraints, indentLevel);
 			break;
+
 		case NormalizeSpace:
+			// Text-only elements — no indentation change needed for the start tag
 			break;
 		}
+
 		parentConstraints.setAvailableLineWidth(parentConstraints.getAvailableLineWidth() - width);
+
 		if (formatElementCategory != FormatElementCategory.PreserveSpace) {
 			formatAttributes(element, parentConstraints, edits);
 			boolean formatted = false;
@@ -135,52 +242,31 @@ public class DOMElementFormatter {
 			switch (emptyElements) {
 			case expand: {
 				if (element.isSelfClosed()) {
-					// expand empty element: <example /> -> <example></example>
+					// Expand: <example /> → <example></example>
 					StringBuilder tag = new StringBuilder();
 					tag.append(">");
 					tag.append("</");
 					tag.append(element.getTagName());
 					tag.append('>');
-					// get the from offset:
-					// - <foo| />
-					// - <foo attr1="" attr2=""| />
 					int from = getOffsetAfterStartTagOrLastAttribute(element);
-					// get the to offset:
-					// - <foo />|
-					// - <foo attr1="" attr2="" />|
 					int to = element.getEnd();
-					// replace with ></foo>
-					// - <foo></foo>
-					// - <foo attr1="" attr2=""></foo>
 					createTextEditIfNeeded(from, to, tag.toString(), edits);
 					formatted = true;
-					// add 4 to width for the additional tag name and '></...>'
 					width += element.getTagName() != null ? element.getTagName().length() + 4 : 0;
 				}
 				break;
 			}
 			case collapse: {
-				// collapse empty element: <example></example> -> <example />
+				// Collapse: <example></example> → <example />
 				if (!element.isSelfClosed() && (end == -1 || element.getEndTagOpenOffset() + 1 < end)
 						&& (shouldCollapseEmptyElement(element, formatterDocument.getSharedSettings()))) {
-					// Do not collapse if range is does not cover the element or is prohibited by
-					// grammar constraint
 					StringBuilder tag = new StringBuilder();
 					if (isSpaceBeforeEmptyCloseTag()) {
 						tag.append(" ");
 					}
 					tag.append("/>");
-					// get the from offset:
-					// - <foo| ></foo>
-					// - <foo attr1="" attr2=""| ></foo>
 					int from = getOffsetAfterStartTagOrLastAttribute(element);
-					// get the to offset:
-					// - <foo ></foo>|
-					// - <foo attr1="" attr2="" ></foo>|
 					int to = element.getEnd();
-					// replace with />
-					// - <foo />
-					// - <foo attr1="" attr2="" />
 					createTextEditIfNeeded(from, to, tag.toString(), edits);
 					formatted = true;
 					width++;
@@ -188,7 +274,6 @@ public class DOMElementFormatter {
 				break;
 			}
 			default:
-				// count width of closing bracket '>'
 				width++;
 			}
 
@@ -201,6 +286,127 @@ public class DOMElementFormatter {
 		return width;
 	}
 
+	/**
+	 * Returns {@code true} if a mixed content element should be moved to a new
+	 * line because it would overflow {@code maxLineWidth}.
+	 *
+	 * <p>Four scenarios trigger a move:</p>
+	 * <ol>
+	 * <li><b>Already overflowed</b> — {@code availableLineWidth < 0} from prior content.
+	 *   <pre>&lt;p&gt;text &lt;a&gt;aaa&lt;/a&gt;\n  &lt;b&gt;bbb&lt;/b&gt;&lt;/p&gt;</pre></li>
+	 * <li><b>Idempotent</b> — element was wrapped on a prior pass and stays wrapped.</li>
+	 * <li><b>Adjacent start-tag overflow</b> — {@code </a><b>} with no whitespace,
+	 *   start tag alone overflows remaining width.</li>
+	 * <li><b>Adjacent full-element overflow</b> — {@code </g><g>kkk</g>}, start tag
+	 *   fits but the full element overflows remaining width.</li>
+	 * </ol>
+	 *
+	 * @param element           the element to check.
+	 * @param parentConstraints the parent's formatting constraints.
+	 * @param startTagWidth     width of {@code <tagName} (tagName.length + 1).
+	 * @param parentContentStart offset after the parent's {@code >}.
+	 * @param startTagOpenOffset offset of this element's {@code <}.
+	 * @return {@code true} if the element should be moved to a new line.
+	 */
+	private boolean shouldMoveOverflowingMixedContentElement(DOMElement element,
+			XMLFormattingConstraints parentConstraints, int startTagWidth,
+			int parentContentStart, int startTagOpenOffset) {
+		int availableWidth = parentConstraints.getAvailableLineWidth();
+		if (availableWidth < 0) {
+			return true;
+		}
+		int wsFrom = formatterDocument.adjustOffsetWithLeftWhitespaces(parentContentStart, startTagOpenOffset);
+		boolean hasWhitespaceBefore = wsFrom >= 0 && wsFrom < startTagOpenOffset;
+		if (hasWhitespaceBefore) {
+			// Whitespace exists before the element (e.g., newline+indent from prior pass).
+			// Only move if the start tag overflows AND there's a line break in the
+			// whitespace (to preserve inline spacing like "</b> <i>").
+			return availableWidth - startTagWidth - 1 < 0
+					&& formatterDocument.hasLineBreak(wsFrom, startTagOpenOffset);
+		}
+		// No whitespace before the element — adjacent to previous sibling
+		// (e.g., "</a><b>"). Check if the FULL element overflows.
+		DOMNode prevSibling = element.getPreviousSibling();
+		if (prevSibling != null && prevSibling.isElement()) {
+			int fullElementWidth = element.getEnd() - element.getStart();
+			return availableWidth - fullElementWidth < 0;
+		}
+		return false;
+	}
+
+	/**
+	 * Returns {@code true} if a mixed content element's indentation should be
+	 * normalized (without moving it between lines).
+	 *
+	 * <p>Two scenarios trigger normalization:</p>
+	 * <ol>
+	 * <li><b>First child after parent start tag</b> — whitespace between parent's
+	 *   {@code >} and the first child is always normalized (no line break required).
+	 *   <pre>&lt;a&gt;   &lt;b&gt;content&lt;/b&gt;&lt;/a&gt; → &lt;a&gt; &lt;b&gt;content&lt;/b&gt;&lt;/a&gt;</pre></li>
+	 * <li><b>Siblings with line break</b> — inconsistent indentation is fixed only
+	 *   when the whitespace contains a line break, to preserve inline spacing.
+	 *   <pre>
+	 *   &lt;set&gt;
+	 *       &lt;if&gt;...&lt;/if&gt;
+	 *                           &lt;if&gt;...&lt;/if&gt;  ← normalized to proper indent
+	 *   </pre></li>
+	 * </ol>
+	 *
+	 * <p>Inline spacing without line breaks (e.g., {@code </b> <i>}) is preserved.</p>
+	 *
+	 * @param element            the element to check.
+	 * @param startTagOpenOffset offset of this element's {@code <}.
+	 * @return {@code true} if the element's indentation should be normalized.
+	 */
+	private boolean shouldNormalizeMixedContentIndentation(DOMElement element, int startTagOpenOffset) {
+		DOMNode prevSibling = element.getPreviousSibling();
+		int leftLimit;
+		if (prevSibling != null) {
+			leftLimit = prevSibling.getEnd();
+		} else {
+			leftLimit = getParentContentStartOffset(element);
+		}
+		return leftLimit != startTagOpenOffset
+				&& StringUtils.isWhitespace(formatterDocument.getTextSequence(), leftLimit, startTagOpenOffset)
+				&& (prevSibling == null || formatterDocument.hasLineBreak(leftLimit, startTagOpenOffset));
+	}
+
+	/**
+	 * Returns the offset right after the parent element's start tag {@code >}.
+	 * This is the beginning of the parent's content area.
+	 *
+	 * @param element the child element.
+	 * @return offset after parent's {@code >}, or 0 if no parent.
+	 */
+	private static int getParentContentStartOffset(DOMElement element) {
+		return element.getParentElement() != null
+				? element.getParentElement().getStartTagCloseOffset() + 1 : 0;
+	}
+
+	/**
+	 * Returns {@code true} if the element is outside the formatting range
+	 * and should be skipped.
+	 */
+	private static boolean isElementOutsideRange(DOMElement element,
+			int startTagOpenOffset, int startTagCloseOffset, int start, int end) {
+		return (end != -1 && startTagOpenOffset > end)
+				|| (start != -1 && startTagCloseOffset != -1 && startTagCloseOffset < start)
+				|| (start != -1 && element.isSelfClosed() && element.getEnd() < start);
+	}
+
+	/**
+	 * Returns {@code true} if the element is the first child of the document root.
+	 * Use case: the root element at the very start of the file.
+	 */
+	private static boolean isFirstChildOfDocument(DOMElement element) {
+		return element.getParentNode().isOwnerDocument()
+				&& element.getParentNode().getFirstChild() == element;
+	}
+
+	/**
+	 * Returns the offset after the start tag name or the last attribute,
+	 * whichever comes later. This is the position just before {@code >} or {@code />}.
+	 */
 	private static int getOffsetAfterStartTagOrLastAttribute(DOMElement element) {
 		DOMAttr attr = getLastAttribute(element);
 		if (attr != null) {
@@ -209,20 +415,30 @@ public class DOMElementFormatter {
 		return element.getOffsetAfterStartTag();
 	}
 
+	/**
+	 * Formats element attributes: spacing, alignment, and line breaks.
+	 *
+	 * <p>Delegates each attribute to {@link DOMAttributeFormatter} which handles
+	 * splitting, alignment, and whitespace between attributes.</p>
+	 *
+	 * <p>Use case: {@code <foo  attr1=""   attr2="">} → {@code <foo attr1="" attr2="">}</p>
+	 *
+	 * @param element           the element whose attributes to format.
+	 * @param parentConstraints the parent's formatting constraints.
+	 * @param edits             the list of text edits to populate.
+	 * @return always 0 (width tracking handled by attribute formatter).
+	 */
 	private int formatAttributes(DOMElement element, XMLFormattingConstraints parentConstraints, List<TextEdit> edits) {
 		if (element.hasAttributes()) {
-			// initialize the previous offset with the start tag:
-			// <foo| attr1="" attr2="">.
+			// Walk attributes left-to-right: <foo| attr1="" attr2="">
 			int prevOffset = element.getOffsetAfterStartTag();
 			boolean singleAttribute = element.hasSingleAttribute();
 			boolean isFirstAttr = true;
 			for (DOMAttr attr : element.attributes()) {
-				// Format current attribute
 				attributeFormatter.formatAttribute(attr, prevOffset, singleAttribute, true, isFirstAttr,
 						parentConstraints, edits);
 				isFirstAttr = false;
-				// set the previous offset with end of the current attribute:
-				// <foo attr1=""| attr2="".
+				// Advance: <foo attr1=""| attr2="">
 				prevOffset = attr.getEnd();
 			}
 		}
@@ -297,65 +513,107 @@ public class DOMElementFormatter {
 		return width;
 	}
 
+	/**
+	 * Formats the end tag ({@code </tagName>}) of an element.
+	 *
+	 * <p>
+	 * Two operations are performed:
+	 * </p>
+	 * <ol>
+	 * <li><b>Left whitespace</b> — adjusts indentation before {@code </tagName}
+	 * based on the element's category.</li>
+	 * <li><b>Closing bracket</b> — removes extra spaces before {@code >}
+	 * (e.g., {@code </a   >} → {@code </a>}).</li>
+	 * </ol>
+	 *
+	 * @param element           the element whose end tag to format.
+	 * @param parentConstraints the parent's formatting constraints (for indent level).
+	 * @param constraints       the element's own constraints (for category).
+	 * @param edits             the list of text edits to populate.
+	 * @return the width consumed by the end tag ({@code </tagName>}).
+	 */
 	private int formatEndTagElement(DOMElement element, XMLFormattingConstraints parentConstraints,
 			XMLFormattingConstraints constraints, List<TextEdit> edits) {
-		// When formatting is off, skip end tag formatting to preserve whitespace
 		if (formatterDocument.isFormatterOff()) {
 			return element.getTagName() != null ? element.getTagName().length() + 2 : 0;
 		}
-		// 1) remove / add some spaces on the left of the end tag element
-		// before formatting : [space][space]</a>
-		// after formatting : </a>
 		int indentLevel = parentConstraints.getIndentLevel();
 		FormatElementCategory formatElementCategory = constraints.getFormatElementCategory();
 		int endTagOpenOffset = element.getEndTagOpenOffset();
 		int startTagCloseOffset = element.getStartTagCloseOffset();
-
+		// width = '</' + tagName length (e.g., "</div" = 5)
 		int width = element.getTagName() != null ? element.getTagName().length() + 2 : 0;
 
 		switch (formatElementCategory) {
 		case PreserveSpace:
 			// Use case (#1301): <doc xml:space="preserve">\nContent\n</doc>
-			// The content is preserved but the end tag must be indented when it
-			// directly follows a newline with no existing indentation.
-			if (endTagOpenOffset > startTagCloseOffset + 1) {
-				char c = formatterDocument.getTextSequence().charAt(endTagOpenOffset - 1);
-				if (c == '\n' || c == '\r') {
-					replaceLeftSpacesWithIndentation(indentLevel, endTagOpenOffset, endTagOpenOffset, false, edits);
-					width += indentLevel * getTabSize();
-				}
+			// Content is preserved, but the end tag must be indented when it
+			// directly follows a bare newline (no existing indentation).
+			if (isEndTagDirectlyAfterNewline(endTagOpenOffset, startTagCloseOffset)) {
+				replaceLeftSpacesWithIndentation(indentLevel, endTagOpenOffset, endTagOpenOffset, false, edits);
+				width += indentLevel * getTabSize();
 			}
 			break;
 		case MixedContent:
-			// Remove spaces and indent if the last child is an element, not text
-			// before formatting: <a> example text <b> </b> [space][space]</a>
-			// after formatting: <a> example text <b> </b>\n</a>
-			DOMNode lastChild = element.getLastChild();
-			if (lastChild != null
-					&& (lastChild.isElement() || lastChild.isComment())
-					&& Character.isWhitespace(formatterDocument.getTextSequence().charAt(endTagOpenOffset - 1))) {
+			// Use case: <p>text <b>bold</b>  </p>
+			// When the last child is an element or comment (not text), normalize
+			// trailing whitespace before the end tag to proper indentation.
+			// Text-last: <p>text</p> — end tag stays inline (no indentation).
+			if (hasTrailingWhitespaceAfterElementOrComment(element, endTagOpenOffset)) {
 				replaceLeftSpacesWithIndentationPreservedNewLines(startTagCloseOffset, endTagOpenOffset,
 						indentLevel, edits);
 				width += indentLevel * getTabSize();
 			}
 			break;
 		case IgnoreSpace:
+			// Use case: <root>  <child/>  </root> → <root>\n  <child />\n</root>
+			// End tag always gets indented on its own line.
 			replaceLeftSpacesWithIndentationPreservedNewLines(startTagCloseOffset, endTagOpenOffset,
 					indentLevel, edits);
 			width += indentLevel * getTabSize();
 			break;
 		case NormalizeSpace:
+			// Text-only element — end tag stays inline after the text content.
 			break;
 		}
-		// 2) remove some spaces between the end tag and and close bracket
-		// before formatting : <a></a[space][space]>
-		// after formatting : <a></a>
+		// Remove extra spaces before the closing '>'
+		// Use case: </a   > → </a>
 		if (element.isEndTagClosed()) {
 			int endTagCloseOffset = element.getEndTagCloseOffset();
 			removeLeftSpaces(element.getEndTagOpenOffset(), endTagCloseOffset, edits);
 			width++;
 		}
 		return width;
+	}
+
+	/**
+	 * Returns {@code true} if the end tag directly follows a newline character,
+	 * meaning it needs indentation in PreserveSpace mode.
+	 *
+	 * <p>Use case: {@code <pre>\ncontent\n</pre>} — the {@code </pre>} follows
+	 * a bare newline and needs indentation added.</p>
+	 */
+	private boolean isEndTagDirectlyAfterNewline(int endTagOpenOffset, int startTagCloseOffset) {
+		if (endTagOpenOffset <= startTagCloseOffset + 1) {
+			return false;
+		}
+		char c = formatterDocument.getTextSequence().charAt(endTagOpenOffset - 1);
+		return c == '\n' || c == '\r';
+	}
+
+	/**
+	 * Returns {@code true} if the element's last child is an element or comment
+	 * AND there is trailing whitespace before the end tag.
+	 *
+	 * <p>Use case (true): {@code <p><b>bold</b>  </p>} — last child is {@code <b>},
+	 * whitespace before {@code </p>}.</p>
+	 * <p>Use case (false): {@code <p>text</p>} — last child is text, no normalization.</p>
+	 */
+	private boolean hasTrailingWhitespaceAfterElementOrComment(DOMElement element, int endTagOpenOffset) {
+		DOMNode lastChild = element.getLastChild();
+		return lastChild != null
+				&& (lastChild.isElement() || lastChild.isComment())
+				&& Character.isWhitespace(formatterDocument.getTextSequence().charAt(endTagOpenOffset - 1));
 	}
 
 	/**
@@ -405,32 +663,49 @@ public class DOMElementFormatter {
 				&& element.hasAttributes() && !element.hasSingleAttribute());
 	}
 
+	/** Delegates to {@link XMLFormatterDocument#replaceLeftSpacesWith}. */
 	private void replaceLeftSpacesWith(int from, int to, String replace, List<TextEdit> edits) {
 		formatterDocument.replaceLeftSpacesWith(from, to, replace, edits);
 	}
 
+	/** Delegates to {@link XMLFormatterDocument#replaceLeftSpacesWithIndentation}. */
 	private int replaceLeftSpacesWithIndentation(int indentLevel, int from, int to, boolean addLineSeparator,
 			List<TextEdit> edits) {
 		return formatterDocument.replaceLeftSpacesWithIndentation(indentLevel, from, to, addLineSeparator, edits);
 	}
 
+	/** Delegates to {@link XMLFormatterDocument#replaceLeftSpacesWithIndentation} with conflict removal. */
+	private int replaceLeftSpacesWithIndentation(int indentLevel, int from, int to, boolean addLineSeparator,
+			boolean removeConflictingEdits, List<TextEdit> edits) {
+		return formatterDocument.replaceLeftSpacesWithIndentation(indentLevel, from, to, addLineSeparator, removeConflictingEdits, edits);
+	}
+
+	/** Delegates to {@link XMLFormatterDocument#replaceLeftSpacesWithIndentationPreservedNewLines}. */
 	private void replaceLeftSpacesWithIndentationPreservedNewLines(int spaceStart, int spaceEnd,
 			int indentLevel, List<TextEdit> edits) {
 		formatterDocument.replaceLeftSpacesWithIndentationPreservedNewLines(spaceStart, spaceEnd, indentLevel,
 				edits);
 	}
 
+	/** Delegates to {@link XMLFormatterDocument#replaceLeftSpacesWithIndentationWithOffsetSpaces}. */
 	private void replaceLeftSpacesWithIndentationWithOffsetSpaces(int spaceCount, int from, int to,
 			List<TextEdit> edits) {
 		formatterDocument.replaceLeftSpacesWithIndentationWithOffsetSpaces(spaceCount, from, to, true, edits);
 	}
 
+	/** Delegates to {@link XMLFormatterDocument#removeLeftSpaces}. */
 	private void removeLeftSpaces(int from, int to, List<TextEdit> edits) {
 		formatterDocument.removeLeftSpaces(from, to, edits);
 	}
 
+	/** Delegates to {@link XMLFormatterDocument#createTextEditIfNeeded}. */
 	private void createTextEditIfNeeded(int from, int to, String expectedContent, List<TextEdit> edits) {
 		formatterDocument.createTextEditIfNeeded(from, to, expectedContent, edits);
+	}
+
+	/** Delegates to {@link XMLFormatterDocument#insertIndentation}. */
+	private void insertIndentation(int indentLevel, int offset, List<TextEdit> edits) {
+		formatterDocument.insertIndentation(indentLevel, offset, edits);
 	}
 
 	/**
@@ -461,45 +736,65 @@ public class DOMElementFormatter {
 		return element.getLastAttr();
 	}
 
+	/** Returns true if attribute line breaks should be preserved. */
 	private boolean isPreserveAttributeLineBreaks() {
 		return formatterDocument.getSharedSettings().getFormattingSettings().isPreserveAttributeLineBreaks();
 	}
 
+	/** Returns the configured split attributes mode. */
 	private SplitAttributes getSplitAttributes() {
 		return formatterDocument.getSharedSettings().getFormattingSettings().getSplitAttributes();
 	}
 
+	/** Returns the number of extra indent levels for split attributes. */
 	private int getSplitAttributesIndentSize() {
 		return formatterDocument.getSharedSettings().getFormattingSettings().getSplitAttributesIndentSize();
 	}
 
+	/** Returns true if a space should be added before {@code />} in empty elements. */
 	private boolean isSpaceBeforeEmptyCloseTag() {
 		return formatterDocument.getSharedSettings().getFormattingSettings().isSpaceBeforeEmptyCloseTag();
 	}
 
+	/** Returns the configured empty elements handling mode. */
 	private EmptyElements getEmptyElements() {
 		return formatterDocument.getSharedSettings().getFormattingSettings().getEmptyElements();
 	}
 
+	/** Delegates to {@link XMLFormatterDocument#formatChildren}. */
 	private void formatChildren(DOMElement element, XMLFormattingConstraints constraints, int start, int end,
 			List<TextEdit> edits) {
 		formatterDocument.formatChildren(element, constraints, start, end, edits);
 	}
 
+	/** Delegates to {@link XMLFormatterDocument#getFormatElementCategory}. */
 	private FormatElementCategory getFormatElementCategory(DOMElement element,
 			XMLFormattingConstraints parentConstraints) {
 		return formatterDocument.getFormatElementCategory(element, parentConstraints);
 	}
 
+	/** Delegates to {@link XMLFormatterDocument#shouldCollapseEmptyElement}. */
 	private boolean shouldCollapseEmptyElement(DOMElement element, SharedSettings settings) {
 		return formatterDocument.shouldCollapseEmptyElement(element, settings);
 	}
 
+	/** Returns the configured maximum line width, or 0 if disabled. */
 	private int getMaxLineWidth() {
 		return formatterDocument.getMaxLineWidth();
 	}
 
+	/** Returns true if {@code maxLineWidth} is set (non-zero). */
+	private boolean isMaxLineWidthSupported() {
+		return formatterDocument.isMaxLineWidthSupported();
+	}
+
+	/** Returns the tab size (number of spaces per indent level). */
 	private int getTabSize() {
 		return formatterDocument.getSharedSettings().getFormattingSettings().getTabSize();
+	}
+
+	/** Delegates to {@link XMLFormatterDocument#resetLineWidth}. */
+	private void resetLineWidth(XMLFormattingConstraints constraints, int indentLevel) {
+		formatterDocument.resetLineWidth(constraints, indentLevel);
 	}
 }
