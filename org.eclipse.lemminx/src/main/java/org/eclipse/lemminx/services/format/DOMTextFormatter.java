@@ -13,6 +13,8 @@ package org.eclipse.lemminx.services.format;
 
 import java.util.List;
 
+import org.eclipse.lemminx.dom.DOMElement;
+import org.eclipse.lemminx.dom.DOMNode;
 import org.eclipse.lemminx.dom.DOMText;
 import org.eclipse.lsp4j.TextEdit;
 
@@ -33,10 +35,12 @@ import org.eclipse.lsp4j.TextEdit;
  * When {@code maxLineWidth} is exceeded, text wraps to a new line.
  * Use case: {@code <p>  hello   world  </p>} → {@code <p>hello world</p>}.</li>
  *
- * <li><b>MixedContent</b> — inline whitespace between text and child
- * elements is collapsed to one space. Text wraps at {@code maxLineWidth}.
- * Use case: {@code <p>text <b>bold</b> more</p>} → whitespace preserved
- * around child elements.</li>
+ * <li><b>MixedContent</b> — inline whitespace is collapsed to one space,
+ * existing newlines are preserved. In {@code reflow} mode, text
+ * soft-wraps at word boundaries when {@code maxLineWidth} is exceeded.
+ * In {@code expand} mode, each text node goes on its own indented line.
+ * Use case: {@code <p>text  <b>bold</b>  more</p>} →
+ * {@code <p>text <b>bold</b> more</p>}.</li>
  *
  * <li><b>IgnoreSpace</b> — text nodes (typically whitespace-only between
  * elements) are handled by element indentation, not here.</li>
@@ -131,6 +135,74 @@ public class DOMTextFormatter {
 		int availableLineWidth = parentConstraints.getAvailableLineWidth();
 		int indentLevel = parentConstraints.getIndentLevel();
 		boolean isMixedContent = formatElementCategory == FormatElementCategory.MixedContent;
+		// When true, MixedContent collapses whitespace (including newlines)
+		// to single spaces — backward-compatible behavior in normalize mode.
+		// When false (reflow/expand), newlines are preserved.
+		//
+		// Use case (normalize, default):
+		//   <p>text\n  <b>bold</b></p> → <p>text <b>bold</b></p>
+		// Use case (normalize + blockElements=["div"]):
+		//   same — blockElements ignored in normalize mode.
+		// Use case (reflow):
+		//   <p>text\n  <b>bold</b></p> → newline preserved
+		boolean mixedContentJoins = isMixedContent && !formatterDocument.isMixedContentReflow();
+		// NormalizeSpace inside MixedContent parent with reflow active:
+		// join content lines so elements like <if> have compact single-line content.
+		// Use case (reflow): <set><if>\n  content</if></set> → <if>content</if>
+		boolean isNormalizeInsideMixedContent = formatElementCategory == FormatElementCategory.NormalizeSpace
+				&& parentConstraints.getMixedContentIndentLevel() > 0
+				&& formatterDocument.isMixedContentReflow();
+		boolean effectiveJoinContentLines = isJoinContentLines() || isNormalizeInsideMixedContent;
+
+		// expand mode: non-whitespace text goes on its own line.
+		// Use case: <p>text <b>bold</b></p> with mixedContent=expand
+		//   → <p>\n  text\n  <b>bold</b>\n</p>
+		if (isMixedContent && parentConstraints.isWrapAllChildren()) {
+			int textStart = textNode.getStart();
+			int textEnd = textNode.getEnd();
+			// Find first non-whitespace character
+			int contentStart = textStart;
+			while (contentStart < textEnd && Character.isWhitespace(text.charAt(contentStart))) {
+				contentStart++;
+			}
+			if (contentStart < textEnd) {
+				// Has non-whitespace content: put on its own indented line.
+				// Use indentLevel directly: in expand mode, text aligns with
+				// sibling elements at the current nesting depth.
+				replaceLeftSpacesWithIndentation(indentLevel, textStart, contentStart,
+						true, edits);
+				// Find last non-whitespace to compute content width and trim trailing
+				int contentEnd = textEnd;
+				while (contentEnd > contentStart && Character.isWhitespace(text.charAt(contentEnd - 1))) {
+					contentEnd--;
+				}
+				// Remove trailing spaces/tabs (not newlines) after content
+				int trimEnd = contentEnd;
+				while (trimEnd < textEnd
+						&& text.charAt(trimEnd) != '\n' && text.charAt(trimEnd) != '\r') {
+					trimEnd++;
+				}
+				if (trimEnd > contentEnd) {
+					formatterDocument.replaceLeftSpacesWith(contentEnd, trimEnd, "", edits);
+				}
+				availableLineWidth = formatterDocument.getNewLineAvailableWidth(indentLevel)
+						- (contentEnd - contentStart);
+				parentConstraints.setAvailableLineWidth(availableLineWidth);
+			}
+			return;
+		}
+
+		// Text after a block element: force content to start on a new line.
+		// Use case: <update>text <set>...</set> more text</update>
+		//   " more text" → "\n  more text" (after block </set>)
+		if (isMixedContent && formatterDocument.isMixedContentReflow()
+				&& isMaxLineWidthSupported()) {
+			DOMNode prevSibling = textNode.getPreviousSibling();
+			if (prevSibling != null && prevSibling.isElement()
+					&& formatterDocument.isBlockElement((DOMElement) prevSibling)) {
+				availableLineWidth = 0;
+			}
+		}
 
 		int spaceStart = -1;
 		int spaceEnd = -1;
@@ -165,10 +237,11 @@ public class DOMTextFormatter {
 				int contentEnd = i + 1;
 				if (isMaxLineWidthSupported()) {
 					availableLineWidth -= contentEnd - contentStart;
+					boolean removeLeading = isNormalizeInsideMixedContent
+							&& spaceStart == textStart && containsNewLine;
 					if (textStart != contentStart && availableLineWidth >= 0
-							&& (isJoinContentLines() || !containsNewLine || isMixedContent)) {
-						// Decrement width for normalized space between text content (not done at
-						// beginning)
+							&& (effectiveJoinContentLines || !containsNewLine || mixedContentJoins)
+							&& !removeLeading) {
 						availableLineWidth--;
 					}
 					if (availableLineWidth < 0 && spaceStart != -1) {
@@ -178,23 +251,40 @@ public class DOMTextFormatter {
 								true, edits);
 						availableLineWidth = formatterDocument.getNewLineAvailableWidth(mixedContentIndentLevel)
 								- (contentEnd - contentStart);
+						if (formatterDocument.isMixedContentReflow()) {
+							parentConstraints.setSoftWrapped(true);
+						}
 						containsNewLine = false;
 						spaceStart = -1;
 						spaceEnd = -1;
 						continue;
-					} else if (containsNewLine && !isJoinContentLines() && !isMixedContent) {
-						availableLineWidth = formatterDocument.getNewLineAvailableWidth(indentLevel)
+					} else if (containsNewLine && !effectiveJoinContentLines && !mixedContentJoins) {
+						int effectiveIndentLevel = isMixedContent
+								? (parentConstraints.getMixedContentIndentLevel() == 0
+										? indentLevel : parentConstraints.getMixedContentIndentLevel())
+								: indentLevel;
+						availableLineWidth = formatterDocument.getNewLineAvailableWidth(effectiveIndentLevel)
 								- (contentEnd - contentStart);
 					}
 				}
-				if (containsNewLine && !isJoinContentLines() && !isMixedContent) {
+				if (containsNewLine && !effectiveJoinContentLines && !mixedContentJoins) {
+					int effectiveIndentLevel = isMixedContent
+							? (parentConstraints.getMixedContentIndentLevel() == 0
+									? indentLevel : parentConstraints.getMixedContentIndentLevel())
+							: indentLevel;
 					replaceLeftSpacesWithIndentationPreservedNewLines(spaceStart, spaceEnd,
-							indentLevel, edits);
+							effectiveIndentLevel, edits);
+					if (formatterDocument.isMixedContentReflow()) {
+						parentConstraints.setSoftWrapped(true);
+					}
 					containsNewLine = false;
-				// Use case (#1026): <a>b  c</a> — don't collapse internal whitespace
-				// unless joinContentLines or mixedContent is on.
-				} else if (isJoinContentLines() || isMixedContent) {
-					replaceSpacesWithOneSpace(spaceStart, spaceEnd - 1, edits);
+				} else if (effectiveJoinContentLines || isMixedContent) {
+					if (isNormalizeInsideMixedContent && spaceStart == textStart
+							&& containsNewLine) {
+						formatterDocument.replaceLeftSpacesWith(spaceStart, spaceEnd, "", edits);
+					} else {
+						replaceSpacesWithOneSpace(spaceStart, spaceEnd - 1, edits);
+					}
 					containsNewLine = false;
 				}
 				spaceStart = -1;
@@ -213,13 +303,24 @@ public class DOMTextFormatter {
 			if (formatElementCategory == FormatElementCategory.NormalizeSpace
 					&& isMaxLineWidthSupported() && availableLineWidth < 0
 					&& spaceStart == -1
-					&& !Character.isWhitespace(text.charAt(textStart))) {
+					&& !Character.isWhitespace(text.charAt(textStart))
+					&& !parentConstraints.isWrapAllChildren()) {
 				// NormalizeSpace (text-only) element where single-word text exceeds
 				// maxLineWidth: keep text inline to avoid zigzag effect where text is
 				// moved to a new line but the end tag stays inline.
+				// When wrapAllChildren is active, skip this guard — the end tag will
+				// also move to its own line (no zigzag).
 				// availableLineWidth intentionally stays negative so the parent element
 				// can wrap at the next word boundary.
-			} else if ((!containsNewLine || isJoinContentLines() || isMixedContent)
+			} else if (parentConstraints.isStartTagCrossedLine()
+					&& textNode.getNextSibling() == null
+					&& !textNode.isElementContentWhitespace()) {
+				// Start tag spans multiple lines (split attributes) and this is
+				// the last non-whitespace text before the end tag. The end tag
+				// handler in DOMElementFormatter will place the end tag on its
+				// own line. Skip trailing whitespace here to avoid overlapping
+				// edits.
+			} else if ((!containsNewLine || effectiveJoinContentLines || mixedContentJoins)
 					&& (!isMaxLineWidthSupported() || availableLineWidth >= 0)) {
 				// Replace spaces with single space in the case of:
 				// 1. there is no new line
@@ -239,14 +340,20 @@ public class DOMTextFormatter {
 						edits);
 				availableLineWidth = formatterDocument.getNewLineAvailableWidth(mixedContentIndentLevel) - (textEnd - textStart);
 			} else {
+				int effectiveIndentLevel = indentLevel;
 				if (formatElementCategory == FormatElementCategory.NormalizeSpace) {
-					// Decrement indent level if is mixed content and text content is the last child
-					indentLevel--;
+					effectiveIndentLevel--;
+				} else if (isMixedContent && textNode.getNextSibling() == null) {
+					// Trailing whitespace before end tag → parent indent level
+					effectiveIndentLevel--;
+				} else if (isMixedContent) {
+					effectiveIndentLevel = parentConstraints.getMixedContentIndentLevel() == 0
+							? indentLevel : parentConstraints.getMixedContentIndentLevel();
 				}
-				replaceLeftSpacesWithIndentationPreservedNewLines(spaceStart, spaceEnd + 1, indentLevel,
-						edits);
+				replaceLeftSpacesWithIndentationPreservedNewLines(spaceStart, spaceEnd + 1,
+						effectiveIndentLevel, edits);
 				if (isMaxLineWidthSupported()) {
-					availableLineWidth = formatterDocument.getNewLineAvailableWidth(indentLevel) - (textEnd - textStart);
+					availableLineWidth = formatterDocument.getNewLineAvailableWidth(effectiveIndentLevel);
 				}
 			}
 		} else if (isTrimTrailingWhitespace()) {
@@ -273,12 +380,10 @@ public class DOMTextFormatter {
 	}
 
 	/** Delegates to {@link XMLFormatterDocument#replaceSpacesWithOneSpace}. */
-	/** Delegates to {@link XMLFormatterDocument#replaceSpacesWithOneSpace}. */
 	private void replaceSpacesWithOneSpace(int spaceStart, int spaceEnd, List<TextEdit> edits) {
 		formatterDocument.replaceSpacesWithOneSpace(spaceStart, spaceEnd, edits);
 	}
 
-	/** Delegates to {@link XMLFormatterDocument#replaceLeftSpacesWithIndentation}. */
 	/** Delegates to {@link XMLFormatterDocument#replaceLeftSpacesWithIndentation}. */
 	private int replaceLeftSpacesWithIndentation(int indentLevel, int from, int to, boolean addLineSeparator,
 			List<TextEdit> edits) {
@@ -286,32 +391,27 @@ public class DOMTextFormatter {
 	}
 
 	/** Delegates to {@link XMLFormatterDocument#replaceLeftSpacesWithIndentationPreservedNewLines}. */
-	/** Delegates to {@link XMLFormatterDocument#replaceLeftSpacesWithIndentationPreservedNewLines}. */
 	private void replaceLeftSpacesWithIndentationPreservedNewLines(int spaceStart, int spaceEnd,
 			int indentLevel, List<TextEdit> edits) {
 		formatterDocument.replaceLeftSpacesWithIndentationPreservedNewLines(spaceStart, spaceEnd, indentLevel,
 				edits);
 	}
 
-	/** Removes whitespace by delegating to {@link XMLFormatterDocument#replaceLeftSpacesWith} with empty replacement. */
 	/** Removes whitespace by replacing with an empty string. */
 	private void removeLeftSpaces(int leftLimit, int to, List<TextEdit> edits) {
 		formatterDocument.replaceLeftSpacesWith(leftLimit, to, "", edits);
 	}
 
-	/** Returns true if content line breaks should be joined into one line. */
-	/** Returns true if content lines should be joined (whitespace-only lines removed). */
+	/** Returns true if content lines should be joined. */
 	private boolean isJoinContentLines() {
 		return formatterDocument.getSharedSettings().getFormattingSettings().isJoinContentLines();
 	}
 
-	/** Returns true if trailing whitespace on lines should be removed. */
 	/** Returns true if trailing whitespace should be trimmed. */
 	private boolean isTrimTrailingWhitespace() {
 		return formatterDocument.getSharedSettings().getFormattingSettings().isTrimTrailingWhitespace();
 	}
 
-	/** Returns true if {@code maxLineWidth} is set (non-zero). */
 	/** Returns true if {@code maxLineWidth} is set (non-zero). */
 	private boolean isMaxLineWidthSupported() {
 		return formatterDocument.isMaxLineWidthSupported();

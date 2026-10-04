@@ -46,6 +46,43 @@ public class XMLFormattingOptions extends org.eclipse.lemminx.settings.LSPFormat
 
 	public static final boolean DEFAULT_CLOSING_BRACKET_NEW_LINE = false;
 
+	/**
+	 * Controls how mixed content (text + child elements) is formatted.
+	 *
+	 * <ul>
+	 * <li>{@link #normalize} (default) — backward-compatible behavior.
+	 * Collapses whitespace (including newlines) to single spaces within
+	 * text nodes. Line breaks in whitespace-only gaps between sibling
+	 * elements are preserved with normalized indentation.
+	 * No block/inline element distinction.
+	 * Use case: {@code <p>text\n  <b>bold</b>  more</p>}
+	 * → {@code <p>text <b>bold</b> more</p>} (newline in text joined).
+	 * Use case: {@code <p>\n  <b>bold</b>\n  <i>more</i>\n</p>}
+	 * → line breaks between elements preserved.</li>
+	 *
+	 * <li>{@link #reflow} — smart wrapping. Collapses inline whitespace
+	 * to a single space but preserves newlines within text nodes (unlike
+	 * {@code normalize} which collapses them). When {@code maxLineWidth}
+	 * is set, content soft-wraps at word and element boundaries. Block
+	 * elements (those listed in {@code blockElements}) always start on
+	 * their own line, and text after a block element starts on a new line.
+	 * Use case: {@code <p>text <b>bold</b> more</p>} with
+	 * {@code maxLineWidth=40} → wraps overflowing content to new lines.</li>
+	 *
+	 * <li>{@link #expand} — always put each mixed content child on
+	 * its own line (one child per line), regardless of
+	 * {@code maxLineWidth}.
+	 * Use case: {@code <p>text <b>bold</b></p>}
+	 * → {@code <p>\n  text\n  <b>bold</b>\n</p>}.</li>
+	 *
+	 * <li>{@link #preserve} — don't reformat mixed content at all.
+	 * Use case: {@code <p>text   <b>bold</b>  more</p>} → unchanged.</li>
+	 * </ul>
+	 */
+	public static enum MixedContent {
+		normalize, reflow, expand, preserve;
+	}
+
 	public static final List<String> DEFAULT_PRESERVE_SPACE = Arrays.asList("xsl:text", //
 			"xsl:comment", //
 			"xsl:processing-instruction", //
@@ -130,6 +167,8 @@ public class XMLFormattingOptions extends org.eclipse.lemminx.settings.LSPFormat
 
 	private String emptyElements;
 	private List<String> preserveSpace;
+	private List<String> blockElements;
+	private String mixedContent;
 
 	private boolean grammarAwareFormatting;
 
@@ -427,6 +466,96 @@ public class XMLFormattingOptions extends org.eclipse.lemminx.settings.LSPFormat
 		return preserveSpace;
 	}
 
+	/**
+	 * Returns the mixed content formatting mode.
+	 *
+	 * <p>Use case: {@code xml.format.mixedContent=preserve} keeps
+	 * {@code <p>text  <b>bold</b>  more</p>} unchanged.</p>
+	 *
+	 * @return the mixed content mode (defaults to {@code normalize}).
+	 */
+	public MixedContent getMixedContent() {
+		String value = mixedContent;
+		if (value != null) {
+			try {
+				return MixedContent.valueOf(value);
+			} catch (Exception e) {
+			}
+		}
+		return MixedContent.normalize;
+	}
+
+	/**
+	 * Sets the mixed content formatting mode.
+	 *
+	 * @param mixedContent the mode to set.
+	 */
+	public void setMixedContent(MixedContent mixedContent) {
+		this.mixedContent = mixedContent != null ? mixedContent.name() : null;
+	}
+
+	/**
+	 * Returns the element name list treated as block in mixed content.
+	 *
+	 * <p>Use case: with {@code blockElements=["div","set"]},
+	 * {@code <p>text <div>block</div></p>} puts {@code <div>}
+	 * on its own line, while {@code <b>} stays inline.</p>
+	 *
+	 * <p>When {@code null} or empty, no elements are block — all elements
+	 * are inline (backward-compatible default).</p>
+	 *
+	 * @return the block element name list, or {@code null} if no elements
+	 *         are block.
+	 */
+	public List<String> getBlockElements() {
+		return blockElements;
+	}
+
+	/**
+	 * Sets the element name list treated as block in mixed content.
+	 *
+	 * @param blockElements the element name list, or {@code null} to treat
+	 *                      all elements as inline (default).
+	 */
+	public void setBlockElements(List<String> blockElements) {
+		this.blockElements = blockElements;
+	}
+
+	/**
+	 * Returns {@code true} if the given element name is a block element
+	 * in mixed content.
+	 *
+	 * <p>When {@link #getBlockElements()} is {@code null} or empty,
+	 * no elements are block — all are inline (backward-compatible behavior).
+	 * {@code null} and {@code []} are equivalent — both mean "not configured".</p>
+	 *
+	 * <p>Only effective in {@code reflow} mode. In {@code normalize} mode,
+	 * the block/inline distinction is not used.</p>
+	 *
+	 * <p>Use cases (with {@code mixedContent=reflow}):</p>
+	 * <ul>
+	 * <li>{@code blockElements=null} or {@code []}: no block elements
+	 *   → {@code <p>text <b>bold</b> <div>x</div></p>} stays on one line.</li>
+	 * <li>{@code blockElements=["div"]}: only {@code <div>} is block
+	 *   → {@code <div>} gets its own line, {@code <b>} stays inline.</li>
+	 * </ul>
+	 *
+	 * @param tagName the element tag name to check.
+	 * @return {@code true} if the element is block.
+	 */
+	public boolean isBlockElement(String tagName) {
+		if (blockElements == null || blockElements.isEmpty()
+				|| tagName == null || tagName.isEmpty()) {
+			return false;
+		}
+		for (String name : blockElements) {
+			if (tagName.equals(name)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public boolean isGrammarAwareFormatting() {
 		return grammarAwareFormatting;
 	}
@@ -468,6 +597,8 @@ public class XMLFormattingOptions extends org.eclipse.lemminx.settings.LSPFormat
 		setXsiSchemaLocationSplit(formattingOptions.getXsiSchemaLocationSplit());
 		// New formatter settings
 		setPreserveSpace(formattingOptions.getPreserveSpace());
+		setMixedContent(formattingOptions.getMixedContent());
+		setBlockElements(formattingOptions.getBlockElements());
 		setGrammarAwareFormatting(formattingOptions.isGrammarAwareFormatting());
 		setMaxLineWidth(formattingOptions.getMaxLineWidth());
 		return this;

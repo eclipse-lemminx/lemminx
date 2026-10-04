@@ -113,13 +113,16 @@ public class DOMElementFormatter {
 		EmptyElements emptyElements = getEmptyElements(element, formatElementCategory);
 
 		int indentLevel = parentConstraints.getIndentLevel();
+		parentConstraints.setStartTagCrossedLine(false);
 		int width = formatStartTagElement(element, parentConstraints, emptyElements, start, end, edits);
 		parentConstraints.setAvailableLineWidth(parentConstraints.getAvailableLineWidth() - width);
 
 		// Track indent level for text nodes in mixed content so they
 		// can be indented consistently with their parent element.
 		if (parentConstraints.getMixedContentIndentLevel() == 0
-				&& parentConstraints.getFormatElementCategory() == FormatElementCategory.MixedContent) {
+				&& (parentConstraints.getFormatElementCategory() == FormatElementCategory.MixedContent
+						|| (parentConstraints.getFormatElementCategory() == FormatElementCategory.IgnoreSpace
+								&& formatterDocument.isMixedContentReflow()))) {
 			parentConstraints.setMixedContentIndentLevel(indentLevel);
 		}
 
@@ -131,6 +134,17 @@ public class DOMElementFormatter {
 				constraints.setIndentLevel(indentLevel + 1);
 			}
 			constraints.setFormatElementCategory(formatElementCategory);
+			// Per-element flags, not inherited from parent.
+			constraints.setWrapAllChildren(false);
+			constraints.setSoftWrapped(false);
+			constraints.setStartTagCrossedLine(parentConstraints.isStartTagCrossedLine());
+			parentConstraints.setStartTagCrossedLine(false);
+
+			// expand mode: force all MixedContent children to block layout.
+			if (formatElementCategory == FormatElementCategory.MixedContent
+					&& formatterDocument.isMixedContentExpand()) {
+				constraints.setWrapAllChildren(true);
+			}
 
 			formatChildren(element, constraints, start, end, edits);
 
@@ -184,12 +198,52 @@ public class DOMElementFormatter {
 			break;
 
 		case MixedContent: {
-			// Phase 1: overflow handling (#1797, #1131)
-			// Move overflowing elements to new lines when maxLineWidth is enabled.
+			// Block/inline distinction only in reflow or expand mode.
+			// In normalize mode (default), all elements stay inline — backward compatible.
+			//
+			// Use case (reflow + blockElements=["div"]):
+			//   <p>text <div>details</div> <b>bold</b></p>
+			//   → <div> is block (in blockElements) → own line
+			//   → <b> is not block → stays on same line as text
+			//
+			// Use case (expand): all children get own line regardless of blockElements.
+			//
+			// Use case (normalize + blockElements=["div"]):
+			//   <p>text <div>details</div></p>
+			//   → blockElements ignored in normalize mode, all elements stay inline
+			if (formatterDocument.isMixedContentReflow()
+					&& (isBlockElement(element) || parentConstraints.isWrapAllChildren())) {
+				int parentContentStart = getParentContentStartOffset(element);
+				int replaced = replaceLeftSpacesWithIndentation(indentLevel, parentContentStart,
+						startTagOpenOffset, true, true, edits);
+				if (replaced == 0) {
+					insertIndentation(indentLevel, startTagOpenOffset, edits);
+				}
+				resetLineWidth(parentConstraints, indentLevel);
+				parentConstraints.setSoftWrapped(true);
+				break;
+			}
+			// Inline element in mixed content — stay inline with surrounding text.
+			// Soft-wrap: move to new line when the full element doesn't fit on
+			// the current line. Unlike expand mode, only overflowing elements move.
+			// Use case: <p>text <b>here</b> more <b>bold</b></p> with maxLineWidth=40
+			//   → <b>bold</b> wraps to next line only if it overflows.
 			boolean moved = false;
 			if (isMaxLineWidthSupported()) {
 				int parentContentStart = getParentContentStartOffset(element);
-				if (shouldMoveOverflowingMixedContentElement(element, parentConstraints,
+				if (formatterDocument.isMixedContentReflow()) {
+					int fullElementWidth = element.getEnd() - element.getStart();
+					if (parentConstraints.getAvailableLineWidth() - fullElementWidth < 0) {
+						int replaced = replaceLeftSpacesWithIndentation(indentLevel, parentContentStart,
+								startTagOpenOffset, true, true, edits);
+						if (replaced == 0) {
+							insertIndentation(indentLevel, startTagOpenOffset, edits);
+						}
+						resetLineWidth(parentConstraints, indentLevel);
+						parentConstraints.setSoftWrapped(true);
+						moved = true;
+					}
+				} else if (shouldMoveOverflowingMixedContentElement(element, parentConstraints,
 						width, parentContentStart, startTagOpenOffset)) {
 					int replaced = replaceLeftSpacesWithIndentation(indentLevel, parentContentStart,
 							startTagOpenOffset, true, true, edits);
@@ -554,17 +608,36 @@ public class DOMElementFormatter {
 				width += indentLevel * getTabSize();
 			}
 			break;
-		case MixedContent:
-			// Use case: <p>text <b>bold</b>  </p>
-			// When the last child is an element or comment (not text), normalize
-			// trailing whitespace before the end tag to proper indentation.
-			// Text-last: <p>text</p> — end tag stays inline (no indentation).
-			if (hasTrailingWhitespaceAfterElementOrComment(element, endTagOpenOffset)) {
+		case MixedContent: {
+			DOMNode lastContent = getLastNonWhitespaceChild(element);
+			boolean lastIsBlock = formatterDocument.isMixedContentReflow()
+					&& lastContent != null && lastContent.isElement()
+					&& isBlockElement((DOMElement) lastContent);
+			if (lastIsBlock || constraints.isWrapAllChildren()
+					|| constraints.isSoftWrapped()
+					|| constraints.isStartTagCrossedLine()) {
+				// End tag on own line when:
+				// - last child is block: <p>text <div>x</div></p> → </p> on own line
+				// - expand mode: <p>\n  text\n  <b>bold</b>\n</p>
+				// - soft-wrap occurred: content wrapped due to maxLineWidth overflow
+				boolean endTagAfterNewline = isEndTagDirectlyAfterNewline(endTagOpenOffset, startTagCloseOffset);
+				boolean joinWillRemoveNewline = endTagAfterNewline
+						&& formatterDocument.getSharedSettings().getFormattingSettings().isJoinContentLines();
+				if (!endTagAfterNewline || joinWillRemoveNewline) {
+					int replaced = replaceLeftSpacesWithIndentation(indentLevel,
+							startTagCloseOffset, endTagOpenOffset, true, true, edits);
+					if (replaced == 0) {
+						insertIndentation(indentLevel, endTagOpenOffset, edits);
+					}
+				}
+				width += indentLevel * getTabSize();
+			} else if (hasTrailingWhitespaceAfterElementOrComment(element, endTagOpenOffset)) {
 				replaceLeftSpacesWithIndentationPreservedNewLines(startTagCloseOffset, endTagOpenOffset,
 						indentLevel, edits);
 				width += indentLevel * getTabSize();
 			}
 			break;
+		}
 		case IgnoreSpace:
 			// Use case: <root>  <child/>  </root> → <root>\n  <child />\n</root>
 			// End tag always gets indented on its own line.
@@ -573,7 +646,15 @@ public class DOMElementFormatter {
 			width += indentLevel * getTabSize();
 			break;
 		case NormalizeSpace:
-			// Text-only element — end tag stays inline after the text content.
+			if (constraints.isSoftWrapped()
+					|| (constraints.isStartTagCrossedLine() && !element.isEmpty())) {
+				int replaced = replaceLeftSpacesWithIndentation(indentLevel,
+						startTagCloseOffset, endTagOpenOffset, true, true, edits);
+				if (replaced == 0) {
+					insertIndentation(indentLevel, endTagOpenOffset, edits);
+				}
+				width += indentLevel * getTabSize();
+			}
 			break;
 		}
 		// Remove extra spaces before the closing '>'
@@ -599,6 +680,23 @@ public class DOMElementFormatter {
 		}
 		char c = formatterDocument.getTextSequence().charAt(endTagOpenOffset - 1);
 		return c == '\n' || c == '\r';
+	}
+
+	/**
+	 * Returns the last child that is not a whitespace-only text node,
+	 * or {@code null} if no such child exists.
+	 *
+	 * <p>Use case: {@code <p><div>block</div>   </p>} — skips trailing whitespace
+	 * text, returns {@code <div>}.</p>
+	 */
+	private DOMNode getLastNonWhitespaceChild(DOMElement element) {
+		DOMNode child = element.getLastChild();
+		while (child != null && child.isText()
+				&& StringUtils.isWhitespace(formatterDocument.getTextSequence(),
+						child.getStart(), child.getEnd())) {
+			child = child.getPreviousSibling();
+		}
+		return child;
 	}
 
 	/**
@@ -776,6 +874,11 @@ public class DOMElementFormatter {
 	/** Delegates to {@link XMLFormatterDocument#shouldCollapseEmptyElement}. */
 	private boolean shouldCollapseEmptyElement(DOMElement element, SharedSettings settings) {
 		return formatterDocument.shouldCollapseEmptyElement(element, settings);
+	}
+
+	/** Delegates to {@link XMLFormatterDocument#isBlockElement}. */
+	private boolean isBlockElement(DOMElement element) {
+		return formatterDocument.isBlockElement(element);
 	}
 
 	/** Returns the configured maximum line width, or 0 if disabled. */

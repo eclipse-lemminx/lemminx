@@ -18,6 +18,8 @@ import java.util.Arrays;
 import org.eclipse.lemminx.XMLAssert;
 import org.eclipse.lemminx.commons.BadLocationException;
 import org.eclipse.lemminx.settings.SharedSettings;
+import org.eclipse.lemminx.settings.XMLFormattingOptions.MixedContent;
+import org.eclipse.lemminx.settings.XMLFormattingOptions.SplitAttributes;
 import org.eclipse.lsp4j.TextEdit;
 import org.junit.jupiter.api.Test;
 
@@ -149,6 +151,130 @@ public class XMLFormatterJoinContentLinesTest {
 				te(2, 5, 3, 3, " "),
 				te(3, 6, 3, 8, " "),
 				te(3, 12, 4, 0, "\n"));
+		assertFormat(expected, expected, settings);
+	}
+
+	@Test
+	public void testJoinContentLinesWithSplitAttributes() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setJoinContentLines(true);
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.splitNewLine);
+
+		String content = "<text x=\"50%\" y=\"50%\" font-size=\"60\"> SVG </text>\n";
+		String expected = "<text\n" + //
+				"    x=\"50%\"\n" + //
+				"    y=\"50%\"\n" + //
+				"    font-size=\"60\"> SVG\n" + //
+				"</text>";
+		XMLAssert.assertFormat(content, expected, settings);
+		assertFormat(expected, expected, settings);
+	}
+
+	@Test
+	public void testJoinContentLinesWithSplitAttributesMultilineContent() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setJoinContentLines(true);
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.splitNewLine);
+
+		String content = "<text\n" + //
+				"  x=\"50%\"\n" + //
+				"  y=\"50%\"\n" + //
+				"  font-size=\"60\"> SVG\n" + //
+				"</text>";
+		String expected = "<text\n" + //
+				"    x=\"50%\"\n" + //
+				"    y=\"50%\"\n" + //
+				"    font-size=\"60\"> SVG\n" + //
+				"</text>";
+		XMLAssert.assertFormat(content, expected, settings);
+		assertFormat(expected, expected, settings);
+	}
+
+	@Test
+	public void testJoinContentLinesFalseWithSplitAttributes() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setJoinContentLines(false);
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.splitNewLine);
+
+		String content = "<text x=\"50%\" y=\"50%\" font-size=\"60\"> SVG </text>\n";
+		String expected = "<text\n" + //
+				"    x=\"50%\"\n" + //
+				"    y=\"50%\"\n" + //
+				"    font-size=\"60\"> SVG\n" + //
+				"</text>";
+		XMLAssert.assertFormat(content, expected, settings);
+		assertFormat(expected, expected, settings);
+	}
+
+	@Test
+	public void testJoinContentLinesWithAlignWithFirstAttrReflow() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setJoinContentLines(true);
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.alignWithFirstAttr);
+		settings.getFormattingSettings().setMixedContent(MixedContent.reflow);
+
+		String content = "<text x=\"50%\"\n" + //
+				"      y=\"50%\"\n" + //
+				"      font-size=\"60\"> SVG </text>\n";
+		String expected = "<text x=\"50%\"\n" + //
+				"      y=\"50%\"\n" + //
+				"      font-size=\"60\"> SVG\n" + //
+				"</text>";
+		XMLAssert.assertFormat(content, expected, settings);
+		assertFormat(expected, expected, settings);
+	}
+
+	@Test
+	public void testJoinContentLinesFalseWithAlignWithFirstAttrReflow() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setJoinContentLines(false);
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.alignWithFirstAttr);
+		settings.getFormattingSettings().setMixedContent(MixedContent.reflow);
+
+		String content = "<text x=\"50%\"\n" + //
+				"      y=\"50%\"\n" + //
+				"      font-size=\"60\"> SVG </text>\n";
+		String expected = "<text x=\"50%\"\n" + //
+				"      y=\"50%\"\n" + //
+				"      font-size=\"60\"> SVG\n" + //
+				"</text>";
+		XMLAssert.assertFormat(content, expected, settings);
+		assertFormat(expected, expected, settings);
+	}
+
+	@Test
+	public void testJoinContentLinesWithAlignWithFirstAttrNormalize() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setJoinContentLines(true);
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.alignWithFirstAttr);
+		settings.getFormattingSettings().setMixedContent(MixedContent.normalize);
+
+		String content = "<text x=\"50%\"\n" + //
+				"      y=\"50%\"\n" + //
+				"      font-size=\"60\"> SVG </text>\n";
+		String expected = "<text x=\"50%\"\n" + //
+				"      y=\"50%\"\n" + //
+				"      font-size=\"60\"> SVG\n" + //
+				"</text>";
+		XMLAssert.assertFormat(content, expected, settings);
+		assertFormat(expected, expected, settings);
+	}
+
+	@Test
+	public void testJoinContentLinesFalseWithAlignWithFirstAttrNormalize() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setJoinContentLines(false);
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.alignWithFirstAttr);
+		settings.getFormattingSettings().setMixedContent(MixedContent.normalize);
+
+		String content = "<text x=\"50%\"\n" + //
+				"      y=\"50%\"\n" + //
+				"      font-size=\"60\"> SVG </text>\n";
+		String expected = "<text x=\"50%\"\n" + //
+				"      y=\"50%\"\n" + //
+				"      font-size=\"60\"> SVG\n" + //
+				"</text>";
+		XMLAssert.assertFormat(content, expected, settings);
 		assertFormat(expected, expected, settings);
 	}
 
