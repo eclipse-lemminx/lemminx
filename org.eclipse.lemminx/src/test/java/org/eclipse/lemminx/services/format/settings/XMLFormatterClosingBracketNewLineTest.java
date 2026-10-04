@@ -215,6 +215,144 @@ public class XMLFormatterClosingBracketNewLineTest {
 		assertFormat(expected, expected, settings);
 	}
 
+	// --- Issue #1649: closingBracketNewLine fails with inner text ---
+
+	// Use case (#1649): alignWithFirstAttr + closingBracketNewLine + text content
+	// Text should go on its own line after the closing bracket
+	@Test
+	public void testClosingBracketNewLineWithTextAlignWithFirstAttr() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.alignWithFirstAttr);
+		settings.getFormattingSettings().setClosingBracketNewLine(true);
+		String content = "<text x=\"50%\" y=\"50%\" font-size=\"60\">SVG</text>";
+		String expected = "<text x=\"50%\"" + lineSeparator() + //
+				"      y=\"50%\"" + lineSeparator() + //
+				"      font-size=\"60\"" + lineSeparator() + //
+				"      >" + lineSeparator() + //
+				"  SVG" + lineSeparator() + //
+				"</text>";
+		assertFormat(content, expected, settings);
+		assertFormat(expected, expected, settings);
+	}
+
+	// Use case (#1649): splitNewLine + closingBracketNewLine + text content
+	@Test
+	public void testClosingBracketNewLineWithTextSplitNewLine() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.splitNewLine);
+		settings.getFormattingSettings().setSplitAttributesIndentSize(0);
+		settings.getFormattingSettings().setClosingBracketNewLine(true);
+		String content = "<a b='b' c='c'>text</a>";
+		String expected = "<a" + lineSeparator() + //
+				"b='b'" + lineSeparator() + //
+				"c='c'" + lineSeparator() + //
+				">" + lineSeparator() + //
+				"  text" + lineSeparator() + //
+				"</a>";
+		assertFormat(content, expected, settings);
+		assertFormat(expected, expected, settings);
+	}
+
+	// Use case (#1649): splitNewLine + default indentSize + text content
+	@Test
+	public void testClosingBracketNewLineWithTextSplitNewLineDefaultIndent() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.splitNewLine);
+		settings.getFormattingSettings().setClosingBracketNewLine(true);
+		String content = "<a b='b' c='c'>text</a>";
+		String expected = "<a" + lineSeparator() + //
+				"    b='b'" + lineSeparator() + //
+				"    c='c'" + lineSeparator() + //
+				"    >" + lineSeparator() + //
+				"  text" + lineSeparator() + //
+				"</a>";
+		assertFormat(content, expected, settings);
+		assertFormat(expected, expected, settings);
+	}
+
+	// Use case (#1649): closingBracketNewLine + text with leading/trailing spaces
+	@Test
+	public void testClosingBracketNewLineWithTextAndSpaces() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.alignWithFirstAttr);
+		settings.getFormattingSettings().setClosingBracketNewLine(true);
+		String content = "<a b='b' c='c'> text </a>";
+		String expected = "<a b='b'" + lineSeparator() + //
+				"   c='c'" + lineSeparator() + //
+				"   >" + lineSeparator() + //
+				"  text" + lineSeparator() + //
+				"</a>";
+		assertFormat(content, expected, settings);
+		assertFormat(expected, expected, settings);
+	}
+
+	// Use case (#1649): closingBracketNewLine + multi-word text content
+	@Test
+	public void testClosingBracketNewLineWithMultiWordText() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.alignWithFirstAttr);
+		settings.getFormattingSettings().setClosingBracketNewLine(true);
+		String content = "<a b='b' c='c'>hello world</a>";
+		String expected = "<a b='b'" + lineSeparator() + //
+				"   c='c'" + lineSeparator() + //
+				"   >" + lineSeparator() + //
+				"  hello world" + lineSeparator() + //
+				"</a>";
+		assertFormat(content, expected, settings);
+		assertFormat(expected, expected, settings);
+	}
+
+	// Use case (#1649): closingBracketNewLine + text content in nested element
+	@Test
+	public void testClosingBracketNewLineWithTextNested() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.alignWithFirstAttr);
+		settings.getFormattingSettings().setClosingBracketNewLine(true);
+		String content = "<root>\n" + //
+				"  <text x=\"50%\" y=\"50%\">SVG</text>\n" + //
+				"</root>";
+		String expected = "<root>\n" + //
+				"  <text x=\"50%\"\n" + //
+				"        y=\"50%\"\n" + //
+				"        >\n" + //
+				"    SVG\n" + //
+				"  </text>\n" + //
+				"</root>";
+		assertFormat(content, expected, settings);
+		assertFormat(expected, expected, settings);
+	}
+
+	// Use case (#1649): closingBracketNewLine with single attribute — no effect,
+	// text stays inline (single attribute means no split)
+	@Test
+	public void testClosingBracketNewLineWithTextSingleAttribute() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.splitNewLine);
+		settings.getFormattingSettings().setSplitAttributesIndentSize(0);
+		settings.getFormattingSettings().setClosingBracketNewLine(true);
+		String content = "<a b='b'>text</a>";
+		String expected = "<a b='b'>text</a>";
+		assertFormat(content, expected, settings);
+		assertFormat(expected, expected, settings);
+	}
+
+	// Use case (#1649): closingBracketNewLine with text, self-closing is unaffected
+	// (self-closing has no inner text)
+	@Test
+	public void testClosingBracketNewLineTextDoesNotAffectSelfClosing() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.splitNewLine);
+		settings.getFormattingSettings().setSplitAttributesIndentSize(0);
+		settings.getFormattingSettings().setClosingBracketNewLine(true);
+		String content = "<a b='' c=''/>";
+		String expected = "<a" + lineSeparator() + //
+				"b=''" + lineSeparator() + //
+				"c=''" + lineSeparator() + //
+				"/>";
+		assertFormat(content, expected, settings);
+		assertFormat(expected, expected, settings);
+	}
+
 	private static void assertFormat(String unformatted, String expected, SharedSettings sharedSettings,
 			TextEdit... expectedEdits) throws BadLocationException {
 		assertFormat(unformatted, expected, sharedSettings, "test://test.html", expectedEdits);

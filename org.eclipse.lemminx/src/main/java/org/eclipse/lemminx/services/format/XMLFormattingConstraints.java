@@ -78,6 +78,15 @@ public class XMLFormattingConstraints {
 	private int mixedContentIndentLevel = 0;
 
 	/**
+	 * True when {@code closingBracketNewLine} placed the start tag's
+	 * closing bracket ({@code >}) on its own line. Tells
+	 * {@link DOMTextFormatter} to move the first text content to a new
+	 * line and {@link DOMElementFormatter} to place the end tag on its
+	 * own line.
+	 */
+	private boolean closingBracketNewLine = false;
+
+	/**
 	 * Copies all constraint values from another instance.
 	 * Used to create child constraints from the parent before formatting
 	 * an element's children.
@@ -89,6 +98,7 @@ public class XMLFormattingConstraints {
 		setAvailableLineWidth(constraints.getAvailableLineWidth());
 		setIndentLevel(constraints.getIndentLevel());
 		setMixedContentIndentLevel(constraints.getMixedContentIndentLevel());
+		setClosingBracketNewLine(constraints.isClosingBracketNewLine());
 	}
 
 	/**
@@ -163,6 +173,24 @@ public class XMLFormattingConstraints {
 	 */
 	public void setMixedContentIndentLevel(int mixedContentIndentLevel) {
 		this.mixedContentIndentLevel = mixedContentIndentLevel;
+	}
+
+	/**
+	 * Returns whether the start tag's closing bracket was placed on a new line.
+	 *
+	 * @return true if closing bracket is on a new line.
+	 */
+	public boolean isClosingBracketNewLine() {
+		return closingBracketNewLine;
+	}
+
+	/**
+	 * Sets whether the start tag's closing bracket was placed on a new line.
+	 *
+	 * @param closingBracketNewLine true if closing bracket is on a new line.
+	 */
+	public void setClosingBracketNewLine(boolean closingBracketNewLine) {
+		this.closingBracketNewLine = closingBracketNewLine;
 	}
 
 }

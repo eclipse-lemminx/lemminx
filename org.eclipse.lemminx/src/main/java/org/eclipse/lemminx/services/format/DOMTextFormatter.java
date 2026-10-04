@@ -136,6 +136,7 @@ public class DOMTextFormatter {
 		int spaceEnd = -1;
 		int lineSeparatorOffset = -1;
 		boolean containsNewLine = false;
+		boolean closingBracketHandled = false;
 
 		int textStart = textNode.getStart();
 		int textEnd = textNode.getEnd();
@@ -163,6 +164,22 @@ public class DOMTextFormatter {
 					i++;
 				}
 				int contentEnd = i + 1;
+				// #1649: closingBracketNewLine — move first text to new line
+				if (!closingBracketHandled && parentConstraints.isClosingBracketNewLine()
+						&& formatElementCategory == FormatElementCategory.NormalizeSpace) {
+					closingBracketHandled = true;
+					int replaceFrom = spaceStart != -1 ? spaceStart : contentStart;
+					replaceLeftSpacesWithIndentation(indentLevel, replaceFrom, contentStart,
+							true, edits);
+					if (isMaxLineWidthSupported()) {
+						availableLineWidth = formatterDocument.getNewLineAvailableWidth(indentLevel)
+								- (contentEnd - contentStart);
+					}
+					spaceStart = -1;
+					spaceEnd = -1;
+					containsNewLine = false;
+					continue;
+				}
 				if (isMaxLineWidthSupported()) {
 					availableLineWidth -= contentEnd - contentStart;
 					if (textStart != contentStart && availableLineWidth >= 0
@@ -208,7 +225,11 @@ public class DOMTextFormatter {
 		if (spaceStart != -1 && spaceEnd == -1 && containsNewLine) {
 			spaceEnd = spaceStart;
 		}
-		if (formatElementCategory != FormatElementCategory.IgnoreSpace && spaceEnd + 1 != text.length()) {
+		// #1649: trailing whitespace handled by formatEndTagElement
+		if (parentConstraints.isClosingBracketNewLine()
+				&& formatElementCategory == FormatElementCategory.NormalizeSpace) {
+			// skip — formatEndTagElement places end tag on new line
+		} else if (formatElementCategory != FormatElementCategory.IgnoreSpace && spaceEnd + 1 != text.length()) {
 			// Don't format final spaces if text is at the end of the file
 			if (formatElementCategory == FormatElementCategory.NormalizeSpace
 					&& isMaxLineWidthSupported() && availableLineWidth < 0

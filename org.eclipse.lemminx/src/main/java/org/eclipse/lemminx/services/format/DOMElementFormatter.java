@@ -131,6 +131,9 @@ public class DOMElementFormatter {
 				constraints.setIndentLevel(indentLevel + 1);
 			}
 			constraints.setFormatElementCategory(formatElementCategory);
+			if (shouldFormatClosingBracketNewLine(element)) {
+				constraints.setClosingBracketNewLine(true);
+			}
 
 			formatChildren(element, constraints, start, end, edits);
 
@@ -573,7 +576,14 @@ public class DOMElementFormatter {
 			width += indentLevel * getTabSize();
 			break;
 		case NormalizeSpace:
-			// Text-only element — end tag stays inline after the text content.
+			// Text-only element — end tag stays inline unless closingBracketNewLine
+			// placed > on its own line (#1649) AND element has content, in which
+			// case the end tag goes on a new line at the parent's indent level.
+			if (constraints.isClosingBracketNewLine() && element.hasChildNodes()) {
+				replaceLeftSpacesWithIndentation(indentLevel, startTagCloseOffset,
+						endTagOpenOffset, true, edits);
+				width += indentLevel * getTabSize();
+			}
 			break;
 		}
 		// Remove extra spaces before the closing '>'
