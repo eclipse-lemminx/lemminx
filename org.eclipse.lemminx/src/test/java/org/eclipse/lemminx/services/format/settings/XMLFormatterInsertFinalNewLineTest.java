@@ -104,6 +104,71 @@ public class XMLFormatterInsertFinalNewLineTest extends AbstractCacheBasedTest {
 				te(1, 0, 2, 0, ""));
 	}
 
+	// Use case: insertFinalNewline=true with range format — final newline not
+	// inserted when range doesn't include end of document
+	@Test
+	public void testDontInsertFinalNewLineWithRange() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setInsertFinalNewline(true);
+		String content = "<div  class = \"foo\">\r\n" + //
+				"  |<img  src = \"foo\"|/>\r\n" + //
+				" </div>";
+		String expected = "<div  class = \"foo\">\r\n" + //
+				"  <img src=\"foo\" />\r\n" + //
+				" </div>";
+		assertFormat(content, expected, settings, //
+				te(1, 6, 1, 8, " "), //
+				te(1, 11, 1, 12, ""), //
+				te(1, 13, 1, 14, ""), //
+				te(1, 19, 1, 19, " "));
+	}
+
+	// Use case: insertFinalNewline=true with range including end of document
+	// — final newline IS inserted
+	@Test
+	public void testInsertFinalNewLineWithRange2() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setInsertFinalNewline(true);
+		String content = "<div  class = \"foo\">\r\n" + //
+				"  |<img  src = \"foo\"/>\r\n" + //
+				" </div>|";
+		String expected = "<div  class = \"foo\">\r\n" + //
+				"  <img src=\"foo\" />\r\n" + //
+				"</div>\r\n";
+		assertFormat(content, expected, settings, //
+				te(1, 6, 1, 8, " "), //
+				te(1, 11, 1, 12, ""), //
+				te(1, 13, 1, 14, ""), //
+				te(1, 19, 1, 19, " "), //
+				te(1, 21, 2, 1, "\r\n"), //
+				te(2, 7, 2, 7, "\r\n"));
+	}
+
+	// Use case: insertFinalNewline=true with range including blank lines
+	// — blank lines inside range preserved, final newline not inserted (range
+	// doesn't reach end of document)
+	@Test
+	public void testInsertFinalNewLineWithRange3() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setInsertFinalNewline(true);
+		String content = "<div  class = \"foo\">\r\n" + //
+				"  |<img  src = \"foo\"/>\r\n" + //
+				"\r\n" + "|" + "\r\n" + //
+				"<h1></h1>\r\n" + //
+				" </div>";
+		String expected = "<div  class = \"foo\">\r\n" + //
+				"  <img src=\"foo\" />\r\n" + //
+				"\r\n" + //
+				"\r\n" + //
+				"<h1></h1>" + "\r\n" + //
+				" </div>";
+		assertFormat(content, expected, settings, //
+				te(1, 6, 1, 8, " "), //
+				te(1, 11, 1, 12, ""), //
+				te(1, 13, 1, 14, ""), //
+				te(1, 19, 1, 19, " "));
+	}
+
 	private static void assertFormat(String unformatted, String actual, TextEdit... expectedEdits)
 			throws BadLocationException {
 		assertFormat(unformatted, actual, new SharedSettings(), expectedEdits);
