@@ -34,6 +34,7 @@ import org.eclipse.lemminx.extensions.contentmodel.model.CMDocument;
 import org.eclipse.lemminx.services.extensions.format.IFormatterParticipant;
 import org.eclipse.lemminx.settings.SharedSettings;
 import org.eclipse.lemminx.settings.XMLFormattingOptions;
+import org.eclipse.lemminx.settings.XMLFormattingOptions.MixedContent;
 import org.eclipse.lemminx.utils.StringUtils;
 import org.eclipse.lemminx.utils.TextEditUtils;
 import org.eclipse.lsp4j.Position;
@@ -1042,6 +1043,12 @@ public class XMLFormatterDocument {
 				}
 			}
 			if (hasElement && hasText) {
+				// Use case: <p>text <b>bold</b> more</p>
+				// mixedContent=preserve → don't reformat (PreserveSpace)
+				// mixedContent=reflow → MixedContent (smart formatting)
+				if (getFormattingSettings().getMixedContent() == MixedContent.preserve) {
+					return FormatElementCategory.PreserveSpace;
+				}
 				return FormatElementCategory.MixedContent;
 			}
 		}
@@ -1270,6 +1277,49 @@ public class XMLFormatterDocument {
 			}
 		}
 		return newLineCounter;
+	}
+
+	/**
+	 * Returns {@code true} if the given element is an inline element
+	 * in mixed content.
+	 *
+	 * <p>Use case: in {@code <p>text <b>bold</b> <div>block</div></p>}
+	 * with {@code blockElements=["div"]}, {@code <div>} gets block treatment
+	 * (own line) while {@code <b>} stays inline with text.</p>
+	 *
+	 * @param element the element to check.
+	 * @return {@code true} if the element is block.
+	 */
+	public boolean isBlockElement(DOMElement element) {
+		return getFormattingSettings().isBlockElement(element.getTagName());
+	}
+
+	/**
+	 * Returns {@code true} when {@code mixedContent} is {@code reflow}
+	 * or {@code expand}. When {@code false} (default {@code normalize}),
+	 * newlines within text nodes are collapsed to spaces (but line breaks
+	 * in whitespace-only gaps between sibling elements are still preserved).
+	 * {@code blockElements} is ignored in {@code normalize} mode.
+	 *
+	 * <p>Use cases:</p>
+	 * <ul>
+	 * <li>{@code normalize} (default) → {@code false}: newlines in text
+	 *   nodes joined to spaces, line breaks between elements preserved.
+	 *   {@code <p>text\n<b>bold</b></p>}
+	 *   → {@code <p>text <b>bold</b></p>}.</li>
+	 * <li>{@code reflow} → {@code true}: newlines in text nodes preserved,
+	 *   block/inline distinction via {@code blockElements},
+	 *   soft-wrap at {@code maxLineWidth}.</li>
+	 * <li>{@code expand} → {@code true}: all children on own lines.</li>
+	 * </ul>
+	 */
+	public boolean isMixedContentReflow() {
+		MixedContent mc = getFormattingSettings().getMixedContent();
+		return mc == MixedContent.reflow || mc == MixedContent.expand;
+	}
+
+	public boolean isMixedContentExpand() {
+		return getFormattingSettings().getMixedContent() == MixedContent.expand;
 	}
 
 	/** Returns true if {@code maxLineWidth} is set (non-zero). */

@@ -114,14 +114,17 @@ public class DOMAttributeFormatter {
 			if (isPreserveAttributeLineBreaks() && hasLineBreak(prevOffset, attr.getStart())) {
 				replaceLeftSpacesWithIndentation(indentLevel + 1, prevOffset, attr.getStart(), true, edits);
 				alreadyIndented = true;
+				parentConstraints.setStartTagCrossedLine(true);
 			} else if (getSplitAttributes() == SplitAttributes.splitNewLine && !singleAttribute) {
 				replaceLeftSpacesWithIndentation(indentLevel + getSplitAttributesIndentSize(), prevOffset,
 						attr.getStart(), true, edits);
 				alreadyIndented = true;
+				parentConstraints.setStartTagCrossedLine(true);
 			} else if (getSplitAttributes() == SplitAttributes.alignWithFirstAttr && !isFirstAttr) {
 				replaceLeftSpacesWithIndentationWithOffsetSpaces(getFirstAttrOffset(attr.getOwnerElement(), indentLevel), prevOffset,
 						attr.getStart(), edits);
 				alreadyIndented = true;
+				parentConstraints.setStartTagCrossedLine(true);
 			}
 		}
 
@@ -168,6 +171,7 @@ public class DOMAttributeFormatter {
 			if (isMaxLineWidthSupported() && parentConstraints.getAvailableLineWidth() < 0
 					&& getSplitAttributes() == SplitAttributes.preserve) {
 				replaceLeftSpacesWithIndentation(indentLevel + 1, from, to, true, edits);
+				parentConstraints.setStartTagCrossedLine(true);
 				int attrValuelength = attr.getValue() != null ? attr.getValue().length() : 0;
 				parentConstraints.setAvailableLineWidth(
 						getMaxLineWidth() - getTabSize() * (indentLevel + 1) - attributeNamelength

@@ -78,6 +78,32 @@ public class XMLFormattingConstraints {
 	private int mixedContentIndentLevel = 0;
 
 	/**
+	 * When {@code true}, all child elements in a MixedContent parent are
+	 * formatted as block elements (each on its own line), regardless of the
+	 * {@code blockElements} setting. Only used in {@code expand} mode.
+	 */
+	private boolean wrapAllChildren = false;
+
+	/**
+	 * Set to {@code true} when text or elements are soft-wrapped to a new
+	 * line due to {@code maxLineWidth} overflow in {@code normalize} mode.
+	 * Used by the end tag handler to put the closing tag on its own line.
+	 *
+	 * <p>Use case: {@code <p>Click <b>here</b> to see the <b>details</b></p>}
+	 * with {@code maxLineWidth=40} → {@code <b>details</b>} wraps, so
+	 * {@code </p>} goes on its own line.</p>
+	 */
+	private boolean softWrapped = false;
+
+	/**
+	 * Set to {@code true} when the formatter emits a newline before an
+	 * attribute during the current formatting pass. Tracked per-element
+	 * to detect multi-line start tags in the formatted output (not the
+	 * original document).
+	 */
+	private boolean startTagCrossedLine = false;
+
+	/**
 	 * Copies all constraint values from another instance.
 	 * Used to create child constraints from the parent before formatting
 	 * an element's children.
@@ -89,6 +115,7 @@ public class XMLFormattingConstraints {
 		setAvailableLineWidth(constraints.getAvailableLineWidth());
 		setIndentLevel(constraints.getIndentLevel());
 		setMixedContentIndentLevel(constraints.getMixedContentIndentLevel());
+		setWrapAllChildren(constraints.isWrapAllChildren());
 	}
 
 	/**
@@ -163,6 +190,55 @@ public class XMLFormattingConstraints {
 	 */
 	public void setMixedContentIndentLevel(int mixedContentIndentLevel) {
 		this.mixedContentIndentLevel = mixedContentIndentLevel;
+	}
+
+	/**
+	 * Returns {@code true} if all children should be formatted as block
+	 * elements (one child per line). Only used in {@code expand} mode.
+	 *
+	 * <p>Use case: {@code <p>text <b>bold</b></p>} with {@code mixedContent=expand}
+	 * → {@code <p>\n  text\n  <b>bold</b>\n</p>}.</p>
+	 *
+	 * @return {@code true} if wrap-all-children mode is active.
+	 */
+	public boolean isWrapAllChildren() {
+		return wrapAllChildren;
+	}
+
+	/**
+	 * Sets the wrap-all-children flag.
+	 *
+	 * @param wrapAllChildren {@code true} to force all children to block layout.
+	 */
+	public void setWrapAllChildren(boolean wrapAllChildren) {
+		this.wrapAllChildren = wrapAllChildren;
+	}
+
+	/**
+	 * Returns {@code true} if content was soft-wrapped due to
+	 * {@code maxLineWidth} overflow during child formatting.
+	 *
+	 * @return {@code true} if soft wrapping occurred.
+	 */
+	public boolean isSoftWrapped() {
+		return softWrapped;
+	}
+
+	/**
+	 * Sets the soft-wrapped flag.
+	 *
+	 * @param softWrapped {@code true} when text or element wrapping occurred.
+	 */
+	public void setSoftWrapped(boolean softWrapped) {
+		this.softWrapped = softWrapped;
+	}
+
+	public boolean isStartTagCrossedLine() {
+		return startTagCrossedLine;
+	}
+
+	public void setStartTagCrossedLine(boolean startTagCrossedLine) {
+		this.startTagCrossedLine = startTagCrossedLine;
 	}
 
 }
