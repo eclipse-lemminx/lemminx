@@ -59,7 +59,7 @@ public class LogHelper {
 			if (!StringUtils.isBlank(path)) {
 				createDirectoryPath(path);
 				try {
-					FileHandler fh = LogHelper.getFileHandler(path);
+					FileHandler fh = getFileHandler(path);
 					logger.addHandler(fh);
 				} catch (SecurityException | IOException e) {
 					logger.warning("Error at creation of FileHandler for logging");
@@ -123,7 +123,7 @@ public class LogHelper {
 			FileHandler fh = null;
 			fh = new FileHandler(filePath, true);
 			fh.setFormatter(new SimpleFormatter());
-			fh.setLevel(Level.INFO);
+			fh.setLevel(getLogLevel());
 			return fh;
 		}
 		throw new IOException("Cannot write file since it cannot be written to");
