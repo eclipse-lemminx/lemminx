@@ -40,6 +40,8 @@ public class XMLBuilder {
 	private final Collection<IFormatterParticipant> formatterParticipants;
 
 	private int initialLineWidth;
+	private int lastElementNameLength;
+	private boolean firstAttrOnTagLine;
 
 	private static final Logger LOGGER = Logger.getLogger(XMLBuilder.class.getName());
 
@@ -67,11 +69,16 @@ public class XMLBuilder {
 
 	public XMLBuilder startElement(String prefix, String name, boolean close) {
 		append("<");
+		int nameLen = 0;
 		if (prefix != null && !prefix.isEmpty()) {
 			append(prefix);
 			append(":");
+			nameLen = prefix.length() + 1;
 		}
 		append(name);
+		nameLen += name != null ? name.length() : 0;
+		this.lastElementNameLength = nameLen;
+		this.firstAttrOnTagLine = false;
 		if (close) {
 			closeStartElement();
 		}
@@ -146,6 +153,7 @@ public class XMLBuilder {
 	 */
 	private XMLBuilder addSingleAttribute(String name, String value, boolean surroundWithQuotes, boolean prependSpace,
 			DOMAttr attr) {
+		this.firstAttrOnTagLine = true;
 		if (prependSpace) {
 			appendSpace();
 		}
@@ -178,9 +186,15 @@ public class XMLBuilder {
 	 * @return
 	 */
 	public XMLBuilder addAttribute(String name, String value, int level, boolean surroundWithQuotes) {
-		if (getSplitAttributes() == SplitAttributes.splitNewLine) {
+		if (getSplitAttributes().isAlwaysSplit()) {
 			linefeed();
-			indent(level + sharedSettings.getFormattingSettings().getSplitAttributesIndentSize());
+			if (getSplitAttributes().isAlignWithFirstAttr() && firstAttrOnTagLine) {
+				indentToFirstAttrOffset();
+			} else if (getSplitAttributes().isAlignWithFirstAttr()) {
+				indent(level + 1);
+			} else {
+				indent(level + sharedSettings.getFormattingSettings().getSplitAttributesIndentSize());
+			}
 		} else if (isMaxLineWidthExceeded(name, value, surroundWithQuotes)) {
 			linefeed();
 			indent(level + 1);
@@ -197,9 +211,15 @@ public class XMLBuilder {
 	}
 
 	private XMLBuilder addAttribute(DOMAttr attr, int level, boolean surroundWithQuotes) {
-		if (getSplitAttributes()== SplitAttributes.splitNewLine) {
+		if (getSplitAttributes().isAlwaysSplit()) {
 			linefeed();
-			indent(level + sharedSettings.getFormattingSettings().getSplitAttributesIndentSize());
+			if (getSplitAttributes().isAlignWithFirstAttr() && firstAttrOnTagLine) {
+				indentToFirstAttrOffset();
+			} else if (getSplitAttributes().isAlignWithFirstAttr()) {
+				indent(level + 1);
+			} else {
+				indent(level + sharedSettings.getFormattingSettings().getSplitAttributesIndentSize());
+			}
 		} else {
 			appendSpace();
 		}
@@ -369,6 +389,15 @@ public class XMLBuilder {
 			}
 		}
 		return this;
+	}
+
+	private void indentToFirstAttrOffset() {
+		// +1 for '<', +1 for space before first attr
+		// indent level is already handled by linefeed() which appends whitespacesIndent
+		int offset = lastElementNameLength + 2;
+		for (int i = 0; i < offset; i++) {
+			appendSpace();
+		}
 	}
 
 	public XMLBuilder startPrologOrPI(String tagName) {

@@ -16,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.lemminx.dom.DOMAttr;
+import org.eclipse.lemminx.dom.DOMElement;
 import org.eclipse.lemminx.extensions.xsi.XSISchemaModel;
 import org.eclipse.lemminx.extensions.xsi.settings.XSISchemaLocationSplit;
 import org.eclipse.lemminx.services.extensions.format.IFormatterParticipant;
@@ -187,15 +188,22 @@ public class XSIFormatterParticipant implements IFormatterParticipant {
 
 		int tabSize = formattingOptions.getTabSize();
 		int indentSpaceOffset;
-		int startOfLineOffset = formatterDocument.getLineAtOffset(attr.getOwnerElement().getStart());
+		DOMElement ownerElement = attr.getOwnerElement();
+		int startOfLineOffset = ownerElement != null
+				? formatterDocument.getLineAtOffset(ownerElement.getStart())
+				: formatterDocument.getLineAtOffset(attr.getStart());
 
-		if (formattingOptions.getSplitAttributes() != SplitAttributes.preserve) {
-			if (formattingOptions.getSplitAttributes() == SplitAttributes.splitNewLine) {
+		if (!formattingOptions.getSplitAttributes().isPreserve()) {
+			if (formattingOptions.getSplitAttributes().isAlignWithFirstAttr() && ownerElement != null) {
+				// force-aligned, alignWithFirstAttr, aligned-multiple, preserve-aligned:
+				// align xsi:schemaLocation with the first attribute
+				indentSpaceOffset = (attrValueStart + 1) - attr.getNodeAttrName().getStart()
+						+ ownerElement.getTagName().length() + 2;
+			} else {
+				// force, force-expand-multiline, splitNewLine, auto:
+				// indent xsi:schemaLocation with splitAttributesIndentSize
 				indentSpaceOffset = (attrValueStart + 1) - attr.getNodeAttrName().getStart()
 						+ formattingOptions.getSplitAttributesIndentSize() * tabSize;
-			} else {
-				indentSpaceOffset = (attrValueStart + 1) - attr.getNodeAttrName().getStart()
-						+ attr.getOwnerElement().getTagName().length() + 2;
 			}
 		} else if (formattingOptions.isPreserveAttributeLineBreaks()) {
 			indentSpaceOffset = attrValueStart - formatterDocument.getOffsetWithPreserveLineBreaks(startOfLineOffset,
@@ -218,7 +226,7 @@ public class XSIFormatterParticipant implements IFormatterParticipant {
 				availableLineWidth -= i - lastAttrValueTermIndex;
 				lastAttrValueTermIndex = i;
 				if (availableLineWidth < 0 && formatterDocument.isMaxLineWidthSupported()
-						&& formattingOptions.getSplitAttributes() == SplitAttributes.preserve) {
+						&& formattingOptions.getSplitAttributes().isPreserve()) {
 					indentSpaceOffset = (attrValueStart + 1) - attr.getNodeAttrName().getStart()
 							+ (parentConstraints.getIndentLevel() + 1) * tabSize;
 				}

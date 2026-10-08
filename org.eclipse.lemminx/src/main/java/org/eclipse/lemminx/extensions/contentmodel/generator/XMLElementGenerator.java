@@ -28,6 +28,7 @@ import org.eclipse.lemminx.extensions.contentmodel.model.CMElementDeclaration;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
 import org.eclipse.lemminx.services.extensions.ISharedSettingsRequest;
 import org.eclipse.lemminx.settings.SharedSettings;
+import org.eclipse.lemminx.settings.XMLFormattingOptions.SplitAttributes;
 import org.eclipse.lemminx.utils.MarkupContentFactory;
 import org.eclipse.lemminx.utils.StringUtils;
 import org.eclipse.lemminx.utils.XMLBuilder;
@@ -49,6 +50,7 @@ public class XMLElementGenerator {
 	private final DOMNode node;
 	private boolean useTypeDefaults;
 	private boolean forDocumentGeneration;
+	private boolean rootHasBindingAttributes;
 
 	private String rootNamespace;
 	private Map<String, String> namespacePrefixes;
@@ -101,6 +103,10 @@ public class XMLElementGenerator {
 
 	void setForDocumentGeneration(boolean forDocumentGeneration) {
 		this.forDocumentGeneration = forDocumentGeneration;
+	}
+
+	void setRootHasBindingAttributes(boolean rootHasBindingAttributes) {
+		this.rootHasBindingAttributes = rootHasBindingAttributes;
 	}
 
 	private String computeElementPrefix(CMElementDeclaration element) {
@@ -230,7 +236,8 @@ public class XMLElementGenerator {
 		}
 		// Attributes
 		Collection<CMAttributeDeclaration> attributes = elementDeclaration.getAttributes();
-		snippetIndex = generate(attributes, level, snippetIndex, xml, elementDeclaration.getLocalName(), hasXsiType);
+		boolean hasExtraAttributes = hasXsiType || (level == 0 && rootHasBindingAttributes);
+		snippetIndex = generate(attributes, level, snippetIndex, xml, elementDeclaration.getLocalName(), hasExtraAttributes);
 		// Elements children
 		if (children.size() > 0) {
 			xml.closeStartElement();
@@ -320,6 +327,12 @@ public class XMLElementGenerator {
 		// - required attributes
 		// - mapping between namespace / prefix for required attributes
 		boolean generateXmlnsAttr = false;
+
+		SplitAttributes splitAttr = sharedSettings.getFormattingSettings().getSplitAttributes();
+		boolean keepFirstOnTagLine = splitAttr.isAlwaysSplit() && !splitAttr.isExpandFirstAttribute()
+				&& !hasExtraAttributes;
+		boolean isFirstAttrOfElement = !hasExtraAttributes;
+
 		for (CMAttributeDeclaration att : attributes) {
 			// required attributes
 			if (att.isRequired()) {
@@ -338,8 +351,12 @@ public class XMLElementGenerator {
 							prefix = att.getOwnerElementDeclaration().getPrefix(namespace);
 							if (prefix != null) {
 								if (!"xml".equals(prefix)) {
-									// Generate an xmlns:prefix attribute to declare the namespace.
-									xml.addAttribute("xmlns:" + prefix, namespace, level, true);
+									if (isFirstAttrOfElement && keepFirstOnTagLine) {
+										xml.addSingleAttribute("xmlns:" + prefix, namespace, true);
+										isFirstAttrOfElement = false;
+									} else {
+										xml.addAttribute("xmlns:" + prefix, namespace, level, true);
+									}
 									generateXmlnsAttr = true;
 								}
 							}
@@ -367,7 +384,10 @@ public class XMLElementGenerator {
 			String value = generateAttributeValue(defaultValue, enumerationValues, canSupportSnippets, snippetIndex,
 					false, sharedSettings);
 			String attrName = attributeDeclaration.getName(prefixes);
-			if (attributesSize != 1 || generateXmlnsAttr || hasExtraAttributes) {
+			if (isFirstAttrOfElement && keepFirstOnTagLine) {
+				xml.addSingleAttribute(attrName, value, true);
+				isFirstAttrOfElement = false;
+			} else if (attributesSize != 1 || generateXmlnsAttr || hasExtraAttributes) {
 				xml.addAttribute(attrName, value, level, true);
 			} else {
 				xml.addSingleAttribute(attrName, value, true);
