@@ -108,23 +108,36 @@ public class DOMAttributeFormatter {
 		// Use case: <foo[space][space]attr="" → <foo[space]attr=""
 		boolean alreadyIndented = false;
 		if (useSettings) {
+			SplitAttributes splitAttr = getSplitAttributes();
 			// Apply split/line-break settings to position the attribute.
-			// Use case (preserveAttributeLineBreaks): keep existing line breaks
-			//   <foo\n  attr=""> → stays as-is with proper indent
 			if (isPreserveAttributeLineBreaks() && hasLineBreak(prevOffset, attr.getStart())) {
-				replaceLeftSpacesWithIndentation(indentLevel + 1, prevOffset, attr.getStart(), true, edits);
+				// Preserve existing line breaks; align or indent depending on mode.
+				// Use case (preserve-aligned): <el a="1"\n  b="2"> → <el a="1"\n      b="2">
+				if (splitAttr.isAlignWithFirstAttr() && !isFirstAttr) {
+					replaceLeftSpacesWithIndentationWithOffsetSpaces(
+							getFirstAttrOffset(attr.getOwnerElement(), indentLevel), prevOffset,
+							attr.getStart(), edits);
+				} else {
+					replaceLeftSpacesWithIndentation(indentLevel + 1, prevOffset, attr.getStart(), true, edits);
+				}
 				alreadyIndented = true;
 				parentConstraints.setStartTagCrossedLine(true);
-			} else if (getSplitAttributes() == SplitAttributes.splitNewLine && !singleAttribute) {
-				replaceLeftSpacesWithIndentation(indentLevel + getSplitAttributesIndentSize(), prevOffset,
-						attr.getStart(), true, edits);
-				alreadyIndented = true;
-				parentConstraints.setStartTagCrossedLine(true);
-			} else if (getSplitAttributes() == SplitAttributes.alignWithFirstAttr && !isFirstAttr) {
-				replaceLeftSpacesWithIndentationWithOffsetSpaces(getFirstAttrOffset(attr.getOwnerElement(), indentLevel), prevOffset,
+			} else if (splitAttr.isAlwaysSplit() && splitAttr.isAlignWithFirstAttr() && !isFirstAttr) {
+				// Use case (force-aligned): <el a="1" b="2"> → <el a="1"\n      b="2">
+				replaceLeftSpacesWithIndentationWithOffsetSpaces(
+						getFirstAttrOffset(attr.getOwnerElement(), indentLevel), prevOffset,
 						attr.getStart(), edits);
 				alreadyIndented = true;
 				parentConstraints.setStartTagCrossedLine(true);
+			} else if (splitAttr.isAlwaysSplit() && !splitAttr.isAlignWithFirstAttr()) {
+				// Use case (force): <el a="1" b="2"> → <el a="1"\n    b="2">
+				// Use case (force-expand-multiline): <el a="1" b="2"> → <el\n    a="1"\n    b="2">
+				if (splitAttr.isExpandFirstAttribute() ? !singleAttribute : !isFirstAttr) {
+					replaceLeftSpacesWithIndentation(indentLevel + getSplitAttributesIndentSize(), prevOffset,
+							attr.getStart(), true, edits);
+					alreadyIndented = true;
+					parentConstraints.setStartTagCrossedLine(true);
+				}
 			}
 		}
 
@@ -148,11 +161,21 @@ public class DOMAttributeFormatter {
 			// enabled
 			if (isMaxLineWidthSupported()) {
 				int availableLineWidth = parentConstraints.getAvailableLineWidth();
+				SplitAttributes splitAttr = getSplitAttributes();
 				if (isPreserveAttributeLineBreaks() && hasLineBreak(prevOffset, attr.getStart())) {
-					availableLineWidth = getMaxLineWidth() - getTabSize() * (indentLevel + 1);
-				} else if (getSplitAttributes() == SplitAttributes.splitNewLine && !singleAttribute) {
+					if (splitAttr.isAlignWithFirstAttr() && !isFirstAttr) {
+						availableLineWidth = getMaxLineWidth()
+								- getFirstAttrOffset(attr.getOwnerElement(), indentLevel);
+					} else {
+						availableLineWidth = getMaxLineWidth() - getTabSize() * (indentLevel + 1);
+					}
+				} else if (splitAttr.isAlwaysSplit() && !splitAttr.isAlignWithFirstAttr()
+						&& (splitAttr.isExpandFirstAttribute() ? !singleAttribute : !isFirstAttr)) {
 					availableLineWidth = getMaxLineWidth()
 							- getTabSize() * (indentLevel + getSplitAttributesIndentSize());
+				} else if (splitAttr.isAlwaysSplit() && splitAttr.isAlignWithFirstAttr() && !isFirstAttr) {
+					availableLineWidth = getMaxLineWidth()
+							- getFirstAttrOffset(attr.getOwnerElement(), indentLevel);
 				} else {
 					// counts the space between the start tag name and attribute value
 					availableLineWidth--;
@@ -168,22 +191,81 @@ public class DOMAttributeFormatter {
 		if (!alreadyIndented) {
 			int from = prevOffset;
 			int to = attr.getStart();
-			if (isMaxLineWidthSupported() && parentConstraints.getAvailableLineWidth() < 0
-					&& getSplitAttributes() == SplitAttributes.preserve) {
-				replaceLeftSpacesWithIndentation(indentLevel + 1, from, to, true, edits);
+			SplitAttributes splitAttr = getSplitAttributes();
+			boolean overflowed = isMaxLineWidthSupported() && parentConstraints.getAvailableLineWidth() < 0;
+			boolean previouslyCrossedLine = parentConstraints.isStartTagCrossedLine();
+			if (overflowed && splitAttr.isSplitOnOverflow() && splitAttr.isAlignWithFirstAttr() && !isFirstAttr) {
+				// Use case (aligned-multiple, maxLineWidth=30):
+				// <el attr1="v1" attr2="v2"> → <el attr1="v1"\n      attr2="v2">
+				int firstAttrOffset = getFirstAttrOffset(attr.getOwnerElement(), indentLevel);
+				replaceLeftSpacesWithIndentationWithOffsetSpaces(firstAttrOffset, from, to, edits);
 				parentConstraints.setStartTagCrossedLine(true);
 				int attrValuelength = attr.getValue() != null ? attr.getValue().length() : 0;
 				parentConstraints.setAvailableLineWidth(
-						getMaxLineWidth() - getTabSize() * (indentLevel + 1) - attributeNamelength
-								- attrValuelength);
+						getMaxLineWidth() - firstAttrOffset - attributeNamelength - attrValuelength);
+			} else if (overflowed && splitAttr.isSplitOnOverflow() && !isFirstAttr) {
+				// Use case (auto, maxLineWidth=30):
+				// <el attr1="v1" attr2="v2"> → <el attr1="v1"\n    attr2="v2">
+				int indentSize = indentLevel + getSplitAttributesIndentSize();
+				replaceLeftSpacesWithIndentation(indentSize, from, to, true, edits);
+				parentConstraints.setStartTagCrossedLine(true);
+				int attrValuelength = attr.getValue() != null ? attr.getValue().length() : 0;
+				parentConstraints.setAvailableLineWidth(
+						getMaxLineWidth() - getTabSize() * indentSize - attributeNamelength - attrValuelength);
+			} else if (splitAttr.isSplitOnOverflow() && previouslyCrossedLine && !isFirstAttr) {
+				// After a wrap, only wrap again if this attribute would overflow the line.
+				// Matches HTML auto behavior: multiple attributes stay on the same line
+				// if they fit within maxLineWidth.
+				if (overflowed) {
+					if (splitAttr.isAlignWithFirstAttr()) {
+						int firstAttrOffset = getFirstAttrOffset(attr.getOwnerElement(), indentLevel);
+						replaceLeftSpacesWithIndentationWithOffsetSpaces(firstAttrOffset, from, to, edits);
+						int attrValuelength = attr.getValue() != null ? attr.getValue().length() : 0;
+						parentConstraints.setAvailableLineWidth(
+								getMaxLineWidth() - firstAttrOffset - attributeNamelength - attrValuelength);
+					} else {
+						int indentSize = indentLevel + getSplitAttributesIndentSize();
+						replaceLeftSpacesWithIndentation(indentSize, from, to, true, edits);
+						int attrValuelength = attr.getValue() != null ? attr.getValue().length() : 0;
+						parentConstraints.setAvailableLineWidth(
+								getMaxLineWidth() - getTabSize() * indentSize - attributeNamelength - attrValuelength);
+					}
+				} else {
+					replaceLeftSpacesWithOneSpace(from, to, edits);
+				}
+			} else if (overflowed && splitAttr.isPreserve()) {
+				parentConstraints.setStartTagCrossedLine(true);
+				int attrValuelength = attr.getValue() != null ? attr.getValue().length() : 0;
+				if (splitAttr.isAlignWithFirstAttr() && !isFirstAttr) {
+					int firstAttrOffset = getFirstAttrOffset(attr.getOwnerElement(), indentLevel);
+					replaceLeftSpacesWithIndentationWithOffsetSpaces(firstAttrOffset, from, to, edits);
+					parentConstraints.setAvailableLineWidth(
+							getMaxLineWidth() - firstAttrOffset - attributeNamelength - attrValuelength);
+				} else {
+					replaceLeftSpacesWithIndentation(indentLevel + 1, from, to, true, edits);
+					parentConstraints.setAvailableLineWidth(
+							getMaxLineWidth() - getTabSize() * (indentLevel + 1) - attributeNamelength
+									- attrValuelength);
+				}
+			} else if (splitAttr.isPreserve() && previouslyCrossedLine && !isFirstAttr) {
+				if (overflowed) {
+					if (splitAttr.isAlignWithFirstAttr()) {
+						int firstAttrOffset = getFirstAttrOffset(attr.getOwnerElement(), indentLevel);
+						replaceLeftSpacesWithIndentationWithOffsetSpaces(firstAttrOffset, from, to, edits);
+						int attrValuelength = attr.getValue() != null ? attr.getValue().length() : 0;
+						parentConstraints.setAvailableLineWidth(
+								getMaxLineWidth() - firstAttrOffset - attributeNamelength - attrValuelength);
+					} else {
+						replaceLeftSpacesWithIndentation(indentLevel + 1, from, to, true, edits);
+						int attrValuelength = attr.getValue() != null ? attr.getValue().length() : 0;
+						parentConstraints.setAvailableLineWidth(
+								getMaxLineWidth() - getTabSize() * (indentLevel + 1) - attributeNamelength
+										- attrValuelength);
+					}
+				} else {
+					replaceLeftSpacesWithOneSpace(from, to, edits);
+				}
 			} else {
-				// remove extra whitespaces between previous attribute
-				// attr0='name'[space][space][space]attr1='name' -->
-				// attr0='name'[space]attr1='name'
-
-				// Adjust the startAttr to avoid ignoring invalid content
-				// ex : <asdf |""`=asdf />
-				// must be adjusted with <asdf ""|`=asdf /> to keep the invalid content ""
 				replaceLeftSpacesWithOneSpace(from, to, edits);
 			}
 		}
@@ -218,7 +300,8 @@ public class DOMAttributeFormatter {
 	 */
 	private int getFirstAttrOffset(DOMElement ownerElement, int indentLevel) {
 		// +1 for '<', +1 for space between element name and first attr name
-		return getTabSize() * indentLevel + ownerElement.getTagName().length() + 2;
+		int tagNameLength = ownerElement != null ? ownerElement.getTagName().length() : 0;
+		return getTabSize() * indentLevel + tagNameLength + 2;
 	}
 
 	/** Delegates to {@link XMLFormatterDocument#formatAttributeValue}. */

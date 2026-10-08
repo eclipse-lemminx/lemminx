@@ -98,8 +98,114 @@ public class XMLFormattingOptions extends org.eclipse.lemminx.settings.LSPFormat
 	private boolean legacy;
 	private int maxLineWidth;
 
+	/**
+	 * Controls how attributes are wrapped across lines. Values follow the same
+	 * naming convention as VS Code's {@code html.format.wrapAttributes} for
+	 * consistency, so users familiar with HTML formatting will recognize the
+	 * behavior.
+	 *
+	 * <p>
+	 * Legacy values {@link #splitNewLine} and {@link #alignWithFirstAttr} are
+	 * kept for backward compatibility but are deprecated in favor of the new
+	 * names.
+	 * </p>
+	 */
 	public static enum SplitAttributes {
-		preserve, splitNewLine, alignWithFirstAttr;
+		/** Keep existing attribute layout; only wrap when {@code maxLineWidth} is exceeded. */
+		preserve,
+
+		/** @deprecated Use {@link #forceExpandMultiline} instead. */
+		@Deprecated
+		splitNewLine,
+
+		/** @deprecated Use {@link #forceAligned} instead. */
+		@Deprecated
+		alignWithFirstAttr,
+
+		/** Wrap when line exceeds {@code maxLineWidth}, indent with {@code splitAttributesIndentSize}. */
+		auto,
+
+		/** Always wrap each attribute except the first, indent with {@code splitAttributesIndentSize}. */
+		force,
+
+		/** Always wrap each attribute except the first, align with the first attribute. */
+		forceAligned,
+
+		/** Always wrap every attribute (including the first) onto its own line. */
+		forceExpandMultiline,
+
+		/** Wrap when line exceeds {@code maxLineWidth}, align with the first attribute. */
+		alignedMultiple,
+
+		/** Preserve existing line breaks but align wrapped attributes with the first attribute. */
+		preserveAligned;
+
+		private static final java.util.Map<String, SplitAttributes> ALIASES = new java.util.HashMap<>();
+		static {
+			// Support hyphenated names from JSON settings (e.g., "force-aligned")
+			ALIASES.put("force-aligned", forceAligned);
+			ALIASES.put("force-expand-multiline", forceExpandMultiline);
+			ALIASES.put("aligned-multiple", alignedMultiple);
+			ALIASES.put("preserve-aligned", preserveAligned);
+		}
+
+		/**
+		 * Parse a string value into a {@link SplitAttributes}, supporting both
+		 * camelCase enum names and hyphenated JSON names.
+		 */
+		public static SplitAttributes fromString(String value) {
+			if (value == null) {
+				return preserve;
+			}
+			try {
+				return valueOf(value);
+			} catch (IllegalArgumentException e) {
+				SplitAttributes alias = ALIASES.get(value);
+				return alias != null ? alias : preserve;
+			}
+		}
+
+		/** Returns true if attributes should always be split regardless of line width. */
+		public boolean isAlwaysSplit() {
+			switch (this) {
+			case splitNewLine:
+			case alignWithFirstAttr:
+			case force:
+			case forceAligned:
+			case forceExpandMultiline:
+				return true;
+			default:
+				return false;
+			}
+		}
+
+		/** Returns true if the first attribute should also be placed on a new line. */
+		public boolean isExpandFirstAttribute() {
+			return this == splitNewLine || this == forceExpandMultiline;
+		}
+
+		/** Returns true if attributes should align with the first attribute. */
+		public boolean isAlignWithFirstAttr() {
+			switch (this) {
+			case alignWithFirstAttr:
+			case forceAligned:
+			case alignedMultiple:
+			case preserveAligned:
+				return true;
+			default:
+				return false;
+			}
+		}
+
+		/** Returns true if this mode preserves existing line breaks. */
+		public boolean isPreserve() {
+			return this == preserve || this == preserveAligned;
+		}
+
+		/** Returns true if splitting is conditional on {@code maxLineWidth} overflow. */
+		public boolean isSplitOnOverflow() {
+			return this == auto || this == alignedMultiple;
+		}
 	}
 
 	private String splitAttributes;
@@ -239,14 +345,7 @@ public class XMLFormattingOptions extends org.eclipse.lemminx.settings.LSPFormat
 	}
 
 	public SplitAttributes getSplitAttributes() {
-		String value = splitAttributes;
-		if ((value != null)) {
-			try {
-				return SplitAttributes.valueOf(value);
-			} catch (Exception e) {
-			}
-		}
-		return SplitAttributes.preserve;
+		return SplitAttributes.fromString(splitAttributes);
 	}
 
 	public void setSplitAttributes(SplitAttributes splitAttributes) {
@@ -394,13 +493,39 @@ public class XMLFormattingOptions extends org.eclipse.lemminx.settings.LSPFormat
 	}
 
 	/**
-	 * Returns the value of preserveAttrLineBreaks
+	 * Returns the value of preserveAttrLineBreaks.
+	 *
+	 * <p>
+	 * Only effective when {@code splitAttributes} is a preserve mode
+	 * ({@code preserve} or {@code preserve-aligned}). Force/auto modes
+	 * control line breaks themselves and override this setting.
+	 * </p>
+	 *
+	 * <p>
+	 * Use case ({@code preserve} + {@code preserveAttributeLineBreaks=true}):
+	 * </p>
+	 *
+	 * <pre>
+	 * &lt;foo attr1="a"
+	 *   attr2="b"&gt;  → line breaks preserved, indented with level+1
+	 * </pre>
+	 *
+	 * <p>
+	 * Use case ({@code preserve-aligned} +
+	 * {@code preserveAttributeLineBreaks=true}):
+	 * </p>
+	 *
+	 * <pre>
+	 * &lt;foo attr1="a"
+	 *      attr2="b"&gt;  → line breaks preserved, aligned with first attr
+	 * </pre>
 	 *
 	 * @return the value of preserveAttrLineBreaks
 	 */
 	public boolean isPreserveAttributeLineBreaks() {
-		if (this.getSplitAttributes() != SplitAttributes.preserve) {
-			// splitAttributes overrides preserveAttrLineBreaks
+		if (!this.getSplitAttributes().isPreserve()) {
+			// Non-preserve splitAttributes modes override preserveAttrLineBreaks.
+			// Use case: splitAttributes=force → always wraps, ignores existing breaks.
 			return false;
 		}
 		return preserveAttributeLineBreaks;

@@ -154,6 +154,13 @@ public class XMLDocumentGenerator {
 			generator.setNamespacePrefixes(rootNamespace, namespacePrefixes);
 		}
 
+		// Determine whether grammar binding will insert attributes into the root
+		// element's start tag (XSD always does; RNG/RNC only when there's a namespace).
+		String lowerURI = grammarURI.toLowerCase();
+		boolean rootHasBindingAttrs = lowerURI.endsWith(".xsd")
+				|| (!lowerURI.endsWith(".dtd") && !StringUtils.isEmpty(rootElement.getNamespace()));
+		generator.setRootHasBindingAttributes(rootHasBindingAttrs);
+
 		boolean generateOnlyRequired = !generationSettings.isOptionalElements();
 		String xmlContent = generator.generate(rootElement, null, true, false, 0, generateOnlyRequired);
 

@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 public class XMLDocumentGeneratorAttributeFormattingTest extends AbstractXMLDocumentGeneratorTest {
 
 	private static final String GENERATOR_XSD_PATH = "src/test/resources/generator/xsd/";
+	private static final String GENERATOR_RNG_PATH = "src/test/resources/generator/rng/";
 
 	// -- splitAttributes tests --
 
@@ -66,12 +67,76 @@ public class XMLDocumentGeneratorAttributeFormattingTest extends AbstractXMLDocu
 		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.alignWithFirstAttr);
 		String grammarURI = getFileURI(GENERATOR_XSD_PATH + "attributes.xsd");
 		String result = generateFromURI(grammarURI, "entry", settings);
-		// alignWithFirstAttr is not yet implemented in generation,
-		// behaves like preserve (all attributes on same line)
 		assertEquals("<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + ls +
-				"<entry xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" +
-				" xsi:noNamespaceSchemaLocation=\"" + grammarURI + "\"" +
-				" id=\"\" name=\"\" />" + ls, result);
+				"<entry" + ls +
+				"  xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + ls +
+				"  xsi:noNamespaceSchemaLocation=\"" + grammarURI + "\"" + ls +
+				"  id=\"\"" + ls +
+				"  name=\"\" />" + ls, result);
+	}
+
+	@Test
+	public void splitAttributesForceAlignedRNG() {
+		// RNG has no binding attributes in the start tag, so the first attribute
+		// should stay on the tag line with subsequent attributes aligned.
+		SharedSettings settings = createSettings();
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.forceAligned);
+		String grammarURI = getFileURI(GENERATOR_RNG_PATH + "attributes.rng");
+		String result = generateFromURI(grammarURI, "entry", settings);
+		// "entry" = 5 chars → alignment offset = 5 + 2 = 7 spaces
+		assertEquals("<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + ls +
+				"<?xml-model href=\"" + grammarURI + "\"?>" + ls +
+				"<entry id=\"\"" + ls +
+				"       name=\"\">" + ls +
+				"</entry>" + ls, result);
+	}
+
+	@Test
+	public void splitAttributesForceRNG() {
+		// RNG with force: first attribute on tag line, subsequent indented
+		SharedSettings settings = createSettings();
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.force);
+		settings.getFormattingSettings().setSplitAttributesIndentSize(2);
+		String grammarURI = getFileURI(GENERATOR_RNG_PATH + "attributes.rng");
+		String result = generateFromURI(grammarURI, "entry", settings);
+		// force: first attr on tag line, second attr with indent(0 + 2) = 4 spaces
+		assertEquals("<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + ls +
+				"<?xml-model href=\"" + grammarURI + "\"?>" + ls +
+				"<entry id=\"\"" + ls +
+				"    name=\"\">" + ls +
+				"</entry>" + ls, result);
+	}
+
+	@Test
+	public void splitAttributesForceAlignedXSD() {
+		// XSD has binding attributes inserted into the start tag, so all attributes
+		// (including element attributes) use indent — no first-attr-on-tag-line.
+		SharedSettings settings = createSettings();
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.forceAligned);
+		String grammarURI = getFileURI(GENERATOR_XSD_PATH + "attributes.xsd");
+		String result = generateFromURI(grammarURI, "entry", settings);
+		assertEquals("<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + ls +
+				"<entry" + ls +
+				"  xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + ls +
+				"  xsi:noNamespaceSchemaLocation=\"" + grammarURI + "\"" + ls +
+				"  id=\"\"" + ls +
+				"  name=\"\" />" + ls, result);
+	}
+
+	@Test
+	public void splitAttributesForceExpandMultilineRNG() {
+		// forceExpandMultiline: ALL attributes on new lines including the first
+		SharedSettings settings = createSettings();
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.forceExpandMultiline);
+		settings.getFormattingSettings().setSplitAttributesIndentSize(2);
+		String grammarURI = getFileURI(GENERATOR_RNG_PATH + "attributes.rng");
+		String result = generateFromURI(grammarURI, "entry", settings);
+		assertEquals("<?xml version=\"1.0\" encoding=\"UTF-8\"?>" + ls +
+				"<?xml-model href=\"" + grammarURI + "\"?>" + ls +
+				"<entry" + ls +
+				"    id=\"\"" + ls +
+				"    name=\"\">" + ls +
+				"</entry>" + ls, result);
 	}
 
 	// -- splitAttributesIndentSize tests --

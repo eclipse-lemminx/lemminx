@@ -541,14 +541,14 @@ public class DOMElementFormatter {
 			}
 		} else if (shouldFormatClosingBracketNewLine(element)) {
 			int indentLevel = parentConstraints.getIndentLevel();
-			if (getSplitAttributes() == SplitAttributes.splitNewLine) {
-				replaceLeftSpacesWithIndentation(indentLevel + getSplitAttributesIndentSize(), startTagOpen,
-						startTagClose, true, edits);
-				return (indentLevel + getSplitAttributesIndentSize()) * getTabSize();
-			} else { /* splitAttributes == alignWithFirstAttr */
+			if (getSplitAttributes().isAlignWithFirstAttr()) {
 				int indentOffset = indentLevel * getTabSize() + element.getTagName().length() + 2;
 				replaceLeftSpacesWithIndentationWithOffsetSpaces(indentOffset, startTagOpen, startTagClose, edits);
 				return indentOffset;
+			} else {
+				replaceLeftSpacesWithIndentation(indentLevel + getSplitAttributesIndentSize(), startTagOpen,
+						startTagClose, true, edits);
+				return (indentLevel + getSplitAttributesIndentSize()) * getTabSize();
 			}
 		}
 		if (element.isSelfClosed()) {
@@ -757,7 +757,7 @@ public class DOMElementFormatter {
 	 */
 	private boolean shouldFormatClosingBracketNewLine(DOMElement element) {
 		return (formatterDocument.getSharedSettings().getFormattingSettings().getClosingBracketNewLine()
-				&& getSplitAttributes() != SplitAttributes.preserve
+				&& !getSplitAttributes().isPreserve()
 				&& element.hasAttributes() && !element.hasSingleAttribute());
 	}
 
