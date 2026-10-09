@@ -189,7 +189,12 @@ public class CacheResourcesManager {
 			resourcesLoading.put(resourceURI, f);
 		}
 
-		if (f.getNow(null) == null) {
+		// The download only guarantees the cached file once it completes normally (it moves the
+		// temp file before completing), so report RESOURCE_LOADING until then. Never use
+		// getNow() here: it throws an unchecked CompletionException when the download already
+		// failed, which escapes every CacheResourceException handler and aborts validation with
+		// no diagnostic at all.
+		if (!f.isDone() || f.isCompletedExceptionally()) {
 			throw new CacheResourceDownloadingException(resourceURI, resourceCachePath,
 					CacheResourceDownloadingError.RESOURCE_LOADING, f, null);
 		}
