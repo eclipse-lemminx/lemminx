@@ -36,9 +36,16 @@ public class FilesUtilsTest extends AbstractCacheBasedTest {
 		String newBasePathString = System.getProperty("user.home");
 		String newSubPathString = Paths.get("New", "Sub", "Path").toString();
 		Path newSubPath = Paths.get(newSubPathString);
-		FilesUtils.setCachePathSetting(newBasePathString);
-		Path finalPath = FilesUtils.getDeployedPath(newSubPath);
-		assertEquals(Paths.get(newBasePathString, newSubPathString).toString(), finalPath.toString());
+		String previousCachePathSetting = FilesUtils.getCachePathSetting();
+		try {
+			FilesUtils.setCachePathSetting(newBasePathString);
+			Path finalPath = FilesUtils.getDeployedPath(newSubPath);
+			assertEquals(Paths.get(newBasePathString, newSubPathString).toString(), finalPath.toString());
+		} finally {
+			// cachePathSetting is static: leaving it set would leak into every other test of the
+			// JVM (tests run in random order).
+			FilesUtils.setCachePathSetting(previousCachePathSetting);
+		}
 	}
 
 	@Test
