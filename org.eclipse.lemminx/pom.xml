@@ -59,6 +59,9 @@
 				</executions>
 				<configuration>
 					<dotGitDirectory>${project.basedir}/../.git</dotGitDirectory>
+					<!-- the bundled JGit 5.12 can't read the gitdir of a git worktree, see
+						https://github.com/git-commit-id/git-commit-id-maven-plugin/issues/215 -->
+					<useNativeGit>true</useNativeGit>
 					<generateGitPropertiesFile>true</generateGitPropertiesFile>
 					<includeOnlyProperties>
 						<includeOnlyProperty>^git.commit.id.abbrev$</includeOnlyProperty>
