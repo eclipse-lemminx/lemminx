@@ -13,7 +13,8 @@ package org.eclipse.lemminx.extensions.contentmodel.generator;
 
 import java.util.List;
 
-import org.eclipse.lemminx.settings.PathPatternMatcher;
+import org.eclipse.lemminx.settings.DocumentMatcher;
+import org.eclipse.lemminx.settings.GlobMatcher;
 
 /**
  * Settings for XML document generation from grammar.
@@ -161,13 +162,13 @@ public class XMLGenerationSettings {
 	 * glob pattern.
 	 *
 	 * <p>
-	 * Extends {@link PathPatternMatcher} to reuse the existing glob matching for
+	 * Extends {@link DocumentMatcher} to reuse the existing glob matching for
 	 * {@code file://} URIs (Java NIO). For non-file URIs ({@code http://},
-	 * {@code https://}), falls back to a simple textual glob match without regular
-	 * expressions.
+	 * {@code https://}), falls back to a simple textual glob match via
+	 * {@link GlobMatcher}.
 	 * </p>
 	 */
-	public static class GenerationProfile extends PathPatternMatcher {
+	public static class GenerationProfile extends DocumentMatcher {
 
 		private Integer maxDepth;
 
@@ -196,7 +197,7 @@ public class XMLGenerationSettings {
 				return super.matches(grammarURI);
 			}
 			// For http/https URIs, use simple textual glob matching
-			return matchGlob(getPattern(), grammarURI);
+			return GlobMatcher.match(getPattern(), grammarURI);
 		}
 
 		public Integer getMaxDepth() {
@@ -221,75 +222,6 @@ public class XMLGenerationSettings {
 
 		public void setTypeDefaults(Boolean typeDefaults) {
 			this.typeDefaults = typeDefaults;
-		}
-
-		/**
-		 * Matches a glob pattern against a text string without using regular
-		 * expressions. Used for non-file URIs where Java NIO glob cannot be applied.
-		 *
-		 * <p>
-		 * Supported wildcards:
-		 * </p>
-		 * <ul>
-		 * <li>{@code **} matches any sequence of characters including path
-		 * separators</li>
-		 * <li>{@code *} matches any sequence of characters except {@code /}</li>
-		 * <li>{@code ?} matches any single character</li>
-		 * </ul>
-		 *
-		 * @param pattern the glob pattern.
-		 * @param text    the text to match.
-		 * @return true if the text matches the pattern.
-		 */
-		static boolean matchGlob(String pattern, String text) {
-			return matchGlob(pattern, 0, text, 0);
-		}
-
-		private static boolean matchGlob(String pattern, int pi, String text, int ti) {
-			while (pi < pattern.length() && ti < text.length()) {
-				char pc = pattern.charAt(pi);
-				if (pc == '*') {
-					if (pi + 1 < pattern.length() && pattern.charAt(pi + 1) == '*') {
-						pi += 2;
-						if (pi < pattern.length() && pattern.charAt(pi) == '/') {
-							pi++;
-						}
-						for (int i = ti; i <= text.length(); i++) {
-							if (matchGlob(pattern, pi, text, i)) {
-								return true;
-							}
-						}
-						return false;
-					}
-					pi++;
-					for (int i = ti; i <= text.length(); i++) {
-						if (i > ti && text.charAt(i - 1) == '/') {
-							break;
-						}
-						if (matchGlob(pattern, pi, text, i)) {
-							return true;
-						}
-					}
-					return false;
-				} else if (pc == '?') {
-					pi++;
-					ti++;
-				} else {
-					if (pc != text.charAt(ti)) {
-						return false;
-					}
-					pi++;
-					ti++;
-				}
-			}
-			while (pi < pattern.length()) {
-				if (pattern.charAt(pi) == '*') {
-					pi++;
-				} else {
-					break;
-				}
-			}
-			return pi == pattern.length() && ti == text.length();
 		}
 	}
 }

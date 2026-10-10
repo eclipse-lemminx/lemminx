@@ -13,7 +13,7 @@ package org.eclipse.lemminx.extensions.filepath.settings;
 
 import java.util.List;
 
-import org.eclipse.lemminx.settings.PathPatternMatcher;
+import org.eclipse.lemminx.settings.DocumentMatcher;
 
 /**
  * File path mapping which stores list of {@link FilePathExpression} applied
@@ -22,7 +22,7 @@ import org.eclipse.lemminx.settings.PathPatternMatcher;
  * @author Angelo ZERR
  *
  */
-public class FilePathMapping extends PathPatternMatcher {
+public class FilePathMapping extends DocumentMatcher {
 
 	private List<FilePathExpression> expressions;
 

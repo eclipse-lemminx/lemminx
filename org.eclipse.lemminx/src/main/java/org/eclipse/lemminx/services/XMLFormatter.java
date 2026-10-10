@@ -27,6 +27,8 @@ import org.eclipse.lemminx.services.extensions.format.IFormatterParticipant;
 import org.eclipse.lemminx.services.format.XMLFormatterDocumentOld;
 import org.eclipse.lemminx.services.format.XMLFormatterDocument;
 import org.eclipse.lemminx.settings.SharedSettings;
+import org.eclipse.lemminx.settings.XMLFormattingOptions;
+import org.eclipse.lemminx.settings.XMLFormattingProfile;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextEdit;
@@ -55,6 +57,9 @@ class XMLFormatter {
 	 */
 	public List<? extends TextEdit> format(DOMDocument xmlDocument, Range range, SharedSettings sharedSettings) {
 		try {
+			// Resolve profile overrides for this document
+			sharedSettings = resolveProfiles(xmlDocument, sharedSettings);
+
 			if (sharedSettings.getFormattingSettings().isLegacy()) {
 				XMLFormatterDocumentOld formatterDocument = new XMLFormatterDocumentOld(xmlDocument.getTextDocument(),
 						range, sharedSettings, getFormatterParticipants());
@@ -104,6 +109,39 @@ class XMLFormatter {
 		Position start = new Position(0, 0);
 		Position end = textDocument.positionAt(textDocument.getTextSequence().length());
 		return new Range(start, end);
+	}
+
+	/**
+	 * Resolves profile overrides for the given document. Finds the first matching
+	 * {@link XMLFormattingProfile} and applies its format overrides to a copy of
+	 * the shared settings.
+	 *
+	 * <p>
+	 * Use case: a workspace with DocBook ({@code mixedContent=preserve}) and
+	 * Maven POM ({@code splitAttributes=forceExpandMultiline}) files. When
+	 * formatting a DocBook file, the DocBook profile's overrides are merged
+	 * onto the global format settings; when formatting a POM, the POM profile's
+	 * overrides are used instead.
+	 * </p>
+	 *
+	 * @param xmlDocument    the document being formatted.
+	 * @param sharedSettings the global shared settings.
+	 * @return the original settings if no profile matches, or a copy with profile
+	 *         overrides applied.
+	 */
+	private SharedSettings resolveProfiles(DOMDocument xmlDocument, SharedSettings sharedSettings) {
+		List<XMLFormattingProfile> profiles = sharedSettings.getFormattingSettings().getProfiles();
+		if (profiles == null || profiles.isEmpty()) {
+			return sharedSettings;
+		}
+		for (XMLFormattingProfile profile : profiles) {
+			if (profile.matches(xmlDocument)) {
+				SharedSettings merged = new SharedSettings(sharedSettings);
+				profile.applyTo(merged.getFormattingSettings());
+				return merged;
+			}
+		}
+		return sharedSettings;
 	}
 
 	/**

@@ -16,7 +16,7 @@ import java.util.Objects;
 /**
  * XMLExcludedSymbolFiles
  */
-public class XMLExcludedSymbolFile extends PathPatternMatcher{
+public class XMLExcludedSymbolFile extends DocumentMatcher {
 
 	public XMLExcludedSymbolFile(String pattern) {
 		setPattern(pattern);

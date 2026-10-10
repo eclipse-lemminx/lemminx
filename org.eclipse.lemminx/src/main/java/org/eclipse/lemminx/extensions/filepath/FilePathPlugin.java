@@ -120,7 +120,7 @@ public class FilePathPlugin implements IXMLExtension {
 		}
 
 		for (FilePathMapping filePaths : mappings) {
-			if (filePaths.matches(xmlDocument.getDocumentURI())) {
+			if (filePaths.matches(xmlDocument)) {
 				expressions.addAll(filePaths.getExpressions());
 			}
 		}

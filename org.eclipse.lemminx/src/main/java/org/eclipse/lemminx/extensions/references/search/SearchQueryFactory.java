@@ -221,7 +221,6 @@ public class SearchQueryFactory {
 			return null;
 		}
 		DOMDocument document = node.getOwnerDocument();
-		String uri = document.getDocumentURI();
 		List<XMLReferenceExpression> matchedExpressions = null;
 		for (XMLReferences references : allReferences) {
 			// Given this XML references sample
@@ -244,8 +243,7 @@ public class SearchQueryFactory {
 			 * </code>
 			 *
 			 */
-			if (references.matches(uri)) {
-				// here uri matches the "*.xml" pattern
+			if (references.matches(document)) {
 				List<XMLReferenceExpression> expressions = references.getExpressions();
 				if (expressions != null) {
 					if (node.isOwnerDocument()) {

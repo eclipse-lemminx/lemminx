@@ -91,7 +91,7 @@ class XMLSymbolsProvider {
 				? new AtomicLong(symbolSettings.getMaxItemsComputed())
 				: null;
 		SymbolInformationResult symbols = new SymbolInformationResult(limit);
-		XMLSymbolFilter filter = symbolSettings.getFilterFor(xmlDocument.getDocumentURI());
+		XMLSymbolFilter filter = symbolSettings.getFilterFor(xmlDocument);
 
 		try {
 			// Process symbols participants
@@ -165,7 +165,7 @@ class XMLSymbolsProvider {
 				? new AtomicLong(symbolSettings.getMaxItemsComputed())
 				: null;
 		DocumentSymbolsResult symbols = new DocumentSymbolsResult(limit);
-		XMLSymbolFilter filter = symbolSettings.getFilterFor(xmlDocument.getDocumentURI());
+		XMLSymbolFilter filter = symbolSettings.getFilterFor(xmlDocument);
 
 		try {
 			// Process symbols participants
