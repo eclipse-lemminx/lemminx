@@ -326,6 +326,10 @@
 		}]
 	},
 	{
+		"name": "org.eclipse.lemminx.settings.DocumentMatcher",
+		"allDeclaredFields": true
+	},
+	{
 		"name": "org.eclipse.lemminx.settings.PathPatternMatcher",
 		"allDeclaredFields": true
 	},
@@ -371,6 +375,14 @@
 	},
 	{
 		"name": "org.eclipse.lemminx.settings.XMLFormattingOptions",
+		"allDeclaredFields": true,
+		"methods": [{
+			"name": "<init>",
+			"parameterTypes": []
+		}]
+	},
+	{
+		"name": "org.eclipse.lemminx.settings.XMLFormattingProfile",
 		"allDeclaredFields": true,
 		"methods": [{
 			"name": "<init>",

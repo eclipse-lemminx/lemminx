@@ -13,6 +13,8 @@ package org.eclipse.lemminx.settings;
 
 import java.util.Arrays;
 
+import org.eclipse.lemminx.dom.DOMDocument;
+
 /**
  * XMLSymbolPreferences for Document Symbols
  */
@@ -117,10 +119,10 @@ public class XMLSymbolSettings {
 		this.setMaxItemsComputed(newSettings.getMaxItemsComputed());
 	}
 
-	public XMLSymbolFilter getFilterFor(String uri) {
+	public XMLSymbolFilter getFilterFor(DOMDocument document) {
 		if (filters != null) {
 			for (XMLSymbolFilter filter : filters) {
-				if (filter.matches(uri)) {
+				if (filter.matches(document)) {
 					return filter;
 				}
 			}

@@ -13,7 +13,7 @@ package org.eclipse.lemminx.extensions.references.settings;
 
 import java.util.List;
 
-import org.eclipse.lemminx.settings.PathPatternMatcher;
+import org.eclipse.lemminx.settings.DocumentMatcher;
 
 /**
  * XML references which stores list of {@link XMLReferenceExpression} applied
@@ -22,7 +22,7 @@ import org.eclipse.lemminx.settings.PathPatternMatcher;
  * @author Angelo ZERR
  *
  */
-public class XMLReferences extends PathPatternMatcher {
+public class XMLReferences extends DocumentMatcher {
 
 	private transient boolean updated;
 

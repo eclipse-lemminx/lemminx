@@ -13,7 +13,7 @@ package org.eclipse.lemminx.extensions.colors.settings;
 
 import java.util.List;
 
-import org.eclipse.lemminx.settings.PathPatternMatcher;
+import org.eclipse.lemminx.settings.DocumentMatcher;
 
 /**
  * XML colors which stores list of {@link XMLColorExpression} applied
@@ -22,7 +22,7 @@ import org.eclipse.lemminx.settings.PathPatternMatcher;
  * @author Angelo ZERR
  *
  */
-public class XMLColors extends PathPatternMatcher {
+public class XMLColors extends DocumentMatcher {
 
 	private List<XMLColorExpression> expressions;
 

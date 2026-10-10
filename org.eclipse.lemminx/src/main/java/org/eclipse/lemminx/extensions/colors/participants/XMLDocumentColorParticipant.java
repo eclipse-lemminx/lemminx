@@ -182,7 +182,7 @@ public class XMLDocumentColorParticipant implements IDocumentColorParticipant {
 		}
 		List<XMLColorExpression> expressions = new ArrayList<>();
 		for (XMLColors xmlColors : colorsDef) {
-			if (xmlColors.matches(xmlDocument.getDocumentURI())) {
+			if (xmlColors.matches(xmlDocument)) {
 				expressions.addAll(xmlColors.getExpressions());
 			}
 		}

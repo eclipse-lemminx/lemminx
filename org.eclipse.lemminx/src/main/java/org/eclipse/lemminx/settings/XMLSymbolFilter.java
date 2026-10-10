@@ -79,7 +79,7 @@ import org.eclipse.lemminx.xpath.matcher.IXPathNodeMatcher.MatcherType;
    ]
  * </pre>
  */
-public class XMLSymbolFilter extends PathPatternMatcher {
+public class XMLSymbolFilter extends DocumentMatcher {
 
 	public static final XMLSymbolFilter DEFAULT;
 
