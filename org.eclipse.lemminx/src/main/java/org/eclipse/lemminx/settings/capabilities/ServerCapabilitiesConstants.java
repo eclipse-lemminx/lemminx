@@ -112,21 +112,67 @@ public class ServerCapabilitiesConstants {
 	}
 
 	public static final List<String> SEMANTIC_TOKEN_TYPES = Arrays.asList(
-			SemanticTokenTypes.Property, // 0: for attribute names
-			SemanticTokenTypes.Variable, // 1: for entity names
-			SemanticTokenTypes.Type      // 2: for element/notation names
+			SemanticTokenTypes.Property,      // 0: for attribute names
+			SemanticTokenTypes.Variable,      // 1: for entity names / variables
+			SemanticTokenTypes.Type,          // 2: for element/notation names
+			SemanticTokenTypes.Comment,       // 3: for comments
+			SemanticTokenTypes.Keyword,       // 4: for keywords
+			SemanticTokenTypes.String,        // 5: for strings
+			SemanticTokenTypes.Number,        // 6: for numbers
+			SemanticTokenTypes.Function,      // 7: for function names
+			SemanticTokenTypes.Operator,      // 8: for operators
+			SemanticTokenTypes.Namespace,     // 9: for namespaces
+			SemanticTokenTypes.Class,         // 10: for class names
+			SemanticTokenTypes.Parameter,     // 11: for parameters
+			SemanticTokenTypes.Regexp,        // 12: for regexps
+			SemanticTokenTypes.Method,        // 13: for method calls
+			SemanticTokenTypes.Modifier,      // 14: for storage modifiers (public, static...)
+			SemanticTokenTypes.Decorator,     // 15: for annotations/decorators
+			SemanticTokenTypes.Enum,          // 16: for enum types
+			SemanticTokenTypes.EnumMember,    // 17: for enum values
+			SemanticTokenTypes.Interface,     // 18: for interfaces
+			SemanticTokenTypes.Macro,         // 19: for macros/preprocessor
+			SemanticTokenTypes.Label          // 20: for labels
 	);
 
 	public static final List<String> SEMANTIC_TOKEN_MODIFIERS = Arrays.asList(
-			SemanticTokenModifiers.Readonly,    // 0: for required attributes
-			SemanticTokenModifiers.Declaration  // 1: for declarations
+			SemanticTokenModifiers.Readonly,       // 0: for required attributes
+			SemanticTokenModifiers.Declaration,     // 1: for declarations
+			SemanticTokenModifiers.Definition,      // 2: for definitions
+			SemanticTokenModifiers.Static,          // 3: for static members
+			SemanticTokenModifiers.Deprecated,      // 4: for deprecated elements
+			SemanticTokenModifiers.Documentation,   // 5: for doc comments
+			SemanticTokenModifiers.DefaultLibrary   // 6: for built-in/support functions
 	);
 
 	public static final int TOKEN_TYPE_PROPERTY = 0;
 	public static final int TOKEN_TYPE_VARIABLE = 1;
 	public static final int TOKEN_TYPE_TYPE = 2;
+	public static final int TOKEN_TYPE_COMMENT = 3;
+	public static final int TOKEN_TYPE_KEYWORD = 4;
+	public static final int TOKEN_TYPE_STRING = 5;
+	public static final int TOKEN_TYPE_NUMBER = 6;
+	public static final int TOKEN_TYPE_FUNCTION = 7;
+	public static final int TOKEN_TYPE_OPERATOR = 8;
+	public static final int TOKEN_TYPE_NAMESPACE = 9;
+	public static final int TOKEN_TYPE_CLASS = 10;
+	public static final int TOKEN_TYPE_PARAMETER = 11;
+	public static final int TOKEN_TYPE_REGEXP = 12;
+	public static final int TOKEN_TYPE_METHOD = 13;
+	public static final int TOKEN_TYPE_MODIFIER = 14;
+	public static final int TOKEN_TYPE_DECORATOR = 15;
+	public static final int TOKEN_TYPE_ENUM = 16;
+	public static final int TOKEN_TYPE_ENUM_MEMBER = 17;
+	public static final int TOKEN_TYPE_INTERFACE = 18;
+	public static final int TOKEN_TYPE_MACRO = 19;
+	public static final int TOKEN_TYPE_LABEL = 20;
 	public static final int TOKEN_MODIFIER_READONLY = 1 << 0;
 	public static final int TOKEN_MODIFIER_DECLARATION = 1 << 1;
+	public static final int TOKEN_MODIFIER_DEFINITION = 1 << 2;
+	public static final int TOKEN_MODIFIER_STATIC = 1 << 3;
+	public static final int TOKEN_MODIFIER_DEPRECATED = 1 << 4;
+	public static final int TOKEN_MODIFIER_DOCUMENTATION = 1 << 5;
+	public static final int TOKEN_MODIFIER_DEFAULT_LIBRARY = 1 << 6;
 
 	public static final SemanticTokensWithRegistrationOptions DEFAULT_SEMANTIC_TOKENS_OPTIONS = createDefaultSemanticTokensOptions();
 

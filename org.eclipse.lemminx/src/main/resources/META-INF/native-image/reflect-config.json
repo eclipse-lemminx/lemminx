@@ -510,6 +510,30 @@
 		}]
 	},
 	{
+		"name": "org.eclipse.lemminx.extensions.embeddedLanguages.settings.XMLEmbeddedLanguageExpression",
+		"allDeclaredFields": true,
+		"methods": [{
+			"name": "<init>",
+			"parameterTypes": []
+		}]
+	},
+	{
+		"name": "org.eclipse.lemminx.extensions.embeddedLanguages.settings.XMLEmbeddedLanguages",
+		"allDeclaredFields": true,
+		"methods": [{
+			"name": "<init>",
+			"parameterTypes": []
+		}]
+	},
+	{
+		"name": "org.eclipse.lemminx.extensions.embeddedLanguages.settings.XMLEmbeddedLanguagesSettings",
+		"allDeclaredFields": true,
+		"methods": [{
+			"name": "<init>",
+			"parameterTypes": []
+		}]
+	},
+	{
 		"name": "org.eclipse.lemminx.extensions.filepath.settings.FilePathExpression",
 		"allDeclaredFields": true,
 		"methods": [{
