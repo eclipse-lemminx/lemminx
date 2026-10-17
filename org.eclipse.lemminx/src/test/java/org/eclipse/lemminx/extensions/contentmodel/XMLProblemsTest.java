@@ -119,7 +119,7 @@ public class XMLProblemsTest extends AbstractCacheBasedTest {
 								schemaTemplate), //
 						teOp("test.xml", 0, 5, 0, 5, //
 								" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + lineSeparator() + //
-										" xsi:noNamespaceSchemaLocation=\"test.xsd\"")),
+										"    xsi:noNamespaceSchemaLocation=\"test.xsd\"")),
 				// XSD with xml-model
 				ca(d, //
 						createFile("test.xsd", false), //
@@ -199,7 +199,7 @@ public class XMLProblemsTest extends AbstractCacheBasedTest {
 								schemaTemplate), //
 						teOp("test.xml", 0, 5, 0, 5, //
 								" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + lineSeparator() + //
-										" xsi:noNamespaceSchemaLocation=\"test.xsd\"")),
+										"    xsi:noNamespaceSchemaLocation=\"test.xsd\"")),
 				// XSD with xml-model
 				ca(d, //
 						createFile("test.xsd", false), //
@@ -288,7 +288,7 @@ public class XMLProblemsTest extends AbstractCacheBasedTest {
 						schemaTemplate), //
 				teOp("test.xml", 0, 5, 0, 5, //
 						" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + lineSeparator() + //
-								" xsi:noNamespaceSchemaLocation=\"test.xsd\"")));
+								"    xsi:noNamespaceSchemaLocation=\"test.xsd\"")));
 
 		// XSD with xml-model
 		CodeAction unresolved2 = actual.get(1);

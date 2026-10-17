@@ -1365,7 +1365,8 @@ public class XMLFormatterDocument {
 
 	/** Returns the tab size (number of spaces per indent level). */
 	private int getTabSize() {
-		return getFormattingSettings().getTabSize();
+		int tabSize = getFormattingSettings().getTabSize();
+		return tabSize > 0 ? tabSize : XMLFormattingOptions.DEFAULT_TAB_SIZE;
 	}
 
 	/** Returns true if spaces are used for indentation instead of tabs. */

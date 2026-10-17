@@ -150,10 +150,9 @@ public class ReferencedGrammarInfo {
 		}
 		String resolverBy = info.getResolvedBy();
 		if (resolverBy != null) {
-			if (bindingName.length() > 0) {
-				bindingName.append(" ");
+			if (hasKind) {
+				bindingName.append(" with ");
 			}
-			bindingName.append("with ");
 			bindingName.append(resolverBy);
 		}
 		return bindingName.toString();

@@ -67,6 +67,11 @@ public class DOMProcessingInstructionFormatter {
 	public void formatProcessingInstruction(DOMProcessingInstruction processingInstruction,
 			XMLFormattingConstraints parentConstraints, List<TextEdit> edits) {
 		int prevOffset = processingInstruction.getStartContent();
+		if (prevOffset <= processingInstruction.getStart() && processingInstruction.getTarget() != null) {
+			// startContent is not set for prolog PIs (e.g. <?xml ...?>),
+			// compute it from the PI start and target name length
+			prevOffset = processingInstruction.getStart() + 2 + processingInstruction.getTarget().length();
+		}
 		DOMElement parentElement = processingInstruction.getParentElement();
 
 		// Indent PI inside a parent element

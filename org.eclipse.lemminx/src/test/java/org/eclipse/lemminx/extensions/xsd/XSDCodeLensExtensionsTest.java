@@ -48,7 +48,7 @@ public class XSDCodeLensExtensionsTest extends AbstractCacheBasedTest {
 				"	\r\n" + //
 				"</xs:schema>";
 		XMLAssert.testCodeLensFor(xml, //
-				cl(r(0, 0, 0, 0), "http://www.w3.org/2001/XMLSchema (with embedded xml.xsd)", OPEN_URI), //
+				cl(r(0, 0, 0, 0), "http://www.w3.org/2001/XMLSchema (embedded xml.xsd)", OPEN_URI), //
 				cl(r(2, 13, 2, 23), "2 references", SHOW_REFERENCES), //
 				cl(r(11, 11, 11, 21), "1 reference", SHOW_REFERENCES));
 	}
@@ -77,7 +77,7 @@ public class XSDCodeLensExtensionsTest extends AbstractCacheBasedTest {
 				"	</xs:simpleType>\r\n" + //
 				"</xs:schema>";
 		XMLAssert.testCodeLensFor(xml, //
-				cl(r(0, 0, 0, 0), "http://www.w3.org/2001/XMLSchema (with embedded xml.xsd)", OPEN_URI), //
+				cl(r(0, 0, 0, 0), "http://www.w3.org/2001/XMLSchema (embedded xml.xsd)", OPEN_URI), //
 				cl(r(3, 17, 3, 36), "2 references", SHOW_REFERENCES), //
 				cl(r(15, 16, 15, 35), "1 reference", SHOW_REFERENCES));
 	}

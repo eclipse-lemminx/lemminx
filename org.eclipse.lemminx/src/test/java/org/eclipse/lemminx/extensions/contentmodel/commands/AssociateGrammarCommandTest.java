@@ -53,7 +53,7 @@ public class AssociateGrammarCommandTest extends AbstractCacheBasedTest {
 
 		assertEquals(actual, tde(xmlPath, 1, te(1, 4, 1, 4, //
 				" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
-						" xsi:noNamespaceSchemaLocation=\"xsd/tag.xsd\"")));
+						"    xsi:noNamespaceSchemaLocation=\"xsd/tag.xsd\"")));
 	}
 
 	@Test
@@ -74,8 +74,8 @@ public class AssociateGrammarCommandTest extends AbstractCacheBasedTest {
 
 		assertEquals(actual, tde(xmlPath, 1, te(1, 4, 1, 4, //
 				" xmlns=\"team_namespace\"\r\n" + //
-						" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
-						" xsi:schemaLocation=\"team_namespace xsd/team.xsd\"")));
+						"    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
+						"    xsi:schemaLocation=\"team_namespace xsd/team.xsd\"")));
 	}
 
 	@Test

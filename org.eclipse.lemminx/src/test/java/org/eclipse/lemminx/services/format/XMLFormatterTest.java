@@ -632,6 +632,15 @@ public class XMLFormatterTest extends AbstractCacheBasedTest {
 		assertFormat(content, expected);
 	}
 
+	@Test
+	public void testPIWithoutTarget() throws BadLocationException {
+		String content = "<a><??></a>";
+		String expected = "<a>" + lineSeparator() + //
+				"  <??></a>";
+		assertFormat(content, expected, //
+				te(0, 3, 0, 3, lineSeparator() + "  "));
+	}
+
 	// ---------- Tests for comment formatting
 
 	@Test

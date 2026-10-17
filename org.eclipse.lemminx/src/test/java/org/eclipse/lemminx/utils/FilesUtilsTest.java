@@ -82,4 +82,62 @@ public class FilesUtilsTest extends AbstractCacheBasedTest {
 		assertTrue(tempFile.isFile());
 		assertTrue(!tempFile.canExecute() || Platform.isWindows);
 	}
+
+	// ==========================================
+	// getRelativeURI tests
+	// ==========================================
+
+	@Test
+	public void getRelativeURISameDirectory(@TempDir Path temporaryDirectory) {
+		String target = temporaryDirectory.resolve("tag.xsd").toUri().toString();
+		String base = temporaryDirectory.resolve("tag.xml").toUri().toString();
+		assertEquals("tag.xsd", FilesUtils.getRelativeURI(target, base));
+	}
+
+	@Test
+	public void getRelativeURISubDirectory(@TempDir Path temporaryDirectory) {
+		String target = temporaryDirectory.resolve("xsd/tag.xsd").toUri().toString();
+		String base = temporaryDirectory.resolve("tag.xml").toUri().toString();
+		assertEquals("xsd/tag.xsd", FilesUtils.getRelativeURI(target, base));
+	}
+
+	@Test
+	public void getRelativeURIParentDirectory(@TempDir Path temporaryDirectory) {
+		String target = temporaryDirectory.resolve("tag.xsd").toUri().toString();
+		String base = temporaryDirectory.resolve("sub/tag.xml").toUri().toString();
+		assertEquals("../tag.xsd", FilesUtils.getRelativeURI(target, base));
+	}
+
+	@Test
+	public void getRelativeURIWithSpaces(@TempDir Path temporaryDirectory) {
+		String target = temporaryDirectory.resolve("my schema.xsd").toUri().toString();
+		String base = temporaryDirectory.resolve("tag.xml").toUri().toString();
+		assertEquals("my%20schema.xsd", FilesUtils.getRelativeURI(target, base));
+	}
+
+	@Test
+	public void getRelativeURIWithHash(@TempDir Path temporaryDirectory) {
+		String target = temporaryDirectory.resolve("schema#v1.xsd").toUri().toString();
+		String base = temporaryDirectory.resolve("tag.xml").toUri().toString();
+		assertEquals("schema%23v1.xsd", FilesUtils.getRelativeURI(target, base));
+	}
+
+	@Test
+	public void getRelativeURIRegularFilename(@TempDir Path temporaryDirectory) {
+		String target = temporaryDirectory.resolve("foo.xsd").toUri().toString();
+		String base = temporaryDirectory.resolve("foo.xml").toUri().toString();
+		assertEquals("foo.xsd", FilesUtils.getRelativeURI(target, base));
+	}
+
+	@Test
+	public void getRelativeURIFallbackOnInvalidURI() {
+		assertEquals("not-a-uri", FilesUtils.getRelativeURI("not-a-uri", "also-not-a-uri"));
+	}
+
+	@Test
+	public void getRelativeURIWithPlusSign(@TempDir Path temporaryDirectory) {
+		String target = temporaryDirectory.resolve("a+b.xsd").toUri().toString();
+		String base = temporaryDirectory.resolve("tag.xml").toUri().toString();
+		assertEquals("a+b.xsd", FilesUtils.getRelativeURI(target, base));
+	}
 }

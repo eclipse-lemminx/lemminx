@@ -90,7 +90,7 @@ public class XML2XMLSchemaGenerator extends AbstractXML2GrammarGenerator<XMLSche
 			CancelChecker cancelChecker) {
 		String prefix = "xs";
 		schema.startPrologOrPI("xml");
-		schema.addContent(" version=\"1.0\" encoding=\"UTF-8\"");
+		schema.addContentPI("version=\"1.0\" encoding=\"UTF-8\"");
 		schema.endPrologOrPI();
 		// xs:schema
 		schema.startElement(prefix, SCHEMA_ELT, false);
@@ -98,6 +98,7 @@ public class XML2XMLSchemaGenerator extends AbstractXML2GrammarGenerator<XMLSche
 		String targetNamespace = grammar.getDefaultNamespace();
 		if (!StringUtils.isEmpty(targetNamespace)) {
 			schema.addSingleAttribute(SCHEMA_TARGET_NAMESPACE_ATTR, targetNamespace, true);
+			schema.addSingleAttribute("elementFormDefault", "qualified", true);
 		}
 		schema.closeStartElement();
 		// List of xs:element

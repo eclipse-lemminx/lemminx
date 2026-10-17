@@ -146,7 +146,7 @@ public class ReferencedGrammarSymbolsTest extends AbstractCacheBasedTest {
 								ds(getXMLSchemaFileURI("Format.xsd", false), SymbolKind.File, r(0, 0, 0, 1),
 										r(0, 0, 0, 1), null, //
 										Arrays.asList( //
-												ds("Binding: with file association", SymbolKind.Property, r(0, 0, 0, 1),
+												ds("Binding: file association", SymbolKind.Property, r(0, 0, 0, 1),
 														r(0, 0, 0, 1), null, null), //
 												ds("Cache: false", SymbolKind.Property, r(0, 0, 0, 1), r(0, 0, 0, 1),
 														null, null))))), //

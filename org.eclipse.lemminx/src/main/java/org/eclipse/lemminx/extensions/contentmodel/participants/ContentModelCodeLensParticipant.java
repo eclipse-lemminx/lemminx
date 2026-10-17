@@ -112,7 +112,16 @@ public class ContentModelCodeLensParticipant implements ICodeLensParticipant {
 	}
 
 	private CodeLens createReferencedGrammarLens(ReferencedGrammarInfo info, Range range, boolean canSupportOpenUri) {
+		String grammarURI = info.isInCache() ? info.getGrammarCacheInfo().getCachedResolvedUri() : null;
+		if (grammarURI == null) {
+			grammarURI = info.getResolvedURIInfo().getResolvedURI();
+		}
+
 		String uri = info.getIdentifierURI();
+		if (StringUtils.isEmpty(uri) && grammarURI != null) {
+			int lastSlash = grammarURI.lastIndexOf('/');
+			uri = lastSlash >= 0 ? grammarURI.substring(lastSlash + 1) : grammarURI;
+		}
 		StringBuilder title = new StringBuilder(uri != null ? uri : "");
 		String bindingKind = ReferencedGrammarInfo.getBindingKindAndResolvedBy(info);
 		if (!StringUtils.isEmpty(bindingKind)) {
@@ -121,10 +130,6 @@ public class ContentModelCodeLensParticipant implements ICodeLensParticipant {
 			title.append(")");
 		}
 
-		String grammarURI = info.isInCache() ? info.getGrammarCacheInfo().getCachedResolvedUri() : null;
-		if (grammarURI == null) {
-			grammarURI = info.getResolvedURIInfo().getResolvedURI();
-		}
 		Command command = new Command(title.toString(), canSupportOpenUri ? OPEN_URI : "",
 				canSupportOpenUri ? Arrays.asList(grammarURI) : null);
 		return new CodeLens(range, command, null);

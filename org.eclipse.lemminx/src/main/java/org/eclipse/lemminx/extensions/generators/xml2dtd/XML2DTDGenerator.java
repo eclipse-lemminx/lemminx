@@ -45,9 +45,9 @@ public class XML2DTDGenerator extends AbstractXML2GrammarGenerator<DTDGeneratorS
 			Collection<ElementDeclaration> children = elementDecl.getElements();
 			if (children.isEmpty()) {
 				if (hasCharacterContent) {
-					dtd.addContent(" (#PCDATA)");
+					dtd.append(" (#PCDATA)");
 				} else {
-					dtd.addContent(" EMPTY");
+					dtd.append(" EMPTY");
 				}
 			} else {
 				// There are children
@@ -56,7 +56,7 @@ public class XML2DTDGenerator extends AbstractXML2GrammarGenerator<DTDGeneratorS
 					boolean sequenced = elementDecl.getChildrenProperties().isSequenced();
 					if (sequenced) {
 						// All elements have the same child elements in the same sequence
-						dtd.addContent(" (");
+						dtd.append(" (");
 						boolean first = true;
 						for (Map.Entry<String, Cardinality> elementInfo : elementDecl.getChildrenProperties()
 								.getCardinalities().entrySet()) {
@@ -64,53 +64,53 @@ public class XML2DTDGenerator extends AbstractXML2GrammarGenerator<DTDGeneratorS
 							cancelChecker.checkCanceled();
 
 							if (!first) {
-								dtd.addContent(",");
+								dtd.append(",");
 							}
 							first = false;
-							dtd.addContent(elementInfo.getKey());
+							dtd.append(elementInfo.getKey());
 							Cardinality cardinality = elementInfo.getValue();
 							if (cardinality.getMin() == 0 && cardinality.getMax() == 1) {
 								// ? 0-1
-								dtd.addContent("?");
+								dtd.append("?");
 							} else if (cardinality.getMin() == 0 && cardinality.getMax() > 1) {
 								// * 0-n
-								dtd.addContent("*");
+								dtd.append("*");
 							} else if (cardinality.getMax() > 1) {
 								// + 1-n
-								dtd.addContent("+");
+								dtd.append("+");
 							}
 						}
-						dtd.addContent(")");
+						dtd.append(")");
 
 					} else {
 						// the children don't always appear in the same sequence;
-						dtd.addContent(" (");
+						dtd.append(" (");
 						boolean first = true;
 						for (ElementDeclaration elementInfo : children) {
 
 							cancelChecker.checkCanceled();
 
 							if (!first) {
-								dtd.addContent("|");
+								dtd.append("|");
 							}
 							first = false;
-							dtd.addContent(elementInfo.getName());
+							dtd.append(elementInfo.getName());
 						}
-						dtd.addContent(")*");
+						dtd.append(")*");
 					}
 				} else {
 					// Mixed content
-					dtd.addContent("(#PCDATA");
+					dtd.append("(#PCDATA");
 					if (hasCharacterContent) {
 						for (ElementDeclaration elementInfo : children) {
 
 							cancelChecker.checkCanceled();
 
-							dtd.addContent("|");
-							dtd.addContent(elementInfo.getName());
+							dtd.append("|");
+							dtd.append(elementInfo.getName());
 						}
 					}
-					dtd.addContent(")*");
+					dtd.append(")*");
 				}
 			}
 			dtd.closeStartElement();
@@ -142,17 +142,17 @@ public class XML2DTDGenerator extends AbstractXML2GrammarGenerator<DTDGeneratorS
 						dtd.addParameter("#FIXED");
 						dtd.addParameter("\"" + val + "\"");
 					} else if (enums) {
-						dtd.addContent(" (");
+						dtd.append(" (");
 						SortedSet<String> values = attribute.getValues();
 						boolean first = true;
 						for (String value : values) {
 							if (!first) {
-								dtd.addContent("|");
+								dtd.append("|");
 							}
-							dtd.addContent(value);
+							dtd.append(value);
 							first = false;
 						}
-						dtd.addContent(")");
+						dtd.append(")");
 					} else {
 						dtd.addParameter(tokentype);
 					}

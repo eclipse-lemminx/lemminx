@@ -14,6 +14,7 @@ package org.eclipse.lemminx.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import org.eclipse.lemminx.settings.QuoteStyle;
 import org.eclipse.lemminx.settings.SharedSettings;
 import org.eclipse.lemminx.settings.XMLFormattingOptions.SplitAttributes;
 import org.junit.jupiter.api.BeforeEach;
@@ -167,5 +168,130 @@ public class XMLBuilderTest {
 				.selfCloseElement()
 				.toString();
 		assertEquals("<child a='1'\n         b='2' />", xml);
+	}
+
+	// ==========================================
+	// Quote escaping in attribute values
+	// ==========================================
+
+	@Test
+	public void addAttributeEscapesSingleQuoteInValue() throws Exception {
+		SharedSettings s = new SharedSettings();
+		s.getFormattingSettings().setInsertSpaces(true);
+		s.getFormattingSettings().setTabSize(2);
+		s.getPreferences().setQuoteStyle(QuoteStyle.singleQuotes);
+
+		String xml = new XMLBuilder(s, "", "\n")
+				.startElement("root", false)
+				.addSingleAttribute("href", "http://example.org/o'brien", true)
+				.selfCloseElement()
+				.toString();
+		assertEquals("<root href='http://example.org/o&apos;brien' />", xml);
+	}
+
+	@Test
+	public void addAttributeEscapesDoubleQuoteInValue() throws Exception {
+		SharedSettings s = new SharedSettings();
+		s.getFormattingSettings().setInsertSpaces(true);
+		s.getFormattingSettings().setTabSize(2);
+
+		String xml = new XMLBuilder(s, "", "\n")
+				.startElement("root", false)
+				.addSingleAttribute("title", "He said \"hello\"", true)
+				.selfCloseElement()
+				.toString();
+		assertEquals("<root title=\"He said &quot;hello&quot;\" />", xml);
+	}
+
+	@Test
+	public void addAttributeNoEscapeWhenNoConflict() throws Exception {
+		SharedSettings s = new SharedSettings();
+		s.getFormattingSettings().setInsertSpaces(true);
+		s.getFormattingSettings().setTabSize(2);
+
+		String xml = new XMLBuilder(s, "", "\n")
+				.startElement("root", false)
+				.addSingleAttribute("href", "http://example.org/path", true)
+				.selfCloseElement()
+				.toString();
+		assertEquals("<root href=\"http://example.org/path\" />", xml);
+	}
+
+	@Test
+	public void addAttributeSingleQuoteInValueWithDoubleQuotePreference() throws Exception {
+		// Double quote in value, but preferred quote is single → no escaping needed
+		SharedSettings s = new SharedSettings();
+		s.getFormattingSettings().setInsertSpaces(true);
+		s.getFormattingSettings().setTabSize(2);
+		s.getPreferences().setQuoteStyle(QuoteStyle.singleQuotes);
+
+		String xml = new XMLBuilder(s, "", "\n")
+				.startElement("root", false)
+				.addSingleAttribute("title", "He said \"hello\"", true)
+				.selfCloseElement()
+				.toString();
+		assertEquals("<root title='He said \"hello\"' />", xml);
+	}
+
+	@Test
+	public void addAttributeDoubleQuoteInValueWithSingleQuotePreference() throws Exception {
+		// Single quote in value, but preferred quote is double → no escaping needed
+		SharedSettings s = new SharedSettings();
+		s.getFormattingSettings().setInsertSpaces(true);
+		s.getFormattingSettings().setTabSize(2);
+
+		String xml = new XMLBuilder(s, "", "\n")
+				.startElement("root", false)
+				.addSingleAttribute("href", "o'brien", true)
+				.selfCloseElement()
+				.toString();
+		assertEquals("<root href=\"o'brien\" />", xml);
+	}
+
+	@Test
+	public void addAttributeMultipleQuotesEscaped() throws Exception {
+		SharedSettings s = new SharedSettings();
+		s.getFormattingSettings().setInsertSpaces(true);
+		s.getFormattingSettings().setTabSize(2);
+
+		String xml = new XMLBuilder(s, "", "\n")
+				.startElement("root", false)
+				.addSingleAttribute("v", "a\"b\"c", true)
+				.selfCloseElement()
+				.toString();
+		assertEquals("<root v=\"a&quot;b&quot;c\" />", xml);
+	}
+
+	@Test
+	public void addAttributeOnNewLineEscapesQuotes() throws Exception {
+		SharedSettings s = new SharedSettings();
+		s.getFormattingSettings().setInsertSpaces(true);
+		s.getFormattingSettings().setTabSize(2);
+		s.getFormattingSettings().setSplitAttributes(SplitAttributes.force);
+		s.getPreferences().setQuoteStyle(QuoteStyle.singleQuotes);
+
+		String xml = new XMLBuilder(s, "", "\n")
+				.startElement("root", false)
+				.initElementContext("root")
+				.addSingleAttribute("a", "it's", true)
+				.addAttributeOnNewLine("b", "it's fine", 0, true)
+				.selfCloseElement()
+				.toString();
+		assertEquals("<root a='it&apos;s'\n    b='it&apos;s fine' />", xml);
+	}
+
+	@Test
+	public void addAttributeNoSurroundQuotesNoEscaping() throws Exception {
+		// When surroundWithQuotes is false, no escaping should occur
+		SharedSettings s = new SharedSettings();
+		s.getFormattingSettings().setInsertSpaces(true);
+		s.getFormattingSettings().setTabSize(2);
+
+		String xml = new XMLBuilder(s, "", "\n")
+				.startElement("root", false)
+				.addSingleAttribute("v", "'raw'", false)
+				.selfCloseElement()
+				.toString();
+		assertEquals("<root v='raw' />", xml);
 	}
 }

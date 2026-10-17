@@ -17,6 +17,7 @@ import static org.eclipse.lemminx.XMLAssert.assertGrammarGenerator;
 import java.io.IOException;
 
 import org.eclipse.lemminx.AbstractCacheBasedTest;
+import org.eclipse.lemminx.settings.SharedSettings;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -688,5 +689,31 @@ public class XML2RelaxNGGeneratorTest extends AbstractCacheBasedTest {
 				"  </define>" + lineSeparator() + //
 				"</grammar>";
 		assertGrammarGenerator(xml, new RelaxNGGeneratorSettings(), rng);
+	}
+
+	@Test
+	public void schemaWithTabSizeZero() throws IOException {
+		String xml = "<note>\r\n" + //
+				"	<to>Tove</to>\r\n" + //
+				"</note>";
+		String rng = "<grammar xmlns=\"http://relaxng.org/ns/structure/1.0\"" + lineSeparator() + //
+				"  datatypeLibrary=\"http://www.w3.org/2001/XMLSchema-datatypes\">" + lineSeparator() + //
+				"  <start>" + lineSeparator() + //
+				"    <ref name=\"noteContent\" />" + lineSeparator() + //
+				"  </start>" + lineSeparator() + //
+				"  <define name=\"noteContent\">" + lineSeparator() + //
+				"    <element name=\"note\">" + lineSeparator() + //
+				"      <ref name=\"toContent\" />" + lineSeparator() + //
+				"    </element>" + lineSeparator() + //
+				"  </define>" + lineSeparator() + //
+				"  <define name=\"toContent\">" + lineSeparator() + //
+				"    <element name=\"to\">" + lineSeparator() + //
+				"      <text />" + lineSeparator() + //
+				"    </element>" + lineSeparator() + //
+				"  </define>" + lineSeparator() + //
+				"</grammar>";
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setTabSize(0);
+		assertGrammarGenerator(xml, new RelaxNGGeneratorSettings(), settings, rng);
 	}
 }

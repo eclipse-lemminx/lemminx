@@ -28,6 +28,7 @@ import java.util.logging.Logger;
 
 import org.eclipse.lemminx.commons.BadLocationException;
 import org.eclipse.lemminx.commons.CodeActionFactory;
+import org.eclipse.lemminx.dom.DOMAttr;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMElement;
 import org.eclipse.lemminx.extensions.generators.FileContentGeneratorManager;
@@ -40,13 +41,16 @@ import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionParticipant
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionRequest;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionResolvesParticipant;
 import org.eclipse.lemminx.settings.SharedSettings;
+import org.eclipse.lemminx.settings.XMLFormattingOptions.SplitAttributes;
 import org.eclipse.lemminx.utils.StringUtils;
 import org.eclipse.lemminx.utils.XMLBuilder;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionKind;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.Position;
+import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.TextDocumentEdit;
+import org.eclipse.lsp4j.TextEdit;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 
@@ -325,21 +329,35 @@ public class NoGrammarConstraintsCodeAction implements ICodeActionParticipant {
 
 		if (documentElement == null) {
 			generateStartTag(insertText, document);
+		} else {
+			insertText.initElementContext(documentElement.getTagName());
 		}
 
-		insertText.append(" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"");
-		insertText.append(delimiter);
+		SplitAttributes splitAttr = sharedSettings.getFormattingSettings().getSplitAttributes();
 
-		insertText.append(" xsi:noNamespaceSchemaLocation=\"");
-		insertText.append(schemaFileName);
-		insertText.append("\"");
+		if (splitAttr.isExpandFirstAttribute()) {
+			insertText.addAttributeOnNewLine("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance", 0, true);
+		} else {
+			insertText.addSingleAttribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance", true);
+		}
+		insertText.addAttributeOnNewLine("xsi:noNamespaceSchemaLocation", schemaFileName, 0, true);
+
+		int endOffset = afterTagOffset;
+		if (documentElement != null && documentElement.hasAttributes() && splitAttr.isAlwaysSplit()) {
+			insertText.appendNewLineAttributeIndent(0);
+			DOMAttr firstAttr = documentElement.getAttributeNodes().get(0);
+			endOffset = firstAttr.getStart();
+		}
 
 		if (documentElement == null) {
 			generateEndTag(insertText);
 		}
 
-		Position position = document.positionAt(afterTagOffset);
-		return CodeActionFactory.insertEdit(insertText.toString(), position, document.getTextDocument());
+		Position startPosition = document.positionAt(afterTagOffset);
+		Position endPosition = document.positionAt(endOffset);
+		return CodeActionFactory.insertEdits(document.getTextDocument(),
+				Collections.singletonList(
+						new TextEdit(new Range(startPosition, endPosition), insertText.toString())));
 	}
 
 	public static TextDocumentEdit createXSISchemaLocationEdit(String schemaFileName, String targetNamespace,
@@ -355,28 +373,49 @@ public class NoGrammarConstraintsCodeAction implements ICodeActionParticipant {
 
 		if (documentElement == null) {
 			generateStartTag(insertText, document);
+		} else {
+			insertText.initElementContext(documentElement.getTagName());
 		}
 
-		insertText.append(" xmlns=\"");
-		insertText.append(targetNamespace);
-		insertText.append("\"");
-		insertText.append(delimiter);
+		SplitAttributes splitAttr = sharedSettings.getFormattingSettings().getSplitAttributes();
 
-		insertText.append(" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"");
-		insertText.append(delimiter);
+		boolean hasExistingNamespace = documentElement != null
+				&& !StringUtils.isEmpty(documentElement.getNamespaceURI());
 
-		insertText.append(" xsi:schemaLocation=\"");
-		insertText.append(targetNamespace);
-		insertText.append(" ");
-		insertText.append(schemaFileName);
-		insertText.append("\"");
+		int insertOffset;
+		if (hasExistingNamespace) {
+			List<DOMAttr> attrs = documentElement.getAttributeNodes();
+			DOMAttr lastAttr = attrs.get(attrs.size() - 1);
+			insertOffset = lastAttr.getEnd();
+		} else {
+			insertOffset = afterTagOffset;
+			if (splitAttr.isExpandFirstAttribute()) {
+				insertText.addAttributeOnNewLine("xmlns", targetNamespace, 0, true);
+			} else {
+				insertText.addSingleAttribute("xmlns", targetNamespace, true);
+			}
+		}
+
+		insertText.addAttributeOnNewLine("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance", 0, true);
+		insertText.addAttributeOnNewLine("xsi:schemaLocation", targetNamespace + " " + schemaFileName, 0, true);
+
+		int endOffset = insertOffset;
+		if (!hasExistingNamespace && documentElement != null && documentElement.hasAttributes()
+				&& splitAttr.isAlwaysSplit()) {
+			insertText.appendNewLineAttributeIndent(0);
+			DOMAttr firstAttr = documentElement.getAttributeNodes().get(0);
+			endOffset = firstAttr.getStart();
+		}
 
 		if (documentElement == null) {
 			generateEndTag(insertText);
 		}
 
-		Position position = document.positionAt(afterTagOffset);
-		return CodeActionFactory.insertEdit(insertText.toString(), position, document.getTextDocument());
+		Position startPosition = document.positionAt(insertOffset);
+		Position endPosition = document.positionAt(endOffset);
+		return CodeActionFactory.insertEdits(document.getTextDocument(),
+				Collections.singletonList(
+						new TextEdit(new Range(startPosition, endPosition), insertText.toString())));
 	}
 
 	public static TextDocumentEdit createXmlModelEdit(String schemaFileName, String targetNamespace,
@@ -397,7 +436,10 @@ public class NoGrammarConstraintsCodeAction implements ICodeActionParticipant {
 				+ xsdWithXmlModel.toString();
 		Position xmlModelPosition = document.positionAt(beforeTagOffset);
 
-		if (documentElement != null && StringUtils.isEmpty(targetNamespace)) {
+		boolean hasExistingNamespace = documentElement != null
+				&& !StringUtils.isEmpty(documentElement.getNamespaceURI());
+
+		if (documentElement != null && (StringUtils.isEmpty(targetNamespace) || hasExistingNamespace)) {
 			return CodeActionFactory.insertEdit(xmlModelInsertText, xmlModelPosition, document.getTextDocument());
 		}
 
@@ -442,15 +484,15 @@ public class NoGrammarConstraintsCodeAction implements ICodeActionParticipant {
 		} else {
 			builder.addParameter(PLACEHOLDER_ELEMENT_NAME);
 		}
-		builder.addContent(" SYSTEM \"");
-		builder.addContent(dtdFileName);
-		builder.addContent("\"");
+		builder.append(" SYSTEM \"");
+		builder.append(dtdFileName);
+		builder.append("\"");
 		builder.endDoctype();
 		builder.linefeed();
 
 		if (documentElement == null) {
-			builder.addContent("<");
-			builder.addContent(PLACEHOLDER_ELEMENT_NAME);
+			builder.append("<");
+			builder.append(PLACEHOLDER_ELEMENT_NAME);
 			generateEndTag(builder);
 		}
 
@@ -464,14 +506,13 @@ public class NoGrammarConstraintsCodeAction implements ICodeActionParticipant {
 		if (document.getLastChild() != null) {
 			builder.linefeed();
 		}
-		builder.addContent("<");
-		builder.addContent(PLACEHOLDER_ELEMENT_NAME);
+		builder.startElement(PLACEHOLDER_ELEMENT_NAME, false);
 	}
 
 	private static void generateEndTag(XMLBuilder builder) {
-		builder.addContent("></");
-		builder.addContent(PLACEHOLDER_ELEMENT_NAME);
-		builder.addContent(">");
+		builder.append("></");
+		builder.append(PLACEHOLDER_ELEMENT_NAME);
+		builder.append(">");
 	}
 
 }
