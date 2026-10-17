@@ -14,7 +14,6 @@ package org.eclipse.lemminx.extensions.contentmodel.commands;
 import static org.eclipse.lemminx.extensions.xsd.utils.XSDUtils.TARGET_NAMESPACE_ATTR;
 
 import java.net.URL;
-import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -100,7 +99,7 @@ public class AssociateGrammarCommand extends AbstractDOMDocumentCommandHandler {
 		String documentURI = document.getDocumentURI();
 		String fullPathGrammarURI = ArgumentsUtils.getArgAt(params, 1, String.class);
 		String bindingType = ArgumentsUtils.getArgAt(params, 2, String.class);
-		String grammarURI = getRelativeURI(fullPathGrammarURI, documentURI);
+		String grammarURI = FilesUtils.getRelativeURI(fullPathGrammarURI, documentURI);
 		boolean isXSD = DOMUtils.isXSD(fullPathGrammarURI);
 
 		if (GrammarBindingType.STANDARD.getName().equals(bindingType)) {
@@ -134,16 +133,6 @@ public class AssociateGrammarCommand extends AbstractDOMDocumentCommandHandler {
 		throw new UnknownBindingTypeException(bindingType);
 	}
 
-	private static String getRelativeURI(String fullPathGrammarURI, String documentURI) {
-		try {
-			Path grammarPath = FilesUtils.getPath(fullPathGrammarURI);
-			Path documentPath = FilesUtils.getPath(documentURI);
-			Path relativePath = documentPath.getParent().relativize(grammarPath);
-			return relativePath.toString().replaceAll("\\\\", "/");
-		} catch (Exception e) {
-			return fullPathGrammarURI;
-		}
-	}
 
 	private static String getTargetNamespace(String xsdURI) {
 		TargetNamespaceHandler handler = new TargetNamespaceHandler();

@@ -22,6 +22,7 @@ import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMParser;
 import org.eclipse.lemminx.services.XMLLanguageService;
 import org.eclipse.lemminx.settings.SharedSettings;
+import org.eclipse.lemminx.settings.XMLFormattingOptions.SplitAttributes;
 import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextEdit;
 import org.junit.jupiter.api.Assertions;
@@ -129,7 +130,7 @@ public class NoGrammarConstraintsCodeActionTest extends AbstractCacheBasedTest {
 				.createXSINoNamespaceSchemaLocationEdit("file:///my-schema.dtd", xmlDocument, sharedSettings);
 		assertTextDocumentEdit(tde(te(0, 0, 0, 0,
 				"<root-element xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + System.lineSeparator()
-						+ " xsi:noNamespaceSchemaLocation=\"file:///my-schema.dtd\"></root-element>")),
+						+ "    xsi:noNamespaceSchemaLocation=\"file:///my-schema.dtd\"></root-element>")),
 				actual);
 
 		xmlDocument = getDOMDocument("<root></root>");
@@ -137,7 +138,7 @@ public class NoGrammarConstraintsCodeActionTest extends AbstractCacheBasedTest {
 				xmlDocument, sharedSettings);
 		assertTextDocumentEdit(tde(te(0, 5, 0, 5,
 				" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + System.lineSeparator()
-						+ " xsi:noNamespaceSchemaLocation=\"file:///my-schema.dtd\"")),
+						+ "    xsi:noNamespaceSchemaLocation=\"file:///my-schema.dtd\"")),
 				actual);
 
 		xmlDocument = getDOMDocument("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
@@ -146,7 +147,7 @@ public class NoGrammarConstraintsCodeActionTest extends AbstractCacheBasedTest {
 		assertTextDocumentEdit(tde(te(0, 38, 0, 38,
 				System.lineSeparator() + "<root-element xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\""
 						+ System.lineSeparator()
-						+ " xsi:noNamespaceSchemaLocation=\"file:///my-schema.dtd\"></root-element>")),
+						+ "    xsi:noNamespaceSchemaLocation=\"file:///my-schema.dtd\"></root-element>")),
 				actual);
 	}
 
@@ -157,8 +158,8 @@ public class NoGrammarConstraintsCodeActionTest extends AbstractCacheBasedTest {
 				"https://google.ca", xmlDocument, sharedSettings);
 		assertTextDocumentEdit(tde(te(0, 0, 0, 0,
 				"<root-element xmlns=\"https://google.ca\"" + System.lineSeparator()
-						+ " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + System.lineSeparator()
-						+ " xsi:schemaLocation=\"https://google.ca file:///my-schema.dtd\"></root-element>")),
+						+ "    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + System.lineSeparator()
+						+ "    xsi:schemaLocation=\"https://google.ca file:///my-schema.dtd\"></root-element>")),
 				actual);
 
 		xmlDocument = getDOMDocument("<root></root>");
@@ -166,8 +167,8 @@ public class NoGrammarConstraintsCodeActionTest extends AbstractCacheBasedTest {
 				"https://google.ca", xmlDocument, sharedSettings);
 		assertTextDocumentEdit(tde(te(0, 5, 0, 5,
 				" xmlns=\"https://google.ca\"" + System.lineSeparator()
-						+ " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + System.lineSeparator()
-						+ " xsi:schemaLocation=\"https://google.ca file:///my-schema.dtd\"")),
+						+ "    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + System.lineSeparator()
+						+ "    xsi:schemaLocation=\"https://google.ca file:///my-schema.dtd\"")),
 				actual);
 
 		xmlDocument = getDOMDocument("<?xml version=\"1.0\" encoding=\"UTF-8\"?>");
@@ -175,8 +176,132 @@ public class NoGrammarConstraintsCodeActionTest extends AbstractCacheBasedTest {
 				"https://google.ca", xmlDocument, sharedSettings);
 		assertTextDocumentEdit(tde(te(0, 38, 0, 38,
 				System.lineSeparator() + "<root-element xmlns=\"https://google.ca\"" + System.lineSeparator()
-						+ " xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + System.lineSeparator()
-						+ " xsi:schemaLocation=\"https://google.ca file:///my-schema.dtd\"></root-element>")),
+						+ "    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + System.lineSeparator()
+						+ "    xsi:schemaLocation=\"https://google.ca file:///my-schema.dtd\"></root-element>")),
+				actual);
+	}
+
+	// ---------- splitAttributes mode tests ----------
+
+	@Test
+	public void testNoNamespaceSchemaLocationForceMode() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.force);
+
+		DOMDocument xmlDocument = getDOMDocument("<root></root>");
+		TextDocumentEdit actual = NoGrammarConstraintsCodeAction
+				.createXSINoNamespaceSchemaLocationEdit("file:///my-schema.xsd", xmlDocument, settings);
+		assertTextDocumentEdit(tde(te(0, 5, 0, 5,
+				" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + System.lineSeparator()
+						+ "    xsi:noNamespaceSchemaLocation=\"file:///my-schema.xsd\"")),
+				actual);
+	}
+
+	@Test
+	public void testNoNamespaceSchemaLocationForceAlignedMode() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.forceAligned);
+
+		// <root> => tagName.length() + 2 = 4 + 2 = 6 spaces alignment
+		DOMDocument xmlDocument = getDOMDocument("<root></root>");
+		TextDocumentEdit actual = NoGrammarConstraintsCodeAction
+				.createXSINoNamespaceSchemaLocationEdit("file:///my-schema.xsd", xmlDocument, settings);
+		assertTextDocumentEdit(tde(te(0, 5, 0, 5,
+				" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + System.lineSeparator()
+						+ "      xsi:noNamespaceSchemaLocation=\"file:///my-schema.xsd\"")),
+				actual);
+	}
+
+	@Test
+	public void testNoNamespaceSchemaLocationForceAlignedModeShortTag() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.forceAligned);
+
+		// <foo> => tagName.length() + 2 = 3 + 2 = 5 spaces alignment
+		DOMDocument xmlDocument = getDOMDocument("<foo></foo>");
+		TextDocumentEdit actual = NoGrammarConstraintsCodeAction
+				.createXSINoNamespaceSchemaLocationEdit("file:///my-schema.xsd", xmlDocument, settings);
+		assertTextDocumentEdit(tde(te(0, 4, 0, 4,
+				" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + System.lineSeparator()
+						+ "     xsi:noNamespaceSchemaLocation=\"file:///my-schema.xsd\"")),
+				actual);
+	}
+
+	@Test
+	public void testNoNamespaceSchemaLocationForceExpandMultilineMode() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.forceExpandMultiline);
+
+		DOMDocument xmlDocument = getDOMDocument("<root></root>");
+		TextDocumentEdit actual = NoGrammarConstraintsCodeAction
+				.createXSINoNamespaceSchemaLocationEdit("file:///my-schema.xsd", xmlDocument, settings);
+		// In forceExpandMultiline, first attribute also goes on new line
+		assertTextDocumentEdit(tde(te(0, 5, 0, 5,
+				System.lineSeparator()
+						+ "    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + System.lineSeparator()
+						+ "    xsi:noNamespaceSchemaLocation=\"file:///my-schema.xsd\"")),
+				actual);
+	}
+
+	@Test
+	public void testNoNamespaceSchemaLocationWithExistingAttrsForceMode() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.force);
+
+		DOMDocument xmlDocument = getDOMDocument("<foo attr=\"123\"></foo>");
+		TextDocumentEdit actual = NoGrammarConstraintsCodeAction
+				.createXSINoNamespaceSchemaLocationEdit("file:///my-schema.xsd", xmlDocument, settings);
+		// Replaces from after tag name (4) to first attr start (5), consuming the space
+		// Existing attr gets pushed to a new line
+		assertTextDocumentEdit(tde(te(0, 4, 0, 5,
+				" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + System.lineSeparator()
+						+ "    xsi:noNamespaceSchemaLocation=\"file:///my-schema.xsd\"" + System.lineSeparator()
+						+ "    ")),
+				actual);
+	}
+
+	@Test
+	public void testNoNamespaceSchemaLocationWithExistingAttrsPreserveMode() throws BadLocationException {
+		// In preserve mode, existing attributes stay where they are
+		DOMDocument xmlDocument = getDOMDocument("<foo attr=\"123\"></foo>");
+		TextDocumentEdit actual = NoGrammarConstraintsCodeAction
+				.createXSINoNamespaceSchemaLocationEdit("file:///my-schema.xsd", xmlDocument, sharedSettings);
+		// Pure insert, no range replacement
+		assertTextDocumentEdit(tde(te(0, 4, 0, 4,
+				" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + System.lineSeparator()
+						+ "    xsi:noNamespaceSchemaLocation=\"file:///my-schema.xsd\"")),
+				actual);
+	}
+
+	@Test
+	public void testSchemaLocationForceAlignedMode() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.forceAligned);
+
+		// <foo> => 3 + 2 = 5 spaces alignment
+		DOMDocument xmlDocument = getDOMDocument("<foo></foo>");
+		TextDocumentEdit actual = NoGrammarConstraintsCodeAction
+				.createXSISchemaLocationEdit("file:///my-schema.xsd", "https://ns.example.com", xmlDocument, settings);
+		assertTextDocumentEdit(tde(te(0, 4, 0, 4,
+				" xmlns=\"https://ns.example.com\"" + System.lineSeparator()
+						+ "     xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + System.lineSeparator()
+						+ "     xsi:schemaLocation=\"https://ns.example.com file:///my-schema.xsd\"")),
+				actual);
+	}
+
+	@Test
+	public void testSchemaLocationWithExistingAttrsForceMode() throws BadLocationException {
+		SharedSettings settings = new SharedSettings();
+		settings.getFormattingSettings().setSplitAttributes(SplitAttributes.force);
+
+		DOMDocument xmlDocument = getDOMDocument("<foo attr=\"123\"></foo>");
+		TextDocumentEdit actual = NoGrammarConstraintsCodeAction
+				.createXSISchemaLocationEdit("file:///my-schema.xsd", "https://ns.example.com", xmlDocument, settings);
+		assertTextDocumentEdit(tde(te(0, 4, 0, 5,
+				" xmlns=\"https://ns.example.com\"" + System.lineSeparator()
+						+ "    xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + System.lineSeparator()
+						+ "    xsi:schemaLocation=\"https://ns.example.com file:///my-schema.xsd\"" + System.lineSeparator()
+						+ "    ")),
 				actual);
 	}
 

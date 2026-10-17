@@ -52,7 +52,7 @@ public class RNGCodeLensExtensionsTest extends AbstractCacheBasedTest {
 				"    </define>\r\n" + //
 				"</grammar>";
 		XMLAssert.testCodeLensFor(xml, //
-				cl(r(0, 0, 0, 0), "http://relaxng.org/ns/structure/1.0 (with embedded relaxng.rng)", OPEN_URI), //
+				cl(r(0, 0, 0, 0), "http://relaxng.org/ns/structure/1.0 (embedded relaxng.rng)", OPEN_URI), //
 				cl(r(11, 12, 11, 30), "1 reference", SHOW_REFERENCES));
 	}
 
@@ -77,7 +77,7 @@ public class RNGCodeLensExtensionsTest extends AbstractCacheBasedTest {
 				+ "  </div>\r\n"
 				+ "</grammar>";
 		XMLAssert.testCodeLensFor(xml, //
-				cl(r(0, 0, 0, 0), "http://relaxng.org/ns/structure/1.0 (with embedded relaxng.rng)", OPEN_URI), //
+				cl(r(0, 0, 0, 0), "http://relaxng.org/ns/structure/1.0 (embedded relaxng.rng)", OPEN_URI), //
 				cl(r(5, 10, 5, 29), "1 reference", SHOW_REFERENCES),
 				cl(r(12, 14, 12, 25), "1 reference", SHOW_REFERENCES));
 	}

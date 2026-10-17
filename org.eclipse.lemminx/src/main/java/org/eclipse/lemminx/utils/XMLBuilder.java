@@ -89,6 +89,42 @@ public class XMLBuilder {
 		return startElement(null, name, close);
 	}
 
+	/**
+	 * Initializes element context for attribute formatting without generating
+	 * the start tag. Use when adding attributes to an existing element.
+	 */
+	public XMLBuilder initElementContext(String tagName) {
+		this.lastElementNameLength = tagName != null ? tagName.length() : 0;
+		this.firstAttrOnTagLine = false;
+		return this;
+	}
+
+	/**
+	 * Appends a newline followed by the proper attribute indentation
+	 * for the current split attributes mode.
+	 */
+	public XMLBuilder appendNewLineAttributeIndent(int level) {
+		linefeed();
+		if (getSplitAttributes().isAlignWithFirstAttr() && firstAttrOnTagLine) {
+			indentToFirstAttrOffset();
+		} else if (getSplitAttributes().isAlignWithFirstAttr()) {
+			indent(level + 1);
+		} else {
+			indent(level + sharedSettings.getFormattingSettings().getSplitAttributesIndentSize());
+		}
+		return this;
+	}
+
+	/**
+	 * Adds an attribute on a new line with proper indentation,
+	 * always forcing a line break regardless of split attributes mode.
+	 */
+	public XMLBuilder addAttributeOnNewLine(String name, String value, int level, boolean surroundWithQuotes) {
+		appendNewLineAttributeIndent(level);
+		addAttributeContents(name, true, value, surroundWithQuotes, null);
+		return this;
+	}
+
 	public XMLBuilder endElement(String name, boolean isEndTagClosed) {
 		return endElement(null, name, isEndTagClosed);
 	}
@@ -283,7 +319,12 @@ public class XMLBuilder {
 		if (quote != null) {
 			append(quote);
 		}
-		append(valueWithoutQuote);
+		if (quote != null && valueWithoutQuote != null && valueWithoutQuote.indexOf(quote) != -1) {
+			String entity = quote == '"' ? "&quot;" : "&apos;";
+			append(valueWithoutQuote.replace(String.valueOf(quote), entity));
+		} else {
+			append(valueWithoutQuote);
+		}
 		if (quote != null) {
 			append(quote);
 		}

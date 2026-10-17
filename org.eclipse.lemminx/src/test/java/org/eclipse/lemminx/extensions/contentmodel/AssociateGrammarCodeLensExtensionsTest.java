@@ -150,7 +150,7 @@ public class AssociateGrammarCodeLensExtensionsTest extends AbstractCacheBasedTe
 				"</xs:schema>";
 		testCodeLensFor(xsd, "test.xsd", //
 				Collections.singletonList(CodeLensKind.OpenUri), //
-				cl(r(0, 0, 0, 0), "http://www.w3.org/2001/XMLSchema (with embedded xml.xsd)", OPEN_URI));
+				cl(r(0, 0, 0, 0), "http://www.w3.org/2001/XMLSchema (embedded xml.xsd)", OPEN_URI));
 	}
 
 	@Test
@@ -168,7 +168,7 @@ public class AssociateGrammarCodeLensExtensionsTest extends AbstractCacheBasedTe
 		testCodeLensFor(xml, "file:///test/resources.xml", new XMLLanguageService(), //
 				Collections.singletonList(CodeLensKind.OpenUri), //
 				configuration, //
-				cl(r(0, 0, 0, 0), " (with file association)", OPEN_URI));
+				cl(r(0, 0, 0, 0), "resources.xsd (file association)", OPEN_URI));
 	}
 
 	@Test
@@ -185,14 +185,14 @@ public class AssociateGrammarCodeLensExtensionsTest extends AbstractCacheBasedTe
 		testCodeLensFor(xml, "file:///test/resources.xml", new XMLLanguageService(), //
 				Collections.singletonList(CodeLensKind.OpenUri), //
 				configuration, //
-				cl(r(0, 0, 0, 0), " (with file association)", OPEN_URI));
+				cl(r(0, 0, 0, 0), "resources.xsd (file association)", OPEN_URI));
 
 		xml = "";
 
 		testCodeLensFor(xml, "file:///test/resources.xml", new XMLLanguageService(), //
 				Collections.singletonList(CodeLensKind.OpenUri), //
 				configuration, //
-				cl(r(0, 0, 0, 0), " (with file association)", OPEN_URI));
+				cl(r(0, 0, 0, 0), "resources.xsd (file association)", OPEN_URI));
 	}
 
 	public void unregisterCatalog() throws BadLocationException, IOException {
@@ -206,7 +206,7 @@ public class AssociateGrammarCodeLensExtensionsTest extends AbstractCacheBasedTe
 		testCodeLensFor(xml, "src/test/resources/catalogs/catalog.xml", new XMLLanguageService(), //
 				Collections.singletonList(CodeLensKind.OpenUri), //
 				configuration, //
-				cl(r(0, 0, 0, 0), "urn:oasis:names:tc:entity:xmlns:xml:catalog (with embedded catalog.xsd)", OPEN_URI),
+				cl(r(0, 0, 0, 0), "urn:oasis:names:tc:entity:xmlns:xml:catalog (embedded catalog.xsd)", OPEN_URI),
 				cl(r(1, 1, 1, 8), "Unregister Catalog", UPDATE_CONFIGURATION));
 	}
 
@@ -217,7 +217,7 @@ public class AssociateGrammarCodeLensExtensionsTest extends AbstractCacheBasedTe
 
 		testCodeLensFor(xml, "src/test/resources/catalogs/catalog.xml", new XMLLanguageService(), //
 				Collections.singletonList(CodeLensKind.OpenUri), //
-				cl(r(0, 0, 0, 0), "urn:oasis:names:tc:entity:xmlns:xml:catalog (with embedded catalog.xsd)", OPEN_URI),
+				cl(r(0, 0, 0, 0), "urn:oasis:names:tc:entity:xmlns:xml:catalog (embedded catalog.xsd)", OPEN_URI),
 				cl(r(1, 1, 1, 8), "Register Catalog", UPDATE_CONFIGURATION));
 	}
 
@@ -233,7 +233,7 @@ public class AssociateGrammarCodeLensExtensionsTest extends AbstractCacheBasedTe
 		testCodeLensFor(xml, "src/test/resources/catalogs/catalog.xml", new XMLLanguageService(), //
 				Collections.singletonList(CodeLensKind.OpenUri), //
 				configuration, //
-				cl(r(0, 0, 0, 0), "urn:oasis:names:tc:entity:xmlns:xml:catalog (with embedded catalog.xsd)", OPEN_URI),
+				cl(r(0, 0, 0, 0), "urn:oasis:names:tc:entity:xmlns:xml:catalog (embedded catalog.xsd)", OPEN_URI),
 				cl(r(1, 1, 1, 8), "Register Catalog", UPDATE_CONFIGURATION));
 	}
 
@@ -251,7 +251,7 @@ public class AssociateGrammarCodeLensExtensionsTest extends AbstractCacheBasedTe
 		testCodeLensFor(xml, "src/test/resources/catalogs/catalog.xml", new XMLLanguageService(), //
 				Collections.singletonList(CodeLensKind.OpenUri), //
 				configuration, //
-				cl(r(0, 0, 0, 0), "urn:oasis:names:tc:entity:xmlns:xml:catalog (with embedded catalog.xsd)", OPEN_URI),
+				cl(r(0, 0, 0, 0), "urn:oasis:names:tc:entity:xmlns:xml:catalog (embedded catalog.xsd)", OPEN_URI),
 				cl(r(1, 1, 1, 8), "Unregister Catalog", UPDATE_CONFIGURATION));
 	}
 

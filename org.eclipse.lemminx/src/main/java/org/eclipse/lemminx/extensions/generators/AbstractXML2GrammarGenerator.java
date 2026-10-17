@@ -110,11 +110,12 @@ public abstract class AbstractXML2GrammarGenerator<T extends FileContentGenerato
 	 */
 	private static Grammar createGrammar(Document sourceDocument, boolean flat, CancelChecker cancelChecker) {
 		Grammar grammar = new Grammar();
-		// Update default namespace
+		// Update default namespace from the root element's namespace URI
+		// (covers both xmlns="..." and xmlns:prefix="..." declarations)
 		String defaultNamespace = null;
 		Element documentElement = sourceDocument.getDocumentElement();
 		if (documentElement != null) {
-			defaultNamespace = documentElement.getAttribute(DOMAttr.XMLNS_ATTR);
+			defaultNamespace = documentElement.getNamespaceURI();
 		}
 		grammar.setDefaultNamespace(defaultNamespace);
 		// Update elements information

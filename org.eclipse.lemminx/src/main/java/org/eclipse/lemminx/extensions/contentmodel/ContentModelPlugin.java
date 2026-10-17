@@ -22,6 +22,7 @@ import org.eclipse.lemminx.extensions.contentmodel.commands.AssociateGrammarComm
 import org.eclipse.lemminx.extensions.contentmodel.commands.CheckBoundGrammarCommand;
 import org.eclipse.lemminx.extensions.contentmodel.commands.CheckFilePatternCommand;
 import org.eclipse.lemminx.commons.progress.ProgressSupport;
+import org.eclipse.lemminx.extensions.contentmodel.commands.GenerateGrammarFromXMLCommand;
 import org.eclipse.lemminx.extensions.contentmodel.commands.GenerateXMLFromGrammarCommand;
 import org.eclipse.lemminx.extensions.contentmodel.commands.ListRootElementsCommand;
 import org.eclipse.lemminx.extensions.contentmodel.commands.SurroundWithCommand;
@@ -273,6 +274,8 @@ public class ContentModelPlugin implements IXMLExtension {
 					new ListRootElementsCommand(contentModelManager, progressSupport));
 			generateCommand = new GenerateXMLFromGrammarCommand(contentModelManager, progressSupport);
 			commandService.registerCommand(GenerateXMLFromGrammarCommand.COMMAND_ID, generateCommand);
+			commandService.registerCommand(GenerateGrammarFromXMLCommand.COMMAND_ID,
+					new GenerateGrammarFromXMLCommand(documentProvider, registry));
 		}
 	}
 
@@ -302,6 +305,7 @@ public class ContentModelPlugin implements IXMLExtension {
 			commandService.unregisterCommand(SurroundWithCommand.COMMAND_ID);
 			commandService.unregisterCommand(ListRootElementsCommand.COMMAND_ID);
 			commandService.unregisterCommand(GenerateXMLFromGrammarCommand.COMMAND_ID);
+			commandService.unregisterCommand(GenerateGrammarFromXMLCommand.COMMAND_ID);
 		}
 	}
 

@@ -259,8 +259,8 @@ public class FilesUtils {
 		// Remove file://
 		uri = removeFileScheme(uri, Platform.isWindows);
 		try {
-			// replace "%20" with " ", "%3A" with ":", etc
-			uri = URLDecoder.decode(uri, StandardCharsets.UTF_8.name());
+			// Escape literal '+' before decoding so URLDecoder doesn't treat them as spaces
+			uri = URLDecoder.decode(uri.replace("+", "%2B"), StandardCharsets.UTF_8.name());
 		} catch (UnsupportedEncodingException e) {
 			// Do nothing
 		}
@@ -314,5 +314,27 @@ public class FilesUtils {
 	 */
 	public static String getFileName(Path path) {
 		return path.getName(path.getNameCount() - 1).toString();
+	}
+
+	/**
+	 * Returns the relative URI of {@code targetURI} from the directory containing
+	 * {@code baseDocumentURI}. If relativization fails, returns
+	 * {@code targetURI} unchanged.
+	 *
+	 * @param targetURI       the target file URI (e.g. a grammar file URI).
+	 * @param baseDocumentURI the base document URI used to compute the relative
+	 *                        path.
+	 * @return the relative URI with forward slashes.
+	 */
+	public static String getRelativeURI(String targetURI, String baseDocumentURI) {
+		try {
+			Path targetPath = getPath(targetURI);
+			Path basePath = getPath(baseDocumentURI);
+			Path relativePath = basePath.getParent().relativize(targetPath);
+			// Use URI constructor to properly encode special characters (spaces, #, etc.)
+			return new URI(null, null, relativePath.toString().replace('\\', '/'), null).toASCIIString();
+		} catch (Exception e) {
+			return targetURI;
+		}
 	}
 }
