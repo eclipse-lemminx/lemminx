@@ -53,4 +53,16 @@ public interface Scanner {
 	 * @return True if the token's Text is empty or all whitespace
 	 */
 	boolean isTokenTextBlank();
+
+	/**
+	 * Repositions the scanner to the given offset and resets state to
+	 * {@link ScannerState#WithinContent} so the next {@link #scan()} call
+	 * resumes scanning content from that position.
+	 *
+	 * <p>Use case: skip past a Markdown fenced code block whose content
+	 * contains XML-like tags that the scanner would otherwise tokenize.</p>
+	 *
+	 * @param offset the offset to jump to (must be within the input bounds)
+	 */
+	void goTo(int offset);
 }

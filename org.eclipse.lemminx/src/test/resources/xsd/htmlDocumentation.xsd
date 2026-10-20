@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+           targetNamespace="http://htmlDocumentation"
+           xmlns:tns="http://htmlDocumentation"
+           elementFormDefault="qualified">
+  <xs:element name="root">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="withBr">
+          <xs:annotation>
+            <xs:documentation>Line one.<br/>Line two.</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="withBold">
+          <xs:annotation>
+            <xs:documentation>This is <b>bold</b> text</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="noBr">
+          <xs:annotation>
+            <xs:documentation>Simple documentation</xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="multiLineProse">
+          <xs:annotation>
+            <xs:documentation>
+      In keeping with the standard policy,
+      this document will persist at
+      the given URI.
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="proseWithIndented">
+          <xs:annotation>
+            <xs:documentation>
+      Previous versions include:
+
+        http://example.com/v1
+          (Version 1)
+
+        http://example.com/v2
+          (Version 2)
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="withBareAngleBracket">
+          <xs:annotation>
+            <xs:documentation><![CDATA[<p>The value must satisfy x < 100 and y > 0.</p>]]></xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="withAmpersandLink">
+          <xs:annotation>
+            <xs:documentation><![CDATA[See <a href="https://example.com/search?q=a&b=c">search results</a>.]]></xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="withBlockquote">
+          <xs:annotation>
+            <xs:documentation><![CDATA[<blockquote>Note: This element is deprecated. Use <code>new-element</code> instead.</blockquote>]]></xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="withListParagraph">
+          <xs:annotation>
+            <xs:documentation><![CDATA[
+<ul>
+<li><p>First step.</p></li>
+<li>Second step.</li>
+</ul>
+]]></xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="withRowspan">
+          <xs:annotation>
+            <xs:documentation><![CDATA[
+<table>
+<tr><th>Category</th><th>Item</th></tr>
+<tr><td rowspan="2">Fruit</td><td>Apple</td></tr>
+<tr><td>Banana</td></tr>
+</table>
+]]></xs:documentation>
+          </xs:annotation>
+        </xs:element>
+        <xs:element name="withEntityProse">
+          <xs:annotation>
+            <xs:documentation>
+                The value must satisfy x &lt; 100 and y &gt; 0.
+            </xs:documentation>
+          </xs:annotation>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

@@ -72,7 +72,7 @@ public class DTDCompletionExtensionsTest extends AbstractCacheBasedTest {
 				"  <|";
 		testCompletionFor(xml,
 				c("catalog", te(5, 2, 5, 3, "<catalog>$1</catalog>$0"), "<catalog",
-						" $Id: catalog.dtd,v 1.10 2002/10/18 23:54:58 ndw Exp $ " + System.lineSeparator()
+						"$Id: catalog.dtd,v 1.10 2002/10/18 23:54:58 ndw Exp $" + System.lineSeparator()
 								+ System.lineSeparator() + "Source: catalog.dtd",
 						MarkupKind.PLAINTEXT));
 	}

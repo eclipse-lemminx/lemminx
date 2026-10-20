@@ -1039,6 +1039,27 @@ public class XMLScanner implements Scanner {
 		return tokenError;
 	}
 
+	/**
+	 * {@inheritDoc}
+	 *
+	 * <p>Repositions the internal stream to the given offset and resets
+	 * the scanner state so the next {@link #scan()} call resumes from
+	 * that position as if it were fresh content.</p>
+	 *
+	 * <p>Use case: skip past a Markdown fenced code block whose content
+	 * contains XML-like tags (e.g., {@code <key>value</key>}) that the
+	 * scanner would otherwise tokenize as {@link TokenType#StartTag}.</p>
+	 */
+	@Override
+	public void goTo(int offset) {
+		// Reposition the stream to the target offset.
+		// Ex: after a fenced code block "```\n<key/>\n```\n", skip to
+		// the offset after the closing "```\n" so <key/> is not scanned.
+		stream.goBackTo(offset);
+		state = ScannerState.WithinContent;
+		tokenOffset = offset;
+	}
+
 	public String getTokenTextFromOffset(int offset) {
 		return stream.getText(offset, stream.pos());
 	}

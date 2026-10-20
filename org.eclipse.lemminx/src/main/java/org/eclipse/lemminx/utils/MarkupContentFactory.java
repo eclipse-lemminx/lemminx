@@ -14,6 +14,7 @@ package org.eclipse.lemminx.utils;
 import java.util.List;
 
 import org.eclipse.lemminx.services.extensions.ISharedSettingsRequest;
+import org.eclipse.lemminx.converter.markdown.MarkdownConverter;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.MarkupContent;
 import org.eclipse.lsp4j.MarkupKind;
