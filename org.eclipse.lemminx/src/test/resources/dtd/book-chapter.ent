@@ -1,0 +1,10 @@
+<!ELEMENT chapter (section*)>
+<!ATTLIST chapter
+  id ID #REQUIRED
+  title CDATA #REQUIRED
+>
+
+<!ELEMENT section (#PCDATA)>
+<!ATTLIST section
+  name CDATA #REQUIRED
+>
