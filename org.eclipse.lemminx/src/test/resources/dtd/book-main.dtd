@@ -1,0 +1,8 @@
+<!ELEMENT book (chapter+)>
+<!ATTLIST book
+  title CDATA #REQUIRED
+  isbn CDATA #REQUIRED
+>
+
+<!ENTITY % chapter SYSTEM "book-chapter.ent">
+%chapter;

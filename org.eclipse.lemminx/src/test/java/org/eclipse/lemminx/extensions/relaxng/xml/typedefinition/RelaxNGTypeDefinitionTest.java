@@ -42,6 +42,21 @@ public class RelaxNGTypeDefinitionTest extends AbstractCacheBasedTest {
 	}
 
 	@Test
+	public void toChildElementDeclaration() throws BadLocationException {
+		String xmlFile = "src/test/resources/relaxng/addressBook.xml";
+		String rngFile = "addressBook_v1.rng";
+
+		String xml = "<?xml-model href=\"addressBook_v1.rng\" ?>\r\n" + //
+				"<addressBook>\r\n" + //
+				"  <car|d></card>\r\n" + //
+				"</addressBook>";
+		XMLLanguageService xmlLanguageService = new XMLLanguageService();
+		String targetSchemaURI = xmlLanguageService.getResolverExtensionManager().resolve(xmlFile, null, rngFile);
+		testTypeDefinitionFor(xmlLanguageService, xml, xmlFile, //
+				ll(targetSchemaURI, r(2, 3, 2, 7), r(4, 13, 4, 24)));
+	}
+
+	@Test
 	public void toAttributeDeclaration() throws BadLocationException {
 		String xmlFile = "src/test/resources/relaxng/tei.xml";
 		String xsdFile = "tei_all.rng";
