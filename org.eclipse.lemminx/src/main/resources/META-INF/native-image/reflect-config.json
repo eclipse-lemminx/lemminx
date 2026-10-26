@@ -198,6 +198,10 @@
 		"allDeclaredMethods": true
 	},
 	{
+		"name": "org.eclipse.lemminx.extensions.contentmodel.commands.BindableCatalogEntry",
+		"allDeclaredFields": true
+	},
+	{
 		"name": "org.eclipse.lemminx.extensions.contentmodel.commands.GenerateGrammarFromXMLCommand$GenerateGrammarResult",
 		"allDeclaredFields": true
 	},

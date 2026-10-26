@@ -41,11 +41,11 @@ public abstract class CatalogEntry {
 	}
 
 	/**
-	 * Returns the element that corresponds with this catalog entry
+	 * Returns the DOM element that corresponds with this catalog entry.
 	 *
-	 * @return the element that corresponds with this catalog entry
+	 * @return the DOM element that corresponds with this catalog entry
 	 */
-	protected DOMElement getEntryElement() {
+	public DOMElement getEntryElement() {
 		return entryElement;
 	}
 

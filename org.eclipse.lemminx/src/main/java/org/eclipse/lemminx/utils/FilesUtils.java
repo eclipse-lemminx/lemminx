@@ -337,4 +337,23 @@ public class FilesUtils {
 			return targetURI;
 		}
 	}
+
+	/**
+	 * Returns the relative URI of {@code targetURI} from the given
+	 * {@code baseDirPath} directory. If relativization fails, returns
+	 * {@code targetURI} unchanged.
+	 *
+	 * @param targetURI  the target file URI (e.g. a grammar file URI).
+	 * @param baseDirPath the base directory path used to compute the relative path.
+	 * @return the relative URI with forward slashes.
+	 */
+	public static String getRelativeURI(String targetURI, Path baseDirPath) {
+		try {
+			Path targetPath = getPath(targetURI);
+			Path relativePath = baseDirPath.relativize(targetPath);
+			return new URI(null, null, relativePath.toString().replace('\\', '/'), null).toASCIIString();
+		} catch (Exception e) {
+			return targetURI;
+		}
+	}
 }

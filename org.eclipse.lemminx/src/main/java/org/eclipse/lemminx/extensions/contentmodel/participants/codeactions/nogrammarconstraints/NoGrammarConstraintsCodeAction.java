@@ -318,27 +318,72 @@ public class NoGrammarConstraintsCodeAction implements ICodeActionParticipant {
 	public static TextDocumentEdit createXSINoNamespaceSchemaLocationEdit(String schemaFileName, DOMDocument document,
 			SharedSettings sharedSettings)
 			throws BadLocationException {
+		return createXSINoNamespaceSchemaLocationEdit(schemaFileName, document, sharedSettings, null, false);
+	}
+
+	/**
+	 * Creates an edit that inserts {@code xsi:noNamespaceSchemaLocation} with
+	 * optional root element name(s) resolved from the grammar.
+	 *
+	 * <p>
+	 * When the document has no root element and snippet editing is supported
+	 * with multiple root element names, the generated start tag uses a snippet
+	 * choice {@code ${1|elem1,elem2,...|}} and the end tag mirrors it with
+	 * {@code $1}. Cursor is placed at {@code $0} inside the element.
+	 * </p>
+	 *
+	 * @param schemaFileName   the schema file reference for the attribute value.
+	 * @param document         the target XML document.
+	 * @param sharedSettings   the shared settings.
+	 * @param rootElementNames root element names from the grammar, or null.
+	 * @param snippetSupport   whether the client supports SnippetTextEdit.
+	 * @return the text document edit.
+	 * @throws BadLocationException if position computation fails.
+	 */
+	public static TextDocumentEdit createXSINoNamespaceSchemaLocationEdit(String schemaFileName, DOMDocument document,
+			SharedSettings sharedSettings, List<String> rootElementNames, boolean snippetSupport)
+			throws BadLocationException {
 		String delimiter = document.getTextDocument().lineDelimiter(0);
 		DOMElement documentElement = document.getDocumentElement();
+		DOMElement orphanElement = null;
+		if (documentElement != null && !documentElement.hasTagName()) {
+			orphanElement = documentElement;
+			documentElement = null;
+		}
 		int beforeTagOffset = documentElement != null ? documentElement.getStartTagOpenOffset()
+				: orphanElement != null ? orphanElement.getStart()
 				: document.getLastChild() != null ? document.getLastChild().getEnd() : 0;
 		int afterTagOffset = documentElement != null ? beforeTagOffset + 1 + documentElement.getTagName().length()
 				: beforeTagOffset;
 
+		boolean hasXsiNamespace = documentElement != null && documentElement.getAttribute("xmlns:xsi") != null;
+		boolean useSnippet = snippetSupport && documentElement == null;
+		String startName = getStartElementName(rootElementNames, useSnippet);
+		String endName = getEndElementName(rootElementNames, useSnippet);
+
 		XMLBuilder insertText = new XMLBuilder(sharedSettings, null, delimiter);
 
 		if (documentElement == null) {
-			generateStartTag(insertText, document);
+			if (orphanElement == null) {
+				generateStartTag(insertText, document, startName);
+			} else {
+				insertText.startElement(startName, false);
+			}
+			if (useSnippet && rootElementNames != null && rootElementNames.size() > 1) {
+				insertText.initElementContext(rootElementNames.get(0));
+			}
 		} else {
 			insertText.initElementContext(documentElement.getTagName());
 		}
 
 		SplitAttributes splitAttr = sharedSettings.getFormattingSettings().getSplitAttributes();
 
-		if (splitAttr.isExpandFirstAttribute()) {
-			insertText.addAttributeOnNewLine("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance", 0, true);
-		} else {
-			insertText.addSingleAttribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance", true);
+		if (!hasXsiNamespace) {
+			if (splitAttr.isExpandFirstAttribute()) {
+				insertText.addAttributeOnNewLine("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance", 0, true);
+			} else {
+				insertText.addSingleAttribute("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance", true);
+			}
 		}
 		insertText.addAttributeOnNewLine("xsi:noNamespaceSchemaLocation", schemaFileName, 0, true);
 
@@ -350,29 +395,53 @@ public class NoGrammarConstraintsCodeAction implements ICodeActionParticipant {
 		}
 
 		if (documentElement == null) {
-			generateEndTag(insertText);
+			generateEndTag(insertText, endName, useSnippet);
 		}
 
 		Position startPosition = document.positionAt(afterTagOffset);
-		Position endPosition = document.positionAt(endOffset);
+		Position endPosition = document.positionAt(orphanElement != null ? orphanElement.getEnd() : endOffset);
 		return CodeActionFactory.insertEdits(document.getTextDocument(),
 				Collections.singletonList(
-						new TextEdit(new Range(startPosition, endPosition), insertText.toString())));
+						new TextEdit(new Range(startPosition, endPosition), insertText.toString())),
+				useSnippet);
 	}
 
 	public static TextDocumentEdit createXSISchemaLocationEdit(String schemaFileName, String targetNamespace,
 			DOMDocument document, SharedSettings sharedSettings) throws BadLocationException {
+		return createXSISchemaLocationEdit(schemaFileName, targetNamespace, document, sharedSettings, null, false);
+	}
+
+	public static TextDocumentEdit createXSISchemaLocationEdit(String schemaFileName, String targetNamespace,
+			DOMDocument document, SharedSettings sharedSettings, List<String> rootElementNames,
+			boolean snippetSupport) throws BadLocationException {
 		String delimiter = document.getTextDocument().lineDelimiter(0);
 		DOMElement documentElement = document.getDocumentElement();
+		DOMElement orphanElement = null;
+		if (documentElement != null && !documentElement.hasTagName()) {
+			orphanElement = documentElement;
+			documentElement = null;
+		}
 		int beforeTagOffset = documentElement != null ? documentElement.getStartTagOpenOffset()
+				: orphanElement != null ? orphanElement.getStart()
 				: document.getLastChild() != null ? document.getLastChild().getEnd() : 0;
 		int afterTagOffset = documentElement != null ? beforeTagOffset + 1 + documentElement.getTagName().length()
 				: beforeTagOffset;
 
+		boolean useSnippet = snippetSupport && documentElement == null;
+		String startName = getStartElementName(rootElementNames, useSnippet);
+		String endName = getEndElementName(rootElementNames, useSnippet);
+
 		XMLBuilder insertText = new XMLBuilder(sharedSettings, null, delimiter);
 
 		if (documentElement == null) {
-			generateStartTag(insertText, document);
+			if (orphanElement == null) {
+				generateStartTag(insertText, document, startName);
+			} else {
+				insertText.startElement(startName, false);
+			}
+			if (useSnippet && rootElementNames != null && rootElementNames.size() > 1) {
+				insertText.initElementContext(rootElementNames.get(0));
+			}
 		} else {
 			insertText.initElementContext(documentElement.getTagName());
 		}
@@ -381,6 +450,7 @@ public class NoGrammarConstraintsCodeAction implements ICodeActionParticipant {
 
 		boolean hasExistingNamespace = documentElement != null
 				&& !StringUtils.isEmpty(documentElement.getNamespaceURI());
+		boolean hasXsiNamespace = documentElement != null && documentElement.getAttribute("xmlns:xsi") != null;
 
 		int insertOffset;
 		if (hasExistingNamespace) {
@@ -396,7 +466,9 @@ public class NoGrammarConstraintsCodeAction implements ICodeActionParticipant {
 			}
 		}
 
-		insertText.addAttributeOnNewLine("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance", 0, true);
+		if (!hasXsiNamespace) {
+			insertText.addAttributeOnNewLine("xmlns:xsi", "http://www.w3.org/2001/XMLSchema-instance", 0, true);
+		}
 		insertText.addAttributeOnNewLine("xsi:schemaLocation", targetNamespace + " " + schemaFileName, 0, true);
 
 		int endOffset = insertOffset;
@@ -408,31 +480,57 @@ public class NoGrammarConstraintsCodeAction implements ICodeActionParticipant {
 		}
 
 		if (documentElement == null) {
-			generateEndTag(insertText);
+			generateEndTag(insertText, endName, useSnippet);
 		}
 
 		Position startPosition = document.positionAt(insertOffset);
-		Position endPosition = document.positionAt(endOffset);
+		Position endPosition = document.positionAt(orphanElement != null ? orphanElement.getEnd() : endOffset);
 		return CodeActionFactory.insertEdits(document.getTextDocument(),
 				Collections.singletonList(
-						new TextEdit(new Range(startPosition, endPosition), insertText.toString())));
+						new TextEdit(new Range(startPosition, endPosition), insertText.toString())),
+				useSnippet);
 	}
 
 	public static TextDocumentEdit createXmlModelEdit(String schemaFileName, String targetNamespace,
 			DOMDocument document, SharedSettings sharedSettings) throws BadLocationException {
+		return createXmlModelEdit(schemaFileName, targetNamespace, null, document, sharedSettings, null, false);
+	}
+
+	public static TextDocumentEdit createXmlModelEdit(String schemaFileName, String targetNamespace,
+			String schematypens, DOMDocument document, SharedSettings sharedSettings) throws BadLocationException {
+		return createXmlModelEdit(schemaFileName, targetNamespace, schematypens, document, sharedSettings, null, false);
+	}
+
+	public static TextDocumentEdit createXmlModelEdit(String schemaFileName, String targetNamespace,
+			String schematypens, DOMDocument document, SharedSettings sharedSettings,
+			List<String> rootElementNames, boolean snippetSupport) throws BadLocationException {
 		String delimiter = document.getTextDocument().lineDelimiter(0);
 		DOMElement documentElement = document.getDocumentElement();
+		DOMElement orphanElement = null;
+		if (documentElement != null && !documentElement.hasTagName()) {
+			orphanElement = documentElement;
+			documentElement = null;
+		}
 		int beforeTagOffset = documentElement != null ? documentElement.getStartTagOpenOffset()
+				: orphanElement != null ? orphanElement.getStart()
 				: document.getLastChild() != null ? document.getLastChild().getEnd() : 0;
+
+		boolean useSnippet = snippetSupport && documentElement == null;
+		String startName = getStartElementName(rootElementNames, useSnippet);
+		String endName = getEndElementName(rootElementNames, useSnippet);
 
 		// Insert Text edit for xml-model
 		XMLBuilder xsdWithXmlModel = new XMLBuilder(sharedSettings, null, delimiter);
 		xsdWithXmlModel.startPrologOrPI("xml-model");
 		xsdWithXmlModel.addSingleAttribute("href", schemaFileName, true);
+		if (schematypens != null) {
+			xsdWithXmlModel.addSingleAttribute("schematypens", schematypens, true);
+		}
 		xsdWithXmlModel.endPrologOrPI();
 		xsdWithXmlModel.linefeed();
 
-		String xmlModelInsertText = (documentElement == null && document.getLastChild() != null ? delimiter : "")
+		String xmlModelInsertText = (documentElement == null && orphanElement == null
+				&& document.getLastChild() != null ? delimiter : "")
 				+ xsdWithXmlModel.toString();
 		Position xmlModelPosition = document.positionAt(beforeTagOffset);
 
@@ -448,7 +546,11 @@ public class NoGrammarConstraintsCodeAction implements ICodeActionParticipant {
 		XMLBuilder xmlNamespaceInsertText = new XMLBuilder(sharedSettings, null, delimiter);
 
 		if (documentElement == null) {
-			generateStartTag(xmlNamespaceInsertText, document);
+			if (orphanElement == null) {
+				generateStartTag(xmlNamespaceInsertText, document, startName);
+			} else {
+				xmlNamespaceInsertText.startElement(startName, false);
+			}
 		}
 
 		if (!StringUtils.isEmpty(targetNamespace)) {
@@ -458,61 +560,194 @@ public class NoGrammarConstraintsCodeAction implements ICodeActionParticipant {
 		}
 
 		if (documentElement == null) {
-			generateEndTag(xmlNamespaceInsertText);
+			generateEndTag(xmlNamespaceInsertText, endName, useSnippet);
 		}
 
 		int afterTagOffset = beforeTagOffset
 				+ (documentElement != null ? 1 + documentElement.getTagName().length() : 0);
 		Position xmlNamespacePosition = document.positionAt(afterTagOffset);
 
+		if (orphanElement != null) {
+			Position orphanEnd = document.positionAt(orphanElement.getEnd());
+			return CodeActionFactory.insertEdits(document.getTextDocument(),
+					Arrays.asList(CodeActionFactory.insertEdit(xmlModelInsertText, xmlModelPosition),
+							new TextEdit(new Range(xmlNamespacePosition, orphanEnd),
+									xmlNamespaceInsertText.toString())),
+					useSnippet);
+		}
 		return CodeActionFactory.insertEdits(document.getTextDocument(), //
 				Arrays.asList(CodeActionFactory.insertEdit(xmlModelInsertText, xmlModelPosition), //
-						CodeActionFactory.insertEdit(xmlNamespaceInsertText.toString(), xmlNamespacePosition)));
+						CodeActionFactory.insertEdit(xmlNamespaceInsertText.toString(), xmlNamespacePosition)),
+				useSnippet);
 	}
 
 	public static TextDocumentEdit createDocTypeEdit(String dtdFileName, DOMDocument document,
 			SharedSettings sharedSettings) throws BadLocationException {
+		return createDocTypeEdit(null, dtdFileName, document, sharedSettings, null, false);
+	}
+
+	public static TextDocumentEdit createDocTypeEdit(String dtdFileName, DOMDocument document,
+			SharedSettings sharedSettings, List<String> rootElementNames, boolean snippetSupport)
+			throws BadLocationException {
+		return createDocTypeEdit(null, dtdFileName, document, sharedSettings, rootElementNames, snippetSupport);
+	}
+
+	public static TextDocumentEdit createPublicDocTypeEdit(String publicId, String systemId, DOMDocument document,
+			SharedSettings sharedSettings) throws BadLocationException {
+		return createDocTypeEdit(publicId, systemId, document, sharedSettings, null, false);
+	}
+
+	public static TextDocumentEdit createPublicDocTypeEdit(String publicId, String systemId, DOMDocument document,
+			SharedSettings sharedSettings, List<String> rootElementNames, boolean snippetSupport)
+			throws BadLocationException {
+		return createDocTypeEdit(publicId, systemId, document, sharedSettings, rootElementNames, snippetSupport);
+	}
+
+	private static TextDocumentEdit createDocTypeEdit(String publicId, String systemId, DOMDocument document,
+			SharedSettings sharedSettings, List<String> rootElementNames, boolean snippetSupport)
+			throws BadLocationException {
 		String delimiter = document.getTextDocument().lineDelimiter(0);
 		DOMElement documentElement = document.getDocumentElement();
+		DOMElement orphanElement = null;
+		if (documentElement != null && !documentElement.hasTagName()) {
+			orphanElement = documentElement;
+			documentElement = null;
+		}
 		int beforeTagOffset = documentElement != null ? documentElement.getStartTagOpenOffset()
+				: orphanElement != null ? orphanElement.getStart()
 				: document.getLastChild() != null ? document.getLastChild().getEnd() : 0;
+
+		boolean useSnippet = snippetSupport && documentElement == null;
+		String startName = getStartElementName(rootElementNames, useSnippet);
+		String endName = getEndElementName(rootElementNames, useSnippet);
 
 		XMLBuilder builder = new XMLBuilder(sharedSettings, null, delimiter);
 		builder.startDoctype();
 		if (documentElement != null) {
 			builder.addParameter(documentElement.getLocalName());
 		} else {
-			builder.addParameter(PLACEHOLDER_ELEMENT_NAME);
+			builder.addParameter(startName);
 		}
-		builder.append(" SYSTEM \"");
-		builder.append(dtdFileName);
-		builder.append("\"");
+		if (publicId != null) {
+			builder.append(" PUBLIC \"");
+			builder.append(publicId);
+			builder.append("\" \"");
+			builder.append(systemId);
+			builder.append("\"");
+		} else {
+			builder.append(" SYSTEM \"");
+			builder.append(systemId);
+			builder.append("\"");
+		}
 		builder.endDoctype();
 		builder.linefeed();
 
 		if (documentElement == null) {
 			builder.append("<");
-			builder.append(PLACEHOLDER_ELEMENT_NAME);
-			generateEndTag(builder);
+			builder.append(endName);
+			generateEndTag(builder, endName, useSnippet);
 		}
 
-		String insertText = (documentElement == null && document.getLastChild() != null ? delimiter : "")
-				+ builder.toString();
-		Position position = document.positionAt(beforeTagOffset);
-		return CodeActionFactory.insertEdit(insertText, position, document.getTextDocument());
+		String insertText = (documentElement == null && orphanElement == null && document.getLastChild() != null
+				? delimiter
+				: "") + builder.toString();
+		Position startPosition = document.positionAt(beforeTagOffset);
+		if (orphanElement != null) {
+			Position endPosition = document.positionAt(orphanElement.getEnd());
+			TextEdit edit = new TextEdit(new Range(startPosition, endPosition), insertText);
+			return CodeActionFactory.insertEdits(document.getTextDocument(),
+					Collections.singletonList(edit), useSnippet);
+		}
+		return CodeActionFactory.insertEdit(insertText, startPosition, document.getTextDocument(), useSnippet);
 	}
 
 	private static void generateStartTag(XMLBuilder builder, DOMDocument document) {
+		generateStartTag(builder, document, PLACEHOLDER_ELEMENT_NAME);
+	}
+
+	private static void generateStartTag(XMLBuilder builder, DOMDocument document, String elementName) {
 		if (document.getLastChild() != null) {
 			builder.linefeed();
 		}
-		builder.startElement(PLACEHOLDER_ELEMENT_NAME, false);
+		builder.startElement(elementName, false);
 	}
 
 	private static void generateEndTag(XMLBuilder builder) {
-		builder.append("></");
-		builder.append(PLACEHOLDER_ELEMENT_NAME);
+		generateEndTag(builder, PLACEHOLDER_ELEMENT_NAME, false);
+	}
+
+	private static void generateEndTag(XMLBuilder builder, String elementName, boolean addCursor) {
 		builder.append(">");
+		if (addCursor) {
+			builder.append("$0");
+		}
+		builder.append("</");
+		builder.append(elementName);
+		builder.append(">");
+	}
+
+	/**
+	 * Returns the root element name to use in a DOCTYPE or other binding that
+	 * requires a single name (no snippet choice). Uses the first declared element
+	 * from the grammar, or the placeholder {@code "root-element"} if none are
+	 * available.
+	 */
+	private static String getEffectiveRootElementName(List<String> rootElementNames) {
+		if (rootElementNames == null || rootElementNames.isEmpty()) {
+			return PLACEHOLDER_ELEMENT_NAME;
+		}
+		return rootElementNames.get(0);
+	}
+
+	/**
+	 * Returns the element name for the start tag. When snippet editing is
+	 * supported and there are multiple root elements, generates a snippet choice
+	 * placeholder {@code ${1|elem1,elem2,...|}} so the user can pick the desired
+	 * root. The end tag uses {@code $1} to mirror this choice.
+	 *
+	 * @see #getEndElementName(List, boolean)
+	 */
+	private static String getStartElementName(List<String> rootElementNames, boolean snippetSupport) {
+		if (rootElementNames == null || rootElementNames.isEmpty()) {
+			return PLACEHOLDER_ELEMENT_NAME;
+		}
+		if (rootElementNames.size() == 1 || !snippetSupport) {
+			return rootElementNames.get(0);
+		}
+		StringBuilder sb = new StringBuilder("${1|");
+		for (int i = 0; i < rootElementNames.size(); i++) {
+			if (i > 0) {
+				sb.append(',');
+			}
+			sb.append(escapeSnippetChoice(rootElementNames.get(i)));
+		}
+		sb.append("|}");
+		return sb.toString();
+	}
+
+	/**
+	 * Returns the element name for the end tag. When snippet editing is supported
+	 * and there are multiple root elements, returns {@code $1} to mirror the
+	 * choice made in the start tag.
+	 *
+	 * @see #getStartElementName(List, boolean)
+	 */
+	private static String getEndElementName(List<String> rootElementNames, boolean snippetSupport) {
+		if (rootElementNames == null || rootElementNames.isEmpty()) {
+			return PLACEHOLDER_ELEMENT_NAME;
+		}
+		if (rootElementNames.size() == 1 || !snippetSupport) {
+			return rootElementNames.get(0);
+		}
+		return "$1";
+	}
+
+	/**
+	 * Escapes special characters ({@code \}, {@code |}, {@code ,}) in a snippet
+	 * choice value so they are treated as literal text.
+	 */
+	private static String escapeSnippetChoice(String name) {
+		return name.replace("\\", "\\\\").replace("|", "\\|").replace(",", "\\,");
 	}
 
 }

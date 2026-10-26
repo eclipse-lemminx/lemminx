@@ -1261,6 +1261,15 @@ public class XMLAssert {
 		return new TextDocumentEdit(versionedTextDocumentIdentifier, edits);
 	}
 
+	public static TextDocumentEdit tdeSnippet(String uri, int version, SnippetTextEdit... sne) {
+		VersionedTextDocumentIdentifier versionedTextDocumentIdentifier = new VersionedTextDocumentIdentifier(uri,
+				version);
+		List<Either<TextEdit, SnippetTextEdit>> edits = Arrays.stream(sne)
+				.map(Either::<TextEdit, SnippetTextEdit>forRight)
+				.collect(Collectors.toList());
+		return new TextDocumentEdit(versionedTextDocumentIdentifier, edits);
+	}
+
 	/**
 	 * Creates a {@link SnippetTextEdit} with the given range and snippet text.
 	 *
