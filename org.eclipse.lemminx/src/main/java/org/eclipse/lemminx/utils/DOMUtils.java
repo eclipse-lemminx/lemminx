@@ -86,7 +86,9 @@ public class DOMUtils {
 	 * @return true if the given URI is a XML Schema and false otherwise.
 	 */
 	public static boolean isXSD(String uri) {
-		return uri != null && uri.endsWith(XSD_EXTENSION);
+		return uri != null && uri.length() >= XSD_EXTENSION.length()
+				&& uri.regionMatches(true, uri.length() - XSD_EXTENSION.length(), XSD_EXTENSION, 0,
+						XSD_EXTENSION.length());
 	}
 
 	/**

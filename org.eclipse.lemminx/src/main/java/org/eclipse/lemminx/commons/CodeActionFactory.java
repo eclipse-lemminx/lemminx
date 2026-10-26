@@ -103,8 +103,13 @@ public class CodeActionFactory {
 	 * @return the text edit to insert a new content at the end of the given range.
 	 */
 	public static TextDocumentEdit insertEdit(String insertText, Position position, TextDocumentItem document) {
+		return insertEdit(insertText, position, document, false);
+	}
+
+	public static TextDocumentEdit insertEdit(String insertText, Position position, TextDocumentItem document,
+			boolean snippetSupport) {
 		TextEdit edit = insertEdit(insertText, position);
-		return insertEdits(document, Collections.singletonList(edit));
+		return insertEdits(document, Collections.singletonList(edit), snippetSupport);
 	}
 
 	public static TextEdit insertEdit(String insertText, Position position) {
@@ -112,9 +117,25 @@ public class CodeActionFactory {
 	}
 
 	public static TextDocumentEdit insertEdits(TextDocumentItem document, List<TextEdit> edits) {
+		return insertEdits(document, edits, false);
+	}
+
+	public static TextDocumentEdit insertEdits(TextDocumentItem document, List<TextEdit> edits,
+			boolean snippetSupport) {
 		VersionedTextDocumentIdentifier versionedTextDocumentIdentifier = new VersionedTextDocumentIdentifier(
 				document.getUri(), document.getVersion());
-		List<Either<TextEdit, SnippetTextEdit>> eitherEdits = TextEditUtils.toEitherTextEdits(edits);
+		List<Either<TextEdit, SnippetTextEdit>> eitherEdits;
+		if (snippetSupport) {
+			eitherEdits = edits.stream()
+					.map(te -> {
+						SnippetTextEdit se = new SnippetTextEdit(te.getRange(),
+								new StringValue("snippet", te.getNewText()));
+						return Either.<TextEdit, SnippetTextEdit>forRight(se);
+					})
+					.collect(Collectors.toList());
+		} else {
+			eitherEdits = TextEditUtils.toEitherTextEdits(edits);
+		}
 		return new TextDocumentEdit(versionedTextDocumentIdentifier, eitherEdits);
 	}
 
