@@ -18,9 +18,12 @@ import java.util.Objects;
 
 import org.eclipse.lemminx.XMLTextDocumentService.SaveContext;
 import org.eclipse.lemminx.dom.DOMDocument;
+import org.eclipse.lemminx.extensions.contentmodel.commands.AddCatalogEntryCommand;
 import org.eclipse.lemminx.extensions.contentmodel.commands.AssociateGrammarCommand;
 import org.eclipse.lemminx.extensions.contentmodel.commands.CheckBoundGrammarCommand;
 import org.eclipse.lemminx.extensions.contentmodel.commands.CheckFilePatternCommand;
+import org.eclipse.lemminx.extensions.contentmodel.commands.CreateCatalogCommand;
+import org.eclipse.lemminx.extensions.contentmodel.commands.ListBindableCatalogEntriesCommand;
 import org.eclipse.lemminx.commons.progress.ProgressSupport;
 import org.eclipse.lemminx.extensions.contentmodel.commands.GenerateGrammarFromXMLCommand;
 import org.eclipse.lemminx.extensions.contentmodel.commands.GenerateXMLFromGrammarCommand;
@@ -276,6 +279,12 @@ public class ContentModelPlugin implements IXMLExtension {
 			commandService.registerCommand(GenerateXMLFromGrammarCommand.COMMAND_ID, generateCommand);
 			commandService.registerCommand(GenerateGrammarFromXMLCommand.COMMAND_ID,
 					new GenerateGrammarFromXMLCommand(documentProvider, registry));
+			commandService.registerCommand(ListBindableCatalogEntriesCommand.COMMAND_ID,
+					new ListBindableCatalogEntriesCommand(contentModelManager));
+			commandService.registerCommand(AddCatalogEntryCommand.COMMAND_ID,
+					new AddCatalogEntryCommand());
+			commandService.registerCommand(CreateCatalogCommand.COMMAND_ID,
+					new CreateCatalogCommand());
 		}
 	}
 
@@ -306,6 +315,9 @@ public class ContentModelPlugin implements IXMLExtension {
 			commandService.unregisterCommand(ListRootElementsCommand.COMMAND_ID);
 			commandService.unregisterCommand(GenerateXMLFromGrammarCommand.COMMAND_ID);
 			commandService.unregisterCommand(GenerateGrammarFromXMLCommand.COMMAND_ID);
+			commandService.unregisterCommand(ListBindableCatalogEntriesCommand.COMMAND_ID);
+			commandService.unregisterCommand(AddCatalogEntryCommand.COMMAND_ID);
+			commandService.unregisterCommand(CreateCatalogCommand.COMMAND_ID);
 		}
 	}
 

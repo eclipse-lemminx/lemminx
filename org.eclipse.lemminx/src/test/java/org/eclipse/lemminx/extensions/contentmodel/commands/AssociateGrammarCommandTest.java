@@ -153,7 +153,7 @@ public class AssociateGrammarCommandTest extends AbstractCacheBasedTest {
 					.get();
 			fail("Unknown binding type should throw an exception.");
 		} catch (Exception e) {
-			assertEquals("Unknown binding type 'BAD'. Allowed values are [standard, xml-model]",
+			assertEquals("Unknown binding type 'BAD'. Allowed values are [standard, xml-model, catalog]",
 					e.getCause().getMessage());
 		}
 
