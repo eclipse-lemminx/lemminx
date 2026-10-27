@@ -192,6 +192,16 @@ public interface CMElementDeclaration {
 	}
 
 	/**
+	 * Returns the type name of the declared element (e.g., "xs:integer",
+	 * "itemType") and null if not available.
+	 *
+	 * @return the type name and null otherwise.
+	 */
+	default String getTypeName() {
+		return null;
+	}
+
+	/**
 	 * Return the enumeration values.
 	 *
 	 * @return the enumeration values.

@@ -55,6 +55,8 @@ public class XMLGeneralClientSettings {
 
 	private XMLCodeLensSettings codeLens;
 
+	private XMLInlayHintSettings inlayHint;
+
 	private XMLSemanticTokensSettings semanticTokens;
 
 	private XMLPreferences preferences;
@@ -95,6 +97,24 @@ public class XMLGeneralClientSettings {
 	 */
 	public void setCodeLens(XMLCodeLensSettings codeLens) {
 		this.codeLens = codeLens;
+	}
+
+	/**
+	 * Returns the inlay hint settings.
+	 *
+	 * @return the inlay hint settings.
+	 */
+	public XMLInlayHintSettings getInlayHint() {
+		return inlayHint;
+	}
+
+	/**
+	 * Sets the inlay hint settings.
+	 *
+	 * @param inlayHint
+	 */
+	public void setInlayHint(XMLInlayHintSettings inlayHint) {
+		this.inlayHint = inlayHint;
 	}
 
 	/**

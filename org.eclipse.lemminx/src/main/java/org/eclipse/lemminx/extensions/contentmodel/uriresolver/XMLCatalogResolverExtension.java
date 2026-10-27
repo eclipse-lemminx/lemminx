@@ -15,6 +15,7 @@ package org.eclipse.lemminx.extensions.contentmodel.uriresolver;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.logging.Logger;
@@ -106,7 +107,7 @@ public class XMLCatalogResolverExtension implements URIResolverExtension {
 			setCatalogResolver(null);
 		}
 		String[] newCatalogs = catalogResolver != null ? catalogResolver.getCatalogList() : null;
-		return !Objects.equals(oldCatalogs, newCatalogs);
+		return !Arrays.equals(oldCatalogs, newCatalogs);
 	}
 
 	public String expandSystemId(String path) {

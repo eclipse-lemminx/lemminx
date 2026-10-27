@@ -59,6 +59,7 @@ import org.eclipse.lemminx.services.extensions.diagnostics.IXMLErrorCode;
 import org.eclipse.lemminx.services.extensions.save.AbstractSaveContext;
 import org.eclipse.lemminx.settings.SharedSettings;
 import org.eclipse.lemminx.settings.XMLCodeLensSettings;
+import org.eclipse.lemminx.settings.XMLInlayHintSettings;
 import org.eclipse.lemminx.settings.XMLSymbolSettings;
 import org.eclipse.lemminx.settings.capabilities.CompletionResolveSupportProperty;
 import org.eclipse.lemminx.utils.StringUtils;
@@ -88,6 +89,8 @@ import org.eclipse.lsp4j.DocumentLink;
 import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.HoverCapabilities;
+import org.eclipse.lsp4j.InlayHint;
+import org.eclipse.lsp4j.InlayHintKind;
 import org.eclipse.lsp4j.LinkedEditingRanges;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
@@ -1834,6 +1837,87 @@ public class XMLAssert {
 				assertEquals(expectedCommand.getCommand(), actualCommand.getCommand());
 			}
 			assertEquals(expected[i].getData(), actual.get(i).getData());
+		}
+	}
+
+	// ------------------- InlayHint assert
+
+	public static void testInlayHintFor(String xml, InlayHint... expected) throws BadLocationException {
+		testInlayHintFor(xml, (String) null, expected);
+	}
+
+	public static void testInlayHintFor(String value, String fileURI, InlayHint... expected)
+			throws BadLocationException {
+		testInlayHintFor(value, fileURI, new XMLLanguageService(), expected);
+	}
+
+	public static void testInlayHintFor(String value, String fileURI, XMLInlayHintSettings inlayHintSettings,
+			InlayHint... expected) throws BadLocationException {
+		testInlayHintFor(value, fileURI, new XMLLanguageService(), null, inlayHintSettings, expected);
+	}
+
+	public static void testInlayHintFor(String value, String fileURI, XMLLanguageService xmlLanguageService,
+			InlayHint... expected) throws BadLocationException {
+		testInlayHintFor(value, fileURI, xmlLanguageService, null, expected);
+	}
+
+	public static void testInlayHintFor(String value, String fileURI, XMLLanguageService xmlLanguageService,
+			Consumer<XMLLanguageService> customConfiguration, InlayHint... expected) throws BadLocationException {
+		XMLInlayHintSettings inlayHintSettings = new XMLInlayHintSettings();
+		inlayHintSettings.setEnabled(true);
+		inlayHintSettings.setShowAttributeType(false);
+		inlayHintSettings.setShowElementType(false);
+		testInlayHintFor(value, fileURI, xmlLanguageService, customConfiguration, inlayHintSettings, expected);
+	}
+
+	public static void testInlayHintFor(String value, String fileURI, XMLLanguageService xmlLanguageService,
+			Consumer<XMLLanguageService> customConfiguration, XMLInlayHintSettings inlayHintSettings,
+			InlayHint... expected) throws BadLocationException {
+		TextDocument document = new TextDocument(value, fileURI != null ? fileURI : "test://test/test.xml");
+
+		if (xmlLanguageService == null) {
+			xmlLanguageService = new XMLLanguageService();
+		}
+
+		ContentModelSettings settings = new ContentModelSettings();
+		settings.setUseCache(false);
+		xmlLanguageService.doSave(new SettingsSaveContext(settings));
+
+		DOMDocument xmlDocument = DOMParser.getInstance().parse(document,
+				xmlLanguageService.getResolverExtensionManager());
+		xmlLanguageService.setDocumentProvider((uri) -> xmlDocument);
+
+		if (customConfiguration != null) {
+			xmlLanguageService.initializeIfNeeded();
+			customConfiguration.accept(xmlLanguageService);
+		}
+
+		Range range = new Range(new Position(0, 0), xmlDocument.positionAt(xmlDocument.getText().length()));
+		List<? extends InlayHint> actual = xmlLanguageService.getInlayHint(xmlDocument, inlayHintSettings, range,
+				() -> {
+				});
+		assertInlayHint(actual, expected);
+	}
+
+	public static InlayHint ih(Position position, String label) {
+		InlayHint hint = new InlayHint(position, Either.forLeft(label));
+		hint.setKind(InlayHintKind.Parameter);
+		hint.setPaddingLeft(true);
+		return hint;
+	}
+
+	public static InlayHint ihType(Position position, String label) {
+		InlayHint hint = new InlayHint(position, Either.forLeft(label));
+		hint.setKind(InlayHintKind.Type);
+		return hint;
+	}
+
+	public static void assertInlayHint(List<? extends InlayHint> actual, InlayHint... expected) {
+		assertEquals(expected.length, actual.size());
+		for (int i = 0; i < expected.length; i++) {
+			assertEquals(expected[i].getPosition(), actual.get(i).getPosition());
+			assertEquals(expected[i].getLabel(), actual.get(i).getLabel());
+			assertEquals(expected[i].getKind(), actual.get(i).getKind());
 		}
 	}
 

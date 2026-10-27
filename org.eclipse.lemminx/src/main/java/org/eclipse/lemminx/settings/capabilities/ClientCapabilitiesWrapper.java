@@ -127,6 +127,10 @@ public class ClientCapabilitiesWrapper {
 		return v3Supported && isDynamicRegistrationSupported(getTextDocument().getLinkedEditingRange());
 	}
 
+	public boolean isInlayHintDynamicRegistered() {
+		return v3Supported && isDynamicRegistrationSupported(getTextDocument().getInlayHint());
+	}
+
 	public boolean isInlineCompletionDynamicRegistered() {
 		return v3Supported && isDynamicRegistrationSupported(getTextDocument().getInlineCompletion());
 	}

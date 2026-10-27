@@ -113,6 +113,18 @@ public class CMXSDElementDeclaration implements CMElementDeclaration {
 	}
 
 	@Override
+	public String getTypeName() {
+		if (typeDefinition == null || typeDefinition.getName() == null) {
+			return null;
+		}
+		String name = typeDefinition.getName();
+		if ("http://www.w3.org/2001/XMLSchema".equals(typeDefinition.getNamespace())) {
+			return "xs:" + name;
+		}
+		return name;
+	}
+
+	@Override
 	public Collection<CMAttributeDeclaration> getAttributes() {
 		if (attributes == null) {
 			attributes = new ArrayList<>();

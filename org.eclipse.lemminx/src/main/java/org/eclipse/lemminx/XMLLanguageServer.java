@@ -48,6 +48,7 @@ import org.eclipse.lemminx.settings.InitializationOptionsSettings;
 import org.eclipse.lemminx.settings.ServerSettings;
 import org.eclipse.lemminx.settings.SharedSettings;
 import org.eclipse.lemminx.settings.XMLCodeLensSettings;
+import org.eclipse.lemminx.settings.XMLInlayHintSettings;
 import org.eclipse.lemminx.settings.XMLSemanticTokensSettings;
 import org.eclipse.lemminx.settings.XMLCompletionSettings;
 import org.eclipse.lemminx.settings.XMLFoldingSettings;
@@ -217,6 +218,11 @@ public class XMLLanguageServer implements ProcessLanguageServer, XMLLanguageServ
 			XMLCodeLensSettings newCodeLens = xmlClientSettings.getCodeLens();
 			if (newCodeLens != null) {
 				xmlTextDocumentService.updateCodeLensSettings(newCodeLens);
+			}
+
+			XMLInlayHintSettings newInlayHint = xmlClientSettings.getInlayHint();
+			if (newInlayHint != null) {
+				xmlTextDocumentService.updateInlayHintSettings(newInlayHint);
 			}
 
 			XMLSemanticTokensSettings newSemanticTokens = xmlClientSettings.getSemanticTokens();

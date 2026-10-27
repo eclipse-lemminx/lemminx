@@ -88,6 +88,19 @@ public class CMXSDAttributeDeclaration implements CMAttributeDeclaration {
 	}
 
 	@Override
+	public String getTypeName() {
+		XSSimpleTypeDefinition typeDefinition = getAttrDeclaration().getTypeDefinition();
+		if (typeDefinition == null || typeDefinition.getName() == null) {
+			return null;
+		}
+		String name = typeDefinition.getName();
+		if ("http://www.w3.org/2001/XMLSchema".equals(typeDefinition.getNamespace())) {
+			return "xs:" + name;
+		}
+		return name;
+	}
+
+	@Override
 	public String getAttributeNameDocumentation(ISharedSettingsRequest request) {
 		SchemaDocumentationType currStrategy = request.getSharedSettings().getPreferences()
 				.getShowSchemaDocumentationType();

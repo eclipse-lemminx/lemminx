@@ -32,6 +32,7 @@ import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
 import org.eclipse.lemminx.extensions.contentmodel.participants.ContentModelCodeActionParticipant;
 import org.eclipse.lemminx.extensions.contentmodel.participants.ContentModelCodeLensParticipant;
 import org.eclipse.lemminx.extensions.contentmodel.participants.ContentModelCompletionParticipant;
+import org.eclipse.lemminx.extensions.contentmodel.participants.ContentModelInlayHintParticipant;
 import org.eclipse.lemminx.extensions.contentmodel.participants.ContentModelDocumentLinkParticipant;
 import org.eclipse.lemminx.extensions.contentmodel.participants.ContentModelFormatterParticipant;
 import org.eclipse.lemminx.extensions.contentmodel.participants.ContentModelHoverParticipant;
@@ -53,6 +54,7 @@ import org.eclipse.lemminx.services.extensions.XMLExtensionsRegistry;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionParticipant;
 import org.eclipse.lemminx.services.extensions.codelens.ICodeLensParticipant;
 import org.eclipse.lemminx.services.extensions.commands.IXMLCommandService;
+import org.eclipse.lemminx.services.extensions.inlayhint.IInlayHintParticipant;
 import org.eclipse.lemminx.services.extensions.completion.ICompletionParticipant;
 import org.eclipse.lemminx.services.extensions.diagnostics.IDiagnosticsParticipant;
 import org.eclipse.lemminx.services.extensions.hover.IHoverParticipant;
@@ -91,6 +93,8 @@ public class ContentModelPlugin implements IXMLExtension {
 	private ContentModelSymbolsProviderParticipant symbolsProviderParticipant;
 
 	private ICodeLensParticipant codeLensParticipant;
+
+	private IInlayHintParticipant inlayHintParticipant;
 
 	ContentModelManager contentModelManager;
 
@@ -247,6 +251,8 @@ public class ContentModelPlugin implements IXMLExtension {
 		registry.registerSymbolsProviderParticipant(symbolsProviderParticipant);
 		codeLensParticipant = new ContentModelCodeLensParticipant(contentModelManager);
 		registry.registerCodeLensParticipant(codeLensParticipant);
+		inlayHintParticipant = new ContentModelInlayHintParticipant(contentModelManager);
+		registry.registerInlayHintParticipant(inlayHintParticipant);
 		documentTelemetryParticipant = new DocumentTelemetryParticipant(registry.getTelemetryManager(),
 				contentModelManager);
 		registry.registerDocumentLifecycleParticipant(documentTelemetryParticipant);
@@ -289,6 +295,7 @@ public class ContentModelPlugin implements IXMLExtension {
 		registry.unregisterTypeDefinitionParticipant(typeDefinitionParticipant);
 		registry.unregisterSymbolsProviderParticipant(symbolsProviderParticipant);
 		registry.unregisterCodeLensParticipant(codeLensParticipant);
+		registry.unregisterInlayHintParticipant(inlayHintParticipant);
 		registry.unregisterDocumentLifecycleParticipant(documentTelemetryParticipant);
 		registry.unregisterFormatterParticipant(formatterParticipant);
 		registry.unregisterSemanticTokensParticipant(semanticTokensParticipant);

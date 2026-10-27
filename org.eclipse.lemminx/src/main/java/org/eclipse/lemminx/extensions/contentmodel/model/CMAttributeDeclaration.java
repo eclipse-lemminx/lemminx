@@ -98,6 +98,16 @@ public interface CMAttributeDeclaration {
 	}
 
 	/**
+	 * Returns the type name of the declared attribute (e.g., "xs:integer",
+	 * "xs:boolean") and null if not available.
+	 *
+	 * @return the type name and null otherwise.
+	 */
+	default String getTypeName() {
+		return null;
+	}
+
+	/**
 	 * Returns enumeration values of the declared attribute and empty collection
 	 * otherwise.
 	 * 

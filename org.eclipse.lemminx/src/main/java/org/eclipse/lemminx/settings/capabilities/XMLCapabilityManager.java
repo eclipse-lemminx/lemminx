@@ -29,6 +29,7 @@ import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConsta
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.FORMATTING_RANGE_ID;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.HOVER_ID;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.DEFAULT_SEMANTIC_TOKENS_OPTIONS;
+import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.INLAY_HINT_ID;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.INLINE_COMPLETION_ID;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.LINKED_EDITING_RANGE_ID;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.LINK_ID;
@@ -46,6 +47,7 @@ import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConsta
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_HIGHLIGHT;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_HOVER;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_LINK;
+import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_INLAY_HINT;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_INLINE_COMPLETION;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_LINKED_EDITING_RANGE;
 import static org.eclipse.lemminx.settings.capabilities.ServerCapabilitiesConstants.TEXT_DOCUMENT_REFERENCES;
@@ -190,6 +192,9 @@ public class XMLCapabilityManager {
 		}
 		if (this.getClientCapabilities().isLinkedEditingRangeDynamicRegistered()) {
 			registerCapability(LINKED_EDITING_RANGE_ID, TEXT_DOCUMENT_LINKED_EDITING_RANGE);
+		}
+		if (this.getClientCapabilities().isInlayHintDynamicRegistered()) {
+			registerCapability(INLAY_HINT_ID, TEXT_DOCUMENT_INLAY_HINT);
 		}
 		if (this.getClientCapabilities().isInlineCompletionDynamicRegistered()) {
 			registerCapability(INLINE_COMPLETION_ID, TEXT_DOCUMENT_INLINE_COMPLETION);
