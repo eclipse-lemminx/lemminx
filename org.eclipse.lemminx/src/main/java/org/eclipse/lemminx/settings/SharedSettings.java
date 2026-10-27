@@ -27,6 +27,7 @@ public class SharedSettings {
 
 	private final XMLCodeActionSettings codeActionSettings;
 	private final XMLCodeLensSettings codeLens;
+	private final XMLInlayHintSettings inlayHint;
 	private final XMLSemanticTokensSettings semanticTokens;
 	private final XMLHoverSettings hoverSettings;
 	private final XMLPreferences preferences;
@@ -43,6 +44,7 @@ public class SharedSettings {
 		this.symbols = new XMLSymbolSettings();
 		this.codeActionSettings = new XMLCodeActionSettings();
 		this.codeLens = new XMLCodeLensSettings();
+		this.inlayHint = new XMLInlayHintSettings();
 		this.semanticTokens = new XMLSemanticTokensSettings();
 		this.hoverSettings = new XMLHoverSettings();
 		this.preferences = new XMLPreferences();
@@ -62,6 +64,7 @@ public class SharedSettings {
 		this.symbols.merge(newSettings.getSymbolSettings());
 		this.codeActionSettings.setCapabilities(newSettings.getCodeActionSettings().getCapabilities());
 		this.codeLens.merge(newSettings.getCodeLensSettings());
+		this.inlayHint.merge(newSettings.getInlayHintSettings());
 		this.semanticTokens.merge(newSettings.getSemanticTokensSettings());
 		this.hoverSettings.setCapabilities(newSettings.getHoverSettings().getCapabilities());
 		this.preferences.merge(newSettings.getPreferences());
@@ -98,6 +101,10 @@ public class SharedSettings {
 
 	public XMLCodeLensSettings getCodeLensSettings() {
 		return codeLens;
+	}
+
+	public XMLInlayHintSettings getInlayHintSettings() {
+		return inlayHint;
 	}
 
 	public XMLSemanticTokensSettings getSemanticTokensSettings() {

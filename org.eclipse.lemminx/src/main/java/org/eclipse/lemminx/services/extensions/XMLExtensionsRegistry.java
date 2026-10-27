@@ -34,6 +34,7 @@ import org.eclipse.lemminx.services.extensions.completion.ICompletionParticipant
 import org.eclipse.lemminx.services.extensions.diagnostics.IDiagnosticsParticipant;
 import org.eclipse.lemminx.services.extensions.format.IFormatterParticipant;
 import org.eclipse.lemminx.services.extensions.hover.IHoverParticipant;
+import org.eclipse.lemminx.services.extensions.inlayhint.IInlayHintParticipant;
 import org.eclipse.lemminx.services.extensions.inlinecompletion.IInlineCompletionParticipant;
 import org.eclipse.lemminx.services.extensions.rename.IRenameParticipant;
 import org.eclipse.lemminx.services.extensions.semantictokens.ISemanticTokensParticipant;
@@ -70,6 +71,7 @@ public class XMLExtensionsRegistry implements IComponentProvider {
 	private final List<ISymbolsProviderParticipant> symbolsProviderParticipants;
 	private final List<IWorkspaceServiceParticipant> workspaceServiceParticipants;
 	private final List<IDocumentLifecycleParticipant> documentLifecycleParticipants;
+	private final List<IInlayHintParticipant> inlayHintParticipants;
 	private final List<IInlineCompletionParticipant> inlineCompletionParticipants;
 	private final List<ISemanticTokensParticipant> semanticTokensParticipants;
 	private IXMLDocumentProvider documentProvider;
@@ -108,6 +110,7 @@ public class XMLExtensionsRegistry implements IComponentProvider {
 		symbolsProviderParticipants = new ArrayList<>();
 		workspaceServiceParticipants = new ArrayList<>();
 		documentLifecycleParticipants = new ArrayList<>();
+		inlayHintParticipants = new ArrayList<>();
 		inlineCompletionParticipants = new ArrayList<>();
 		semanticTokensParticipants = new ArrayList<>();
 		resolverExtensionManager = new URIResolverExtensionManager();
@@ -531,6 +534,34 @@ public class XMLExtensionsRegistry implements IComponentProvider {
 	 */
 	public void unregisterSemanticTokensParticipant(ISemanticTokensParticipant semanticTokensParticipant) {
 		semanticTokensParticipants.remove(semanticTokensParticipant);
+	}
+
+	/**
+	 * Return the registered inlay hint participants.
+	 *
+	 * @return the registered inlay hint participants.
+	 */
+	public List<IInlayHintParticipant> getInlayHintParticipants() {
+		initializeIfNeeded();
+		return inlayHintParticipants;
+	}
+
+	/**
+	 * Register a new inlay hint participant.
+	 *
+	 * @param inlayHintParticipant the participant to register.
+	 */
+	public void registerInlayHintParticipant(IInlayHintParticipant inlayHintParticipant) {
+		inlayHintParticipants.add(inlayHintParticipant);
+	}
+
+	/**
+	 * Unregister an inlay hint participant.
+	 *
+	 * @param inlayHintParticipant the participant to unregister.
+	 */
+	public void unregisterInlayHintParticipant(IInlayHintParticipant inlayHintParticipant) {
+		inlayHintParticipants.remove(inlayHintParticipant);
 	}
 
 	/**

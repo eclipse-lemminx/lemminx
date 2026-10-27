@@ -49,6 +49,7 @@ import org.eclipse.lemminx.services.extensions.save.AbstractSaveContext;
 import org.eclipse.lemminx.settings.CompositeSettings;
 import org.eclipse.lemminx.settings.SharedSettings;
 import org.eclipse.lemminx.settings.XMLCodeLensSettings;
+import org.eclipse.lemminx.settings.XMLInlayHintSettings;
 import org.eclipse.lemminx.settings.XMLSemanticTokensSettings;
 import org.eclipse.lemminx.settings.XMLCompletionSettings;
 import org.eclipse.lemminx.settings.XMLFoldingSettings;
@@ -87,6 +88,8 @@ import org.eclipse.lsp4j.FoldingRange;
 import org.eclipse.lsp4j.FoldingRangeRequestParams;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.HoverParams;
+import org.eclipse.lsp4j.InlayHint;
+import org.eclipse.lsp4j.InlayHintParams;
 import org.eclipse.lsp4j.InlineCompletionContext;
 import org.eclipse.lsp4j.InlineCompletionItem;
 import org.eclipse.lsp4j.InlineCompletionList;
@@ -311,6 +314,10 @@ public class XMLTextDocumentService implements TextDocumentService {
 						.setRefreshSupport(capabilities.getWorkspace().getSemanticTokens() != null
 								&& capabilities.getWorkspace().getSemanticTokens().getRefreshSupport() != null
 								&& capabilities.getWorkspace().getSemanticTokens().getRefreshSupport());
+				sharedSettings.getInlayHintSettings()
+						.setRefreshSupport(capabilities.getWorkspace().getInlayHint() != null
+								&& capabilities.getWorkspace().getInlayHint().getRefreshSupport() != null
+								&& capabilities.getWorkspace().getInlayHint().getRefreshSupport());
 			}
 		}
 		if (extendedClientCapabilities != null) {
@@ -572,6 +579,17 @@ public class XMLTextDocumentService implements TextDocumentService {
 	}
 
 	@Override
+	public CompletableFuture<List<InlayHint>> inlayHint(InlayHintParams params) {
+		if (!sharedSettings.getInlayHintSettings().isEnabled()) {
+			return CompletableFuture.completedFuture(Collections.emptyList());
+		}
+		return computeDOMAsync(params.getTextDocument(), (xmlDocument, cancelChecker) -> {
+			return getXMLLanguageService().getInlayHint(xmlDocument, sharedSettings.getInlayHintSettings(),
+					params.getRange(), cancelChecker);
+		});
+	}
+
+	@Override
 	public CompletableFuture<List<Either<Command, CodeAction>>> codeAction(CodeActionParams params) {
 		String uri = params.getTextDocument().getUri();
 		return computeDOMAsyncCompose(params.getTextDocument(), (xmlDocument, cancelChecker) -> {
@@ -792,6 +810,22 @@ public class XMLTextDocumentService implements TextDocumentService {
 				&& sharedSettings.getCodeLensSettings().isRefreshSupport()) {
 			xmlLanguageServer.getLanguageClient().refreshCodeLenses();
 		}
+	}
+
+	public void updateInlayHintSettings(XMLInlayHintSettings newSettings) {
+		XMLInlayHintSettings current = sharedSettings.getInlayHintSettings();
+		boolean changed = current.isEnabled() != newSettings.isEnabled()
+				|| current.isShowElementType() != newSettings.isShowElementType()
+				|| current.isShowAttributeType() != newSettings.isShowAttributeType()
+				|| current.isShowDefaultValue() != newSettings.isShowDefaultValue();
+		current.merge(newSettings);
+		if (initialized && changed && current.isRefreshSupport()) {
+			xmlLanguageServer.getLanguageClient().refreshInlayHints();
+		}
+	}
+
+	public XMLInlayHintSettings getSharedInlayHintSettings() {
+		return sharedSettings.getInlayHintSettings();
 	}
 
 	public void updateSemanticTokensSettings(XMLSemanticTokensSettings newSettings) {

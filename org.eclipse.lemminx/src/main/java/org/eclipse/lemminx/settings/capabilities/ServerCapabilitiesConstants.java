@@ -57,6 +57,7 @@ public class ServerCapabilitiesConstants {
 	public static final String TEXT_DOCUMENT_LINKED_EDITING_RANGE = "textDocument/linkedEditingRange";
 	public static final String TEXT_DOCUMENT_HIGHLIGHT = "textDocument/documentHighlight";
 	public static final String TEXT_DOCUMENT_SELECTION_RANGE = "textDocument/selectionRange";
+	public static final String TEXT_DOCUMENT_INLAY_HINT = "textDocument/inlayHint";
 	public static final String TEXT_DOCUMENT_INLINE_COMPLETION = "textDocument/inlineCompletion";
 	public static final String TEXT_DOCUMENT_SEMANTIC_TOKENS = "textDocument/semanticTokens";
 
@@ -89,6 +90,7 @@ public class ServerCapabilitiesConstants {
 	public static final String WORKSPACE_CHANGE_FOLDERS_ID = UUID.randomUUID().toString();
 	public static final String WORKSPACE_WATCHED_FILES_ID = UUID.randomUUID().toString();
 	public static final String LINKED_EDITING_RANGE_ID = UUID.randomUUID().toString();
+	public static final String INLAY_HINT_ID = UUID.randomUUID().toString();
 	public static final String INLINE_COMPLETION_ID = UUID.randomUUID().toString();
 	public static final String SEMANTIC_TOKENS_ID = UUID.randomUUID().toString();
 

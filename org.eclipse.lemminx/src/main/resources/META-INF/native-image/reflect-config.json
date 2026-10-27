@@ -354,6 +354,14 @@
         }]
     },
 	{
+		"name": "org.eclipse.lemminx.settings.XMLInlayHintSettings",
+		"allDeclaredFields": true,
+		"methods": [{
+			"name": "<init>",
+			"parameterTypes": []
+		}]
+	},
+	{
 		"name": "org.eclipse.lemminx.settings.XMLCodeLensSettings",
 		"allDeclaredFields": true,
 		"methods": [{
@@ -1517,6 +1525,44 @@
 			"parameterTypes": []
 		}]
 	},
+    {
+        "name": "org.eclipse.lsp4j.InlayHint",
+        "allDeclaredFields": true,
+        "methods": [{
+            "name": "<init>",
+            "parameterTypes": []
+        }]
+    },
+    {
+        "name": "org.eclipse.lsp4j.InlayHintKind",
+        "fields": [{
+            "name": "value"
+        }]
+    },
+    {
+        "name": "org.eclipse.lsp4j.InlayHintLabelPart",
+        "allDeclaredFields": true,
+        "methods": [{
+            "name": "<init>",
+            "parameterTypes": []
+        }]
+    },
+    {
+        "name": "org.eclipse.lsp4j.InlayHintParams",
+        "allDeclaredFields": true,
+        "methods": [{
+            "name": "<init>",
+            "parameterTypes": []
+        }]
+    },
+    {
+        "name": "org.eclipse.lsp4j.InlayHintRegistrationOptions",
+        "allDeclaredFields": true,
+        "methods": [{
+            "name": "<init>",
+            "parameterTypes": []
+        }]
+    },
     {
         "name": "org.eclipse.lsp4j.InlayHintCapabilities",
         "allDeclaredFields": true,

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:element name="form">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element name="input" type="inputType" maxOccurs="unbounded" />
+            </xs:sequence>
+            <xs:attribute name="lang" type="xs:string" default="en" />
+            <xs:attribute name="method" type="xs:string" default="GET" />
+            <xs:attribute name="maxRetries" type="xs:int" />
+            <xs:attribute name="debug" type="xs:boolean" default="false" />
+        </xs:complexType>
+    </xs:element>
+    <xs:complexType name="inputType">
+        <xs:attribute name="name" type="xs:string" />
+        <xs:attribute name="type" type="xs:string" default="text" />
+        <xs:attribute name="maxLength" type="xs:integer" />
+        <xs:attribute name="required" type="xs:boolean" default="false" />
+    </xs:complexType>
+</xs:schema>

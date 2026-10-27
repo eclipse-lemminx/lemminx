@@ -1,0 +1,12 @@
+<!ELEMENT root (item)*>
+<!ATTLIST root
+    lang CDATA "en"
+    version CDATA "1.0"
+    id CDATA #IMPLIED
+>
+<!ELEMENT item (name)>
+<!ATTLIST item
+    visible CDATA "true"
+    status CDATA #FIXED "active"
+>
+<!ELEMENT name (#PCDATA)>

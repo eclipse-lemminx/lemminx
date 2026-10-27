@@ -62,6 +62,7 @@ public class ServerCapabilitiesInitializer {
 		serverCapabilities.setLinkedEditingRangeProvider(!clientCapabilities.isLinkedEditingRangeDynamicRegistered());
 		serverCapabilities.setColorProvider(!clientCapabilities.isColorDynamicRegistrationSupported());
 		serverCapabilities.setSelectionRangeProvider(!clientCapabilities.isSelectionRangeDynamicRegistered());
+		serverCapabilities.setInlayHintProvider(!clientCapabilities.isInlayHintDynamicRegistered());
 		serverCapabilities.setInlineCompletionProvider(!clientCapabilities.isInlineCompletionDynamicRegistered());
 		if (!clientCapabilities.isSemanticTokensDynamicRegistered()) {
 			serverCapabilities.setSemanticTokensProvider(DEFAULT_SEMANTIC_TOKENS_OPTIONS);

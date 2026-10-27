@@ -28,11 +28,13 @@ import org.eclipse.lemminx.services.extensions.XMLExtensionsRegistry;
 import org.eclipse.lemminx.services.extensions.diagnostics.DiagnosticsResult;
 import org.eclipse.lemminx.settings.SharedSettings;
 import org.eclipse.lemminx.settings.XMLCodeLensSettings;
+import org.eclipse.lemminx.settings.XMLInlayHintSettings;
 import org.eclipse.lemminx.settings.XMLCompletionSettings;
 import org.eclipse.lemminx.settings.XMLFoldingSettings;
 import org.eclipse.lemminx.settings.XMLSymbolSettings;
 import org.eclipse.lemminx.utils.TextEditUtils;
 import org.eclipse.lemminx.utils.XMLPositionUtility;
+import org.eclipse.lsp4j.InlayHint;
 import org.eclipse.lsp4j.SemanticTokens;
 import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionContext;
@@ -99,6 +101,7 @@ public class XMLLanguageService extends XMLExtensionsRegistry implements IXMLFul
 	private final XMLLinkedEditing linkedEditing;
 	private final XMLDocumentColor documentColor;
 	private final XMLSemanticTokens semanticTokens;
+	private final XMLInlayHint inlayHint;
 	private final XMLInlineCompletion inlineCompletion;
 
 	public XMLLanguageService() {
@@ -122,6 +125,7 @@ public class XMLLanguageService extends XMLExtensionsRegistry implements IXMLFul
 		this.rename = new XMLRename(this);
 		this.selectionRanges = new XMLSelectionRanges();
 		this.linkedEditing = new XMLLinkedEditing(this);
+		this.inlayHint = new XMLInlayHint(this);
 		this.inlineCompletion = new XMLInlineCompletion(this);
 	}
 
@@ -318,6 +322,11 @@ public class XMLLanguageService extends XMLExtensionsRegistry implements IXMLFul
 	public List<? extends CodeLens> getCodeLens(DOMDocument xmlDocument, XMLCodeLensSettings settings,
 			CancelChecker cancelChecker) {
 		return codelens.getCodelens(xmlDocument, settings, cancelChecker);
+	}
+
+	public List<InlayHint> getInlayHint(DOMDocument xmlDocument, XMLInlayHintSettings settings, Range range,
+			CancelChecker cancelChecker) {
+		return inlayHint.getInlayHint(xmlDocument, settings, range, cancelChecker);
 	}
 
 	public List<CodeAction> doCodeActions(CodeActionContext context, Range range, DOMDocument document,
