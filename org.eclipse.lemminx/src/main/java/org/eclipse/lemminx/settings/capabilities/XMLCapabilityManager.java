@@ -69,6 +69,7 @@ import org.eclipse.lemminx.XMLTextDocumentService;
 import org.eclipse.lemminx.client.ExtendedClientCapabilities;
 import org.eclipse.lemminx.settings.XMLCodeLensSettings;
 import org.eclipse.lemminx.settings.XMLFormattingOptions;
+import org.eclipse.lemminx.settings.XMLSemanticTokensSettings;
 import org.eclipse.lemminx.settings.XMLSymbolSettings;
 import org.eclipse.lsp4j.ClientCapabilities;
 import org.eclipse.lsp4j.DidChangeWatchedFilesRegistrationOptions;
@@ -256,6 +257,13 @@ public class XMLCapabilityManager {
 		XMLCodeLensSettings codeLensSettings = this.textDocumentService.getSharedCodeLensSettings();
 		if (this.getClientCapabilities().isCodeLensDynamicRegistrationSupported()) {
 			toggleCapability(codeLensSettings.isEnabled(), CODE_LENS_ID, TEXT_DOCUMENT_CODE_LENS, null);
+		}
+
+		XMLSemanticTokensSettings semanticTokensSettings = this.textDocumentService
+				.getSharedSemanticTokensSettings();
+		if (this.getClientCapabilities().isSemanticTokensDynamicRegistered()) {
+			toggleCapability(semanticTokensSettings.isEnabled(), SEMANTIC_TOKENS_ID, TEXT_DOCUMENT_SEMANTIC_TOKENS,
+					DEFAULT_SEMANTIC_TOKENS_OPTIONS);
 		}
 	}
 

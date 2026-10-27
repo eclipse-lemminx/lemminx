@@ -55,6 +55,8 @@ public class XMLGeneralClientSettings {
 
 	private XMLCodeLensSettings codeLens;
 
+	private XMLSemanticTokensSettings semanticTokens;
+
 	private XMLPreferences preferences;
 
 	private XMLTelemetrySettings telemetry;
@@ -93,6 +95,24 @@ public class XMLGeneralClientSettings {
 	 */
 	public void setCodeLens(XMLCodeLensSettings codeLens) {
 		this.codeLens = codeLens;
+	}
+
+	/**
+	 * Returns the semantic tokens settings.
+	 *
+	 * @return the semantic tokens settings.
+	 */
+	public XMLSemanticTokensSettings getSemanticTokens() {
+		return semanticTokens;
+	}
+
+	/**
+	 * Sets the semantic tokens settings.
+	 *
+	 * @param semanticTokens
+	 */
+	public void setSemanticTokens(XMLSemanticTokensSettings semanticTokens) {
+		this.semanticTokens = semanticTokens;
 	}
 
 	/**
