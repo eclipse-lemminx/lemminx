@@ -23,6 +23,9 @@ public class XMLCodeLensSettings {
 
 	private boolean enabled = false;
 
+	// Not deserialized from JSON settings; set from client capabilities
+	private transient boolean refreshSupport;
+
 	private ExtendedCodeLensCapabilities codeLens;
 
 	/**
@@ -64,6 +67,27 @@ public class XMLCodeLensSettings {
 	 */
 	public void setCodeLens(ExtendedCodeLensCapabilities codeLens) {
 		this.codeLens = codeLens;
+	}
+
+	/**
+	 * Returns true if the client supports workspace/codeLens/refresh and false
+	 * otherwise.
+	 *
+	 * @return true if the client supports workspace/codeLens/refresh and false
+	 *         otherwise.
+	 */
+	public boolean isRefreshSupport() {
+		return refreshSupport;
+	}
+
+	/**
+	 * Set true if the client supports workspace/codeLens/refresh and false
+	 * otherwise.
+	 *
+	 * @param refreshSupport
+	 */
+	public void setRefreshSupport(boolean refreshSupport) {
+		this.refreshSupport = refreshSupport;
 	}
 
 	public void merge(XMLCodeLensSettings newSettings) {

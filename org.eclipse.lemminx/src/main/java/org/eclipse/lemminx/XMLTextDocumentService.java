@@ -303,6 +303,10 @@ public class XMLTextDocumentService implements TextDocumentService {
 			if (capabilities.getWorkspace() != null) {
 				sharedSettings.getWorkspaceSettings().setCapabilities(capabilities.getWorkspace());
 				clientConfigurationSupport = capabilities.getWorkspace().getConfiguration();
+				sharedSettings.getCodeLensSettings()
+						.setRefreshSupport(capabilities.getWorkspace().getCodeLens() != null
+								&& capabilities.getWorkspace().getCodeLens().getRefreshSupport() != null
+								&& capabilities.getWorkspace().getCodeLens().getRefreshSupport());
 				sharedSettings.getSemanticTokensSettings()
 						.setRefreshSupport(capabilities.getWorkspace().getSemanticTokens() != null
 								&& capabilities.getWorkspace().getSemanticTokens().getRefreshSupport() != null
@@ -780,7 +784,14 @@ public class XMLTextDocumentService implements TextDocumentService {
 	}
 
 	public void updateCodeLensSettings(XMLCodeLensSettings newSettings) {
+		boolean oldEnabled = sharedSettings.getCodeLensSettings().isEnabled();
 		sharedSettings.getCodeLensSettings().merge(newSettings);
+		// Refresh code lenses when enabled state changes and client supports it
+		// (skip during initialization: LSP forbids server-to-client requests before InitializeResult)
+		if (initialized && oldEnabled != sharedSettings.getCodeLensSettings().isEnabled()
+				&& sharedSettings.getCodeLensSettings().isRefreshSupport()) {
+			xmlLanguageServer.getLanguageClient().refreshCodeLenses();
+		}
 	}
 
 	public void updateSemanticTokensSettings(XMLSemanticTokensSettings newSettings) {
