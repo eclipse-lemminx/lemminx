@@ -49,6 +49,7 @@ import org.eclipse.lemminx.services.extensions.save.AbstractSaveContext;
 import org.eclipse.lemminx.settings.CompositeSettings;
 import org.eclipse.lemminx.settings.SharedSettings;
 import org.eclipse.lemminx.settings.XMLCodeLensSettings;
+import org.eclipse.lemminx.settings.XMLSemanticTokensSettings;
 import org.eclipse.lemminx.settings.XMLCompletionSettings;
 import org.eclipse.lemminx.settings.XMLFoldingSettings;
 import org.eclipse.lemminx.settings.XMLFormattingOptions;
@@ -200,6 +201,8 @@ public class XMLTextDocumentService implements TextDocumentService {
 
 	private volatile int settingsGeneration;
 
+	private boolean initialized;
+
 	private CompletableFuture<SharedSettings> getOrPullScopedSettings(String uri) {
 		if (clientConfigurationSupport == null || !clientConfigurationSupport.booleanValue()) {
 			return CompletableFuture.completedFuture(sharedSettings);
@@ -300,6 +303,10 @@ public class XMLTextDocumentService implements TextDocumentService {
 			if (capabilities.getWorkspace() != null) {
 				sharedSettings.getWorkspaceSettings().setCapabilities(capabilities.getWorkspace());
 				clientConfigurationSupport = capabilities.getWorkspace().getConfiguration();
+				sharedSettings.getSemanticTokensSettings()
+						.setRefreshSupport(capabilities.getWorkspace().getSemanticTokens() != null
+								&& capabilities.getWorkspace().getSemanticTokens().getRefreshSupport() != null
+								&& capabilities.getWorkspace().getSemanticTokens().getRefreshSupport());
 			}
 		}
 		if (extendedClientCapabilities != null) {
@@ -618,6 +625,9 @@ public class XMLTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<SemanticTokens> semanticTokensFull(SemanticTokensParams params) {
+		if (!sharedSettings.getSemanticTokensSettings().isEnabled()) {
+			return CompletableFuture.completedFuture(new SemanticTokens(Collections.emptyList()));
+		}
 		return computeDOMAsync(params.getTextDocument(), (xmlDocument, cancelChecker) -> {
 			return getXMLLanguageService().findSemanticTokens(xmlDocument, cancelChecker);
 		});
@@ -773,6 +783,17 @@ public class XMLTextDocumentService implements TextDocumentService {
 		sharedSettings.getCodeLensSettings().merge(newSettings);
 	}
 
+	public void updateSemanticTokensSettings(XMLSemanticTokensSettings newSettings) {
+		boolean oldEnabled = sharedSettings.getSemanticTokensSettings().isEnabled();
+		sharedSettings.getSemanticTokensSettings().merge(newSettings);
+		// Refresh semantic tokens when enabled state changes and client supports it
+		// (skip during initialization: LSP forbids server-to-client requests before InitializeResult)
+		if (initialized && oldEnabled != sharedSettings.getSemanticTokensSettings().isEnabled()
+				&& sharedSettings.getSemanticTokensSettings().isRefreshSupport()) {
+			xmlLanguageServer.getLanguageClient().refreshSemanticTokens();
+		}
+	}
+
 	public void updatePreferences(XMLPreferences newPreferences) {
 		sharedSettings.getPreferences().merge(newPreferences);
 	}
@@ -783,6 +804,14 @@ public class XMLTextDocumentService implements TextDocumentService {
 
 	public XMLCodeLensSettings getSharedCodeLensSettings() {
 		return sharedSettings.getCodeLensSettings();
+	}
+
+	public XMLSemanticTokensSettings getSharedSemanticTokensSettings() {
+		return sharedSettings.getSemanticTokensSettings();
+	}
+
+	public void setInitialized() {
+		this.initialized = true;
 	}
 
 	public boolean isIncrementalSupport() {

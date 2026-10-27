@@ -362,6 +362,14 @@
 		}]
 	},
 	{
+		"name": "org.eclipse.lemminx.settings.XMLSemanticTokensSettings",
+		"allDeclaredFields": true,
+		"methods": [{
+			"name": "<init>",
+			"parameterTypes": []
+		}]
+	},
+	{
 		"name": "org.eclipse.lemminx.settings.XMLCompletionSettings",
 		"allDeclaredFields": true,
 		"methods": [{

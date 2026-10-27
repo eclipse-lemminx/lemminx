@@ -48,6 +48,7 @@ import org.eclipse.lemminx.settings.InitializationOptionsSettings;
 import org.eclipse.lemminx.settings.ServerSettings;
 import org.eclipse.lemminx.settings.SharedSettings;
 import org.eclipse.lemminx.settings.XMLCodeLensSettings;
+import org.eclipse.lemminx.settings.XMLSemanticTokensSettings;
 import org.eclipse.lemminx.settings.XMLCompletionSettings;
 import org.eclipse.lemminx.settings.XMLFoldingSettings;
 import org.eclipse.lemminx.settings.XMLFormattingOptions;
@@ -154,6 +155,7 @@ public class XMLLanguageServer implements ProcessLanguageServer, XMLLanguageServ
 	@Override
 	public void initialized(InitializedParams params) {
 		capabilityManager.initializeCapabilities();
+		xmlTextDocumentService.setInitialized();
 		getTelemetryManager().onInitialized(params);
 	}
 
@@ -215,6 +217,11 @@ public class XMLLanguageServer implements ProcessLanguageServer, XMLLanguageServ
 			XMLCodeLensSettings newCodeLens = xmlClientSettings.getCodeLens();
 			if (newCodeLens != null) {
 				xmlTextDocumentService.updateCodeLensSettings(newCodeLens);
+			}
+
+			XMLSemanticTokensSettings newSemanticTokens = xmlClientSettings.getSemanticTokens();
+			if (newSemanticTokens != null) {
+				xmlTextDocumentService.updateSemanticTokensSettings(newSemanticTokens);
 			}
 
 			XMLPreferences newPreferences = xmlClientSettings.getPreferences();
