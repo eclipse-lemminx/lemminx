@@ -51,7 +51,9 @@ public class AggregetedHoverValuesTest extends AbstractCacheBasedTest {
 				MARKDOWN_SEPARATOR + //
 				System.lineSeparator() + //
 				System.lineSeparator() + //
-				"Defines a single (usually named) bean. A bean definition may contain nested tags for constructor arguments, property values, lookup methods, and replaced methods. Mixing constructor injection and setter injection on the same bean is explicitly supported."
+				"Defines a single (usually named) bean." + //
+				System.lineSeparator() + System.lineSeparator() + //
+				"A bean definition may contain nested tags for constructor arguments, property values, lookup methods, and replaced methods. Mixing constructor injection and setter injection on the same bean is explicitly supported."
 				+ //
 				System.lineSeparator() + //
 				System.lineSeparator() + "Source: [spring-beans-3.0.xsd](" + schemaURI + ")", r(2, 2, 2, 6));
