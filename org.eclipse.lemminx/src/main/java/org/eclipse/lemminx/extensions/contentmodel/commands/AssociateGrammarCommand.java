@@ -66,7 +66,8 @@ public class AssociateGrammarCommand extends AbstractDOMDocumentCommandHandler {
 	public enum GrammarBindingType {
 
 		STANDARD("standard"), // xsi:schemaLocation, xsi:noNamespaceSchemaLocation, DOCTYPE
-		XML_MODEL("xml-model"); // xml-model processing instruction
+		XML_MODEL("xml-model"), // xml-model processing instruction
+		CATALOG("catalog"); // catalog-based binding (PUBLIC DOCTYPE, SYSTEM DOCTYPE, or namespace)
 
 		private String name;
 
@@ -96,10 +97,14 @@ public class AssociateGrammarCommand extends AbstractDOMDocumentCommandHandler {
 	@Override
 	protected Object executeCommand(DOMDocument document, ExecuteCommandParams params, SharedSettings sharedSettings,
 			CancelChecker cancelChecker) throws Exception {
-		String documentURI = document.getDocumentURI();
-		String fullPathGrammarURI = ArgumentsUtils.getArgAt(params, 1, String.class);
 		String bindingType = ArgumentsUtils.getArgAt(params, 2, String.class);
-		String grammarURI = FilesUtils.getRelativeURI(fullPathGrammarURI, documentURI);
+
+		if (GrammarBindingType.CATALOG.getName().equals(bindingType)) {
+			return executeCatalogBinding(document, params, sharedSettings);
+		}
+
+		String fullPathGrammarURI = ArgumentsUtils.getArgAt(params, 1, String.class);
+		String grammarURI = FilesUtils.getRelativeURI(fullPathGrammarURI, document.getDocumentURI());
 		boolean isXSD = DOMUtils.isXSD(fullPathGrammarURI);
 
 		if (GrammarBindingType.STANDARD.getName().equals(bindingType)) {
@@ -131,6 +136,65 @@ public class AssociateGrammarCommand extends AbstractDOMDocumentCommandHandler {
 					sharedSettings);
 		}
 		throw new UnknownBindingTypeException(bindingType);
+	}
+
+	/**
+	 * Handle catalog-based grammar binding.
+	 *
+	 * Parameters for catalog binding:
+	 * <ul>
+	 * <li>param 1: entryType (String) — "public", "system", or "uri"</li>
+	 * <li>param 2: "catalog" (bindingType)</li>
+	 * <li>param 3: identifier (String) — the publicId, systemId, or name</li>
+	 * <li>param 4: targetURI (String) — the resolved grammar URI</li>
+	 * <li>param 5: uriValue (String) — the raw uri attribute from catalog entry</li>
+	 * </ul>
+	 */
+	private Object executeCatalogBinding(DOMDocument document, ExecuteCommandParams params,
+			SharedSettings sharedSettings) throws Exception {
+		String entryType = ArgumentsUtils.getArgAt(params, 1, String.class);
+		String identifier = ArgumentsUtils.getArgAt(params, 3, String.class);
+		String targetURI = ArgumentsUtils.getArgAt(params, 4, String.class);
+		String uriValue = ArgumentsUtils.getArgAt(params, 5, String.class);
+
+		switch (entryType) {
+			case "public":
+				// <!DOCTYPE root PUBLIC "publicId" "systemId">
+				// Use the raw uri attribute value as the SYSTEM identifier
+				String systemId = uriValue != null ? uriValue : targetURI;
+				return NoGrammarConstraintsCodeAction.createPublicDocTypeEdit(identifier, systemId, document,
+						sharedSettings);
+			case "system": {
+				boolean isXSD = DOMUtils.isXSD(targetURI);
+				if (isXSD) {
+					return NoGrammarConstraintsCodeAction.createXSINoNamespaceSchemaLocationEdit(identifier, document,
+							sharedSettings);
+				}
+				// <!DOCTYPE root SYSTEM "systemId">
+				return NoGrammarConstraintsCodeAction.createDocTypeEdit(identifier, document, sharedSettings);
+			}
+			case "uri": {
+				boolean isXSD = targetURI != null && DOMUtils.isXSD(targetURI);
+				boolean isRNG = targetURI != null
+						&& (targetURI.endsWith(".rng") || targetURI.endsWith(".rnc"));
+				if (isXSD) {
+					String targetNamespace = getTargetNamespace(targetURI);
+					if (StringUtils.isEmpty(targetNamespace)) {
+						return NoGrammarConstraintsCodeAction.createXSINoNamespaceSchemaLocationEdit(identifier,
+								document, sharedSettings);
+					}
+					return NoGrammarConstraintsCodeAction.createXSISchemaLocationEdit(identifier, targetNamespace,
+							document, sharedSettings);
+				} else if (isRNG) {
+					return NoGrammarConstraintsCodeAction.createXmlModelEdit(identifier, null, document,
+							sharedSettings);
+				}
+				// Fallback for uri entries pointing to DTD
+				return NoGrammarConstraintsCodeAction.createDocTypeEdit(identifier, document, sharedSettings);
+			}
+			default:
+				throw new IllegalArgumentException("Unknown catalog entry type: " + entryType);
+		}
 	}
 
 

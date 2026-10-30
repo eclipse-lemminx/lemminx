@@ -472,6 +472,16 @@ public class NoGrammarConstraintsCodeAction implements ICodeActionParticipant {
 
 	public static TextDocumentEdit createDocTypeEdit(String dtdFileName, DOMDocument document,
 			SharedSettings sharedSettings) throws BadLocationException {
+		return createDocTypeEdit(null, dtdFileName, document, sharedSettings);
+	}
+
+	public static TextDocumentEdit createPublicDocTypeEdit(String publicId, String systemId, DOMDocument document,
+			SharedSettings sharedSettings) throws BadLocationException {
+		return createDocTypeEdit(publicId, systemId, document, sharedSettings);
+	}
+
+	private static TextDocumentEdit createDocTypeEdit(String publicId, String systemId, DOMDocument document,
+			SharedSettings sharedSettings) throws BadLocationException {
 		String delimiter = document.getTextDocument().lineDelimiter(0);
 		DOMElement documentElement = document.getDocumentElement();
 		int beforeTagOffset = documentElement != null ? documentElement.getStartTagOpenOffset()
@@ -484,9 +494,17 @@ public class NoGrammarConstraintsCodeAction implements ICodeActionParticipant {
 		} else {
 			builder.addParameter(PLACEHOLDER_ELEMENT_NAME);
 		}
-		builder.append(" SYSTEM \"");
-		builder.append(dtdFileName);
-		builder.append("\"");
+		if (publicId != null) {
+			builder.append(" PUBLIC \"");
+			builder.append(publicId);
+			builder.append("\" \"");
+			builder.append(systemId);
+			builder.append("\"");
+		} else {
+			builder.append(" SYSTEM \"");
+			builder.append(systemId);
+			builder.append("\"");
+		}
 		builder.endDoctype();
 		builder.linefeed();
 
