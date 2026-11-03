@@ -19,12 +19,6 @@
 			"pattern": "\\Qorg/apache/xml/resolver/etc/xcatalog.dtd\\E"
 		},
 		{
-			"pattern": "\\Qorg/jsoup/nodes/entities-base.properties\\E"
-		},
-		{
-			"pattern": "\\Qorg/jsoup/nodes/entities-full.properties\\E"
-		},
-		{
 			"pattern": "\\Qschemas/relaxng/relaxng.rng\\E"
 		},
 		{

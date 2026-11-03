@@ -51,7 +51,9 @@ public class XMLSchemaHoverExtensionsTest extends AbstractCacheBasedTest {
 				"<beans xmlns=\"http://www.springframework.org/schema/beans\" xsi:schemaLocation=\"http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\">\r\n"
 				+ "	<bea|n>";
 		assertHover(xml,
-				"Defines a single (usually named) bean. A bean definition may contain nested tags for constructor arguments, property values, lookup methods, and replaced methods. Mixing constructor injection and setter injection on the same bean is explicitly supported."
+				"Defines a single (usually named) bean." + //
+						System.lineSeparator() + System.lineSeparator() + //
+						"A bean definition may contain nested tags for constructor arguments, property values, lookup methods, and replaced methods. Mixing constructor injection and setter injection on the same bean is explicitly supported."
 						+ //
 						System.lineSeparator() + //
 						System.lineSeparator() + "Source: [spring-beans-3.0.xsd](" + schemaURI + ")",
