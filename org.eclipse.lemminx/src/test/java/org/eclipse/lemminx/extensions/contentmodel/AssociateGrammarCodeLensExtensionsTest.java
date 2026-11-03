@@ -19,14 +19,19 @@ import static org.eclipse.lemminx.client.ClientCommands.OPEN_URI;
 import static org.eclipse.lemminx.client.ClientCommands.UPDATE_CONFIGURATION;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.function.Consumer;
 
 import org.eclipse.lemminx.AbstractCacheBasedTest;
+import org.eclipse.lemminx.XMLAssert.SettingsSaveContext;
 import org.eclipse.lemminx.client.CodeLensKind;
 import org.eclipse.lemminx.commons.BadLocationException;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
+import org.eclipse.lemminx.extensions.contentmodel.settings.ContentModelSettings;
 import org.eclipse.lemminx.extensions.contentmodel.settings.XMLFileAssociation;
+import org.eclipse.lemminx.extensions.contentmodel.settings.XMLValidationFilter;
+import org.eclipse.lemminx.extensions.contentmodel.settings.XMLValidationRootSettings;
 import org.eclipse.lemminx.services.XMLLanguageService;
 import org.eclipse.lemminx.utils.FilesUtils;
 import org.junit.jupiter.api.Test;
@@ -70,6 +75,77 @@ public class AssociateGrammarCodeLensExtensionsTest extends AbstractCacheBasedTe
 				"<foo />";
 		testCodeLensFor(xml, "test.xml", //
 				Collections.emptyList());
+	}
+
+	@Test
+	public void noBindCodeLensWhenNoGrammarIgnoredByFilter() throws BadLocationException {
+		String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\r\n" + //
+				"<foo />";
+		Consumer<XMLLanguageService> configuration = ls -> {
+			ContentModelSettings cmSettings = new ContentModelSettings();
+			cmSettings.setUseCache(false);
+			XMLValidationRootSettings validation = new XMLValidationRootSettings();
+			XMLValidationFilter filter = new XMLValidationFilter();
+			filter.setNoGrammar("ignore");
+			filter.setPattern("**/.classpath");
+			validation.setFilters(new XMLValidationFilter[] { filter });
+			cmSettings.setValidation(validation);
+			ls.doSave(new SettingsSaveContext(cmSettings));
+		};
+		// .classpath matches the validation filter with noGrammar=ignore,
+		// so no "Bind to grammar/schema..." CodeLens should appear
+		testCodeLensFor(xml, "file:///home/project/.classpath", new XMLLanguageService(), //
+				Collections.singletonList(CodeLensKind.Association), //
+				configuration);
+	}
+
+	@Test
+	public void noBindCodeLensWhenNoGrammarIgnoredByDefaultFilter() throws BadLocationException {
+		String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\r\n" + //
+				"<foo />";
+		// The default filters include a pattern for .classpath with noGrammar=ignore.
+		Consumer<XMLLanguageService> configuration = ls -> {
+			ContentModelSettings cmSettings = new ContentModelSettings();
+			cmSettings.setUseCache(false);
+			cmSettings.setValidation(new XMLValidationRootSettings());
+			ls.doSave(new SettingsSaveContext(cmSettings));
+		};
+		testCodeLensFor(xml, "file:///home/project/.classpath", new XMLLanguageService(), //
+				Collections.singletonList(CodeLensKind.Association), //
+				configuration);
+	}
+
+	@Test
+	public void noBindCodeLensWhenNoSettingsProvided() throws BadLocationException {
+		String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\r\n" + //
+				"<foo />";
+		// When no settings are provided (cmSettings is null), the default
+		// validation filters should still apply for .classpath files.
+		testCodeLensFor(xml, "file:///home/project/.classpath", new XMLLanguageService(), //
+				Collections.singletonList(CodeLensKind.Association));
+	}
+
+	@Test
+	public void bindCodeLensShownWhenNoFilterMatch() throws BadLocationException {
+		String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\r\n" + //
+				"<foo />";
+		Consumer<XMLLanguageService> configuration = ls -> {
+			ContentModelSettings cmSettings = new ContentModelSettings();
+			cmSettings.setUseCache(false);
+			XMLValidationRootSettings validation = new XMLValidationRootSettings();
+			XMLValidationFilter filter = new XMLValidationFilter();
+			filter.setNoGrammar("ignore");
+			filter.setPattern("**/.classpath");
+			validation.setFilters(new XMLValidationFilter[] { filter });
+			cmSettings.setValidation(validation);
+			ls.doSave(new SettingsSaveContext(cmSettings));
+		};
+		// test.xml does NOT match the .classpath filter,
+		// so "Bind to grammar/schema..." CodeLens should appear
+		testCodeLensFor(xml, "file:///home/project/test.xml", new XMLLanguageService(), //
+				Collections.singletonList(CodeLensKind.Association), //
+				configuration, //
+				cl(r(1, 1, 1, 4), "Bind to grammar/schema...", OPEN_BINDING_WIZARD));
 	}
 
 	@Test

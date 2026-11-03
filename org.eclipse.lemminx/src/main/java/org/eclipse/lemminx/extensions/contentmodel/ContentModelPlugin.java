@@ -43,6 +43,7 @@ import org.eclipse.lemminx.extensions.contentmodel.participants.DocumentTelemetr
 import org.eclipse.lemminx.extensions.contentmodel.participants.diagnostics.ContentModelDiagnosticsParticipant;
 import org.eclipse.lemminx.extensions.contentmodel.settings.ContentModelSettings;
 import org.eclipse.lemminx.extensions.contentmodel.settings.XMLDownloadExternalResourcesSettings;
+import org.eclipse.lemminx.extensions.contentmodel.settings.XMLValidationRootSettings;
 import org.eclipse.lemminx.extensions.contentmodel.settings.XMLValidationSettings;
 import org.eclipse.lemminx.services.IXMLDocumentProvider;
 import org.eclipse.lemminx.services.IXMLValidationService;
@@ -100,7 +101,7 @@ public class ContentModelPlugin implements IXMLExtension {
 
 	private ContentModelSettings cmSettings;
 
-	private XMLValidationSettings currentValidationSettings;
+	private XMLValidationRootSettings currentValidationSettings = new XMLValidationRootSettings();
 
 	private DocumentTelemetryParticipant documentTelemetryParticipant;
 
@@ -155,7 +156,7 @@ public class ContentModelPlugin implements IXMLExtension {
 		if (cmSettings != null) {
 			updateSettings(cmSettings, saveContext);
 		} else {
-			currentValidationSettings = null;
+			currentValidationSettings = new XMLValidationRootSettings();
 		}
 		if (generateCommand != null) {
 			generateCommand.updateContentModelSettings(cmSettings);
@@ -202,14 +203,16 @@ public class ContentModelPlugin implements IXMLExtension {
 		boolean showReferencedGrammars = settings.isShowReferencedGrammars();
 		symbolsProviderParticipant.setEnabled(showReferencedGrammars);
 		// Track if validation settings has changed
-		XMLValidationSettings oldValidationSettings = currentValidationSettings;
-		currentValidationSettings = cmSettings.getValidation();
+		XMLValidationRootSettings oldValidationSettings = currentValidationSettings;
+		XMLValidationRootSettings validation = cmSettings.getValidation();
+		currentValidationSettings = validation != null ? validation : new XMLValidationRootSettings();
 		if (oldValidationSettings != null && !Objects.equals(oldValidationSettings, currentValidationSettings)) {
 			context.collectDocumentToValidate(d -> true);
+			if (context instanceof SaveContext) {
+				((SaveContext) context).setRefreshCodeLenses(true);
+			}
 		}
-		if (currentValidationSettings != null) {
-			contentModelManager.setResolveExternalEntities(currentValidationSettings.isResolveExternalEntities());
-		}
+		contentModelManager.setResolveExternalEntities(currentValidationSettings.isResolveExternalEntities());
 	}
 
 	private void validateAllOpenedDocument(ISaveContext context) {
@@ -249,7 +252,7 @@ public class ContentModelPlugin implements IXMLExtension {
 		registry.registerTypeDefinitionParticipant(typeDefinitionParticipant);
 		symbolsProviderParticipant = new ContentModelSymbolsProviderParticipant(contentModelManager);
 		registry.registerSymbolsProviderParticipant(symbolsProviderParticipant);
-		codeLensParticipant = new ContentModelCodeLensParticipant(contentModelManager);
+		codeLensParticipant = new ContentModelCodeLensParticipant(this, contentModelManager);
 		registry.registerCodeLensParticipant(codeLensParticipant);
 		inlayHintParticipant = new ContentModelInlayHintParticipant(contentModelManager);
 		registry.registerInlayHintParticipant(inlayHintParticipant);
@@ -318,6 +321,10 @@ public class ContentModelPlugin implements IXMLExtension {
 
 	public ContentModelSettings getContentModelSettings() {
 		return cmSettings;
+	}
+
+	public XMLValidationRootSettings getValidationRootSettings() {
+		return currentValidationSettings;
 	}
 
 	public ContentModelManager getContentModelManager() {
