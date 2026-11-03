@@ -23,9 +23,12 @@ import java.util.Set;
 import org.eclipse.lemminx.client.CodeLensKind;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMRange;
+import org.eclipse.lemminx.extensions.contentmodel.ContentModelPlugin;
 import org.eclipse.lemminx.extensions.contentmodel.commands.AssociateGrammarCommand;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
 import org.eclipse.lemminx.extensions.contentmodel.model.ReferencedGrammarInfo;
+import org.eclipse.lemminx.extensions.contentmodel.settings.XMLValidationRootSettings;
+import org.eclipse.lemminx.extensions.contentmodel.settings.XMLValidationSettings;
 import org.eclipse.lemminx.services.extensions.codelens.ICodeLensParticipant;
 import org.eclipse.lemminx.services.extensions.codelens.ICodeLensRequest;
 import org.eclipse.lemminx.utils.DOMUtils;
@@ -69,9 +72,13 @@ import org.eclipse.lsp4j.jsonrpc.CancelChecker;
  */
 public class ContentModelCodeLensParticipant implements ICodeLensParticipant {
 
+	private final ContentModelPlugin contentModelPlugin;
+
 	private final ContentModelManager contentModelManager;
 
-	public ContentModelCodeLensParticipant(ContentModelManager contentModelManager) {
+	public ContentModelCodeLensParticipant(ContentModelPlugin contentModelPlugin,
+			ContentModelManager contentModelManager) {
+		this.contentModelPlugin = contentModelPlugin;
 		this.contentModelManager = contentModelManager;
 	}
 
@@ -135,7 +142,7 @@ public class ContentModelCodeLensParticipant implements ICodeLensParticipant {
 		return new CodeLens(range, command, null);
 	}
 
-	private static void createBindToGrammarSchemaLenses(ICodeLensRequest request, List<CodeLens> lenses) {
+	private void createBindToGrammarSchemaLenses(ICodeLensRequest request, List<CodeLens> lenses) {
 		if (!canSupportAssociation(request)) {
 			return;
 		}
@@ -150,6 +157,14 @@ public class ContentModelCodeLensParticipant implements ICodeLensParticipant {
 		if (!canBindWithGrammar(document)) {
 			return;
 		}
+
+		// Check if the validation filter has noGrammar set to "ignore" for this file
+		// (e.g. .classpath, .project files). If so, don't show the "Bind to
+		// grammar/schema..." CodeLens.
+		if (isNoGrammarIgnored(document.getDocumentURI())) {
+			return;
+		}
+
 		String documentURI = document.getDocumentURI();
 		Range range;
 		if (document.getDocumentElement() != null) {
@@ -159,6 +174,12 @@ public class ContentModelCodeLensParticipant implements ICodeLensParticipant {
 		}
 
 		lenses.add(createAssociateLens(documentURI, "Bind to grammar/schema...", range));
+	}
+
+	private boolean isNoGrammarIgnored(String uri) {
+		XMLValidationRootSettings validationSettings = contentModelPlugin.getValidationRootSettings();
+		XMLValidationSettings settings = validationSettings.getValidationSettings(uri);
+		return XMLValidationSettings.getNoGrammarSeverity(settings) == null;
 	}
 
 	private static boolean canSupportAssociation(ICodeLensRequest request) {
