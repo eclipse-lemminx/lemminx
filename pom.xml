@@ -27,6 +27,8 @@
 	</scm>
 	<modules>
 		<module>org.eclipse.lemminx</module>
+		<module>org.eclipse.lemminx.tm4e</module>
+		<module>org.eclipse.lemminx.uber</module>
 	</modules>
 	<pluginRepositories>
 		<pluginRepository>
@@ -104,7 +106,7 @@
 				<scope>test</scope>
 			</dependency>
 			<dependency>
-				<groupId>org.eclipse</groupId>
+				<groupId>org.eclipse.lemminx</groupId>
 				<artifactId>org.eclipse.lemminx</artifactId>
 				<version>${project.version}</version>
 			</dependency>

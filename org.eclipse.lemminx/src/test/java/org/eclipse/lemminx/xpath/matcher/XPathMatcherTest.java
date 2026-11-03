@@ -129,6 +129,98 @@ public class XPathMatcherTest {
 	}
 
 	@Test
+	public void matchCDATAWithText() {
+		String xml = "<foo>\r\n" + //
+				"	<bar><![CDATA[some code]]></bar>\r\n" + //
+				"	<baz><![CDATA[other code]]></baz>\r\n" + //
+				"</foo>";
+		DOMDocument document = DOMParser.getInstance().parse(xml, "test.xml", null);
+
+		DOMElement bar = getElementByTagName(document.getDocumentElement(), "bar");
+		DOMNode cdataOfBar = bar.getFirstChild();
+
+		XPathMatcher matcher = new XPathMatcher("//text()");
+		assertTrue(matcher.match(cdataOfBar));
+
+		matcher = new XPathMatcher("//bar/text()");
+		assertTrue(matcher.match(cdataOfBar));
+
+		matcher = new XPathMatcher("/foo/bar/text()");
+		assertTrue(matcher.match(cdataOfBar));
+
+		matcher = new XPathMatcher("//baz/text()");
+		assertFalse(matcher.match(cdataOfBar));
+
+		matcher = new XPathMatcher("/foo/baz/text()");
+		assertFalse(matcher.match(cdataOfBar));
+	}
+
+	@Test
+	public void matchCDATAWithNestedElements() {
+		String xml = "<root>\r\n" + //
+				"	<parent>\r\n" + //
+				"		<child><![CDATA[nested cdata]]></child>\r\n" + //
+				"	</parent>\r\n" + //
+				"</root>";
+		DOMDocument document = DOMParser.getInstance().parse(xml, "test.xml", null);
+
+		DOMElement parent = getElementByTagName(document.getDocumentElement(), "parent");
+		DOMElement child = getElementByTagName(parent, "child");
+		DOMNode cdataOfChild = child.getFirstChild();
+
+		XPathMatcher matcher = new XPathMatcher("/root/parent/child/text()");
+		assertTrue(matcher.match(cdataOfChild));
+
+		matcher = new XPathMatcher("//child/text()");
+		assertTrue(matcher.match(cdataOfChild));
+
+		matcher = new XPathMatcher("/root/parent/text()");
+		assertFalse(matcher.match(cdataOfChild));
+	}
+
+	@Test
+	public void matchCDATADoesNotMatchElement() {
+		String xml = "<foo><![CDATA[content]]></foo>";
+		DOMDocument document = DOMParser.getInstance().parse(xml, "test.xml", null);
+
+		DOMElement foo = document.getDocumentElement();
+		DOMNode cdataOfFoo = foo.getFirstChild();
+
+		XPathMatcher matcher = new XPathMatcher("//foo");
+		assertTrue(matcher.match(foo));
+		assertFalse(matcher.match(cdataOfFoo));
+
+		matcher = new XPathMatcher("//@*");
+		assertFalse(matcher.match(cdataOfFoo));
+	}
+
+	@Test
+	public void matchMixedTextAndCDATA() {
+		String xml = "<foo>\r\n" + //
+				"	<bar>text content</bar>\r\n" + //
+				"	<baz><![CDATA[cdata content]]></baz>\r\n" + //
+				"</foo>";
+		DOMDocument document = DOMParser.getInstance().parse(xml, "test.xml", null);
+
+		DOMElement bar = getElementByTagName(document.getDocumentElement(), "bar");
+		DOMNode textOfBar = bar.getFirstChild();
+		DOMElement baz = getElementByTagName(document.getDocumentElement(), "baz");
+		DOMNode cdataOfBaz = baz.getFirstChild();
+
+		XPathMatcher matcher = new XPathMatcher("/foo/bar/text()");
+		assertTrue(matcher.match(textOfBar));
+		assertFalse(matcher.match(cdataOfBaz));
+
+		matcher = new XPathMatcher("/foo/baz/text()");
+		assertFalse(matcher.match(textOfBar));
+		assertTrue(matcher.match(cdataOfBaz));
+
+		matcher = new XPathMatcher("//text()");
+		assertTrue(matcher.match(textOfBar));
+		assertTrue(matcher.match(cdataOfBaz));
+	}
+
+	@Test
 	public void matchAnyWithPredicate() {
 		String xml = "<foo>\r\n" + //
 				"	<bar attr1=\"value1\" attr2=\"value1\">ABCD</bar>\r\n" + //

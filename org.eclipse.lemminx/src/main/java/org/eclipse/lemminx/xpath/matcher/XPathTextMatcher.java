@@ -33,7 +33,8 @@ public class XPathTextMatcher extends AbstractXPathNodeMatcher {
 
 	@Override
 	public boolean match(Node testNode, Collection<String> wildcardValues) {
-		return testNode.getNodeType() == Node.TEXT_NODE;
+		return testNode.getNodeType() == Node.TEXT_NODE
+				|| testNode.getNodeType() == Node.CDATA_SECTION_NODE;
 	}
 
 	@Override
