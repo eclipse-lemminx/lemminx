@@ -100,6 +100,36 @@ public class XMLSyntaxDiagnosticsTest extends AbstractCacheBasedTest {
 		testDiagnosticsFor(xml, d(0, 3, 0, 6, XMLSyntaxErrorCode.AttributePrefixUnbound));
 	}
 
+	@Test
+	public void testCantBindXML() throws Exception {
+		String xml = "<asdf xmlns:xml=\"https://google.ca\" />";
+		testDiagnosticsFor(xml, d(0, 12, 0, 15, XMLSyntaxErrorCode.CantBindXML));
+	}
+
+	@Test
+	public void testCantBindXMLToOtherPrefix() throws Exception {
+		String xml = "<asdf xmlns:foo=\"http://www.w3.org/XML/1998/namespace\" />";
+		testDiagnosticsFor(xml, d(0, 12, 0, 15, XMLSyntaxErrorCode.CantBindXML));
+	}
+
+	@Test
+	public void testCantBindXMLNS() throws Exception {
+		String xml = "<asdf xmlns:xmlns=\"http://example.com\" />";
+		testDiagnosticsFor(xml, d(0, 12, 0, 17, XMLSyntaxErrorCode.CantBindXMLNS));
+	}
+
+	@Test
+	public void testCantBindXMLNSNamespace() throws Exception {
+		String xml = "<asdf xmlns:foo=\"http://www.w3.org/2000/xmlns/\" />";
+		testDiagnosticsFor(xml, d(0, 12, 0, 15, XMLSyntaxErrorCode.CantBindXMLNS));
+	}
+
+	@Test
+	public void testElementXMLNSPrefix() throws Exception {
+		String xml = "<xmlns:foo />";
+		testDiagnosticsFor(xml, d(0, 1, 0, 10, XMLSyntaxErrorCode.ElementXMLNSPrefix));
+	}
+
 	/**
 	 * ContentIllegalInProlog tests
 	 *

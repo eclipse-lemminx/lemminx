@@ -221,6 +221,26 @@ public class XMLPositionUtility {
 		return null;
 	}
 
+	public static Range selectAttributeLocalPartFromGivenNameAt(String attrName, int offset, DOMDocument document) {
+		if (attrName == null) {
+			return null;
+		}
+		DOMNode element = document.findNodeAt(offset);
+		int colonIndex = attrName.indexOf(':');
+		if (colonIndex < 0) {
+			return null;
+		}
+		if (element != null && element.hasAttributes()) {
+			DOMAttr attr = element.getAttributeNode(attrName);
+			if (attr != null) {
+				int startOffset = attr.getNodeAttrName().getStart() + colonIndex + 1;
+				int endOffset = attr.getNodeAttrName().getEnd();
+				return createRange(startOffset, endOffset, document);
+			}
+		}
+		return null;
+	}
+
 	private static Range createAttrNameRange(DOMAttr attr, DOMDocument document) {
 		int startOffset = attr.getNodeAttrName().getStart();
 		int endOffset = attr.getNodeAttrName().getEnd();
