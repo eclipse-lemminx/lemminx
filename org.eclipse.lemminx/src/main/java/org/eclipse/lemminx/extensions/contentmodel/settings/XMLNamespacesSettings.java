@@ -12,6 +12,9 @@
  */
 package org.eclipse.lemminx.extensions.contentmodel.settings;
 
+import org.eclipse.lemminx.commons.config.ConfigurationScope;
+import org.eclipse.lemminx.commons.config.Scope;
+
 /**
  * XML Namespaces settings.
  *
@@ -22,6 +25,11 @@ public class XMLNamespacesSettings {
 		setEnabled(NamespacesEnabled.always);
 	}
 
+	public XMLNamespacesSettings(XMLNamespacesSettings other) {
+		this.enabled = other.enabled;
+	}
+
+	@Scope(ConfigurationScope.RESOURCE)
 	private NamespacesEnabled enabled;
 
 	public void setEnabled(NamespacesEnabled enabled) {

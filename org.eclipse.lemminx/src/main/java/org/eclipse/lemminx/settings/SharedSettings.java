@@ -22,7 +22,7 @@ public class SharedSettings {
 	private boolean linkedEditingEnabled;
 	private final XMLFoldingSettings foldings;
 	private final XMLFormattingOptions format;
-	private final XMLValidationRootSettings validationSettings;
+	private final XMLValidationRootSettings validation;
 	private final XMLSymbolSettings symbols;
 
 	private final XMLCodeActionSettings codeActionSettings;
@@ -40,7 +40,7 @@ public class SharedSettings {
 		this.completion = new XMLCompletionSettings();
 		this.foldings = new XMLFoldingSettings();
 		this.format = new XMLFormattingOptions(true);
-		this.validationSettings = new XMLValidationRootSettings();
+		this.validation = new XMLValidationRootSettings();
 		this.symbols = new XMLSymbolSettings();
 		this.codeActionSettings = new XMLCodeActionSettings();
 		this.codeLens = new XMLCodeLensSettings();
@@ -60,7 +60,7 @@ public class SharedSettings {
 		this.completion.merge(newSettings.getCompletionSettings());
 		this.foldings.merge(newSettings.getFoldingSettings());
 		this.format.merge(newSettings.getFormattingSettings());
-		this.validationSettings.merge(newSettings.getValidationSettings());
+		this.validation.merge(newSettings.getValidationSettings());
 		this.symbols.merge(newSettings.getSymbolSettings());
 		this.codeActionSettings.setCapabilities(newSettings.getCodeActionSettings().getCapabilities());
 		this.codeLens.merge(newSettings.getCodeLensSettings());
@@ -88,7 +88,7 @@ public class SharedSettings {
 	}
 
 	public XMLValidationRootSettings getValidationSettings() {
-		return validationSettings;
+		return validation;
 	}
 
 	public XMLSymbolSettings getSymbolSettings() {
