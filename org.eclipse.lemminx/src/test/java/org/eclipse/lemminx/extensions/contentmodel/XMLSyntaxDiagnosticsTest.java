@@ -47,14 +47,28 @@ public class XMLSyntaxDiagnosticsTest extends AbstractCacheBasedTest {
 	 */
 	@Test
 	public void testAttributeNotUnique() throws Exception {
-		String xml = "<InstdAmt Ccy=\"JPY\" Ccy=\"JPY\" >10000000</InstdAmt>";
-		testDiagnosticsFor(xml, d(0, 10, 0, 13, XMLSyntaxErrorCode.AttributeNotUnique));
+		String xml = "<InstdAmt Ccy=\"JPY\" Ccy=\"EUR\" >10000000</InstdAmt>";
+		Diagnostic d = d(0, 20, 0, 23, XMLSyntaxErrorCode.AttributeNotUnique);
+		testDiagnosticsFor(xml, d);
+		// Without snippet support: removes the duplicate (2nd) Ccy, preserving the first value
+		testCodeActionsFor(xml, d,
+				ca(d, te(0, 19, 0, 29, "")));
+		// With snippet support
+		testCodeActionsFor(xml, d, createSnippetEditSettings(),
+				caSnippet(d, sne(0, 19, 0, 29, "$0")));
 	}
 
 	@Test
 	public void testAttributeNotUnique2() throws Exception {
-		String xml = "<a attr=\"\" attr=\"\" attr2=\"\" />";
-		testDiagnosticsFor(xml, d(0, 3, 0, 7, XMLSyntaxErrorCode.AttributeNotUnique));
+		String xml = "<a attr=\"one\" attr=\"two\" attr2=\"\" />";
+		Diagnostic d = d(0, 14, 0, 18, XMLSyntaxErrorCode.AttributeNotUnique);
+		testDiagnosticsFor(xml, d);
+		// Without snippet support: removes the duplicate (2nd) attr, preserving the first value
+		testCodeActionsFor(xml, d,
+				ca(d, te(0, 13, 0, 24, "")));
+		// With snippet support
+		testCodeActionsFor(xml, d, createSnippetEditSettings(),
+				caSnippet(d, sne(0, 13, 0, 24, "$0")));
 	}
 
 	/**
@@ -68,7 +82,7 @@ public class XMLSyntaxDiagnosticsTest extends AbstractCacheBasedTest {
 		String xml = "<Document xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"urn:iso:std:iso:20022:tech:xsd:pain.001.001.03\"\r\n"
 				+ "\r\n" + //
 				"xmlns=\"urn:iso:std:iso:20022:tech:xsd:pain.001.001.03\"> ";
-		testDiagnosticsFor(xml, d(0, 64, 0, 69, XMLSyntaxErrorCode.AttributeNSNotUnique));
+		testDiagnosticsFor(xml, d(2, 0, 2, 5, XMLSyntaxErrorCode.AttributeNSNotUnique));
 	}
 
 	@Test
@@ -77,7 +91,7 @@ public class XMLSyntaxDiagnosticsTest extends AbstractCacheBasedTest {
 				"<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\" \r\n" + //
 				"	xmlns:tns=\"http://camel.apache.org/schema/spring\"\r\n" + //
 				"	xmlns:tns=\"http://camel.apache.org/schema/spring\" version=\"1.0\">";
-		testDiagnosticsFor(xml, d(2, 1, 2, 10, XMLSyntaxErrorCode.AttributeNSNotUnique));
+		testDiagnosticsFor(xml, d(3, 1, 3, 10, XMLSyntaxErrorCode.AttributeNSNotUnique));
 	}
 
 	@Test
@@ -139,7 +153,13 @@ public class XMLSyntaxDiagnosticsTest extends AbstractCacheBasedTest {
 		String xml = "<Id>\r\n" + //
 				"					<!-- comment -- text -->\r\n" + //
 				"        </Id>";
-		testDiagnosticsFor(xml, d(1, 18, 1, 20, XMLSyntaxErrorCode.DashDashInComment));
+		Diagnostic d = d(1, 18, 1, 20, XMLSyntaxErrorCode.DashDashInComment);
+		testDiagnosticsFor(xml, d);
+		// Without snippet support
+		testCodeActionsFor(xml, d, ca(d, te(1, 18, 1, 20, "- -")));
+		// With snippet support
+		testCodeActionsFor(xml, d, createSnippetEditSettings(),
+				caSnippet(d, sne(1, 18, 1, 20, "- -$0")));
 	}
 
 	/**
@@ -509,7 +529,13 @@ public class XMLSyntaxDiagnosticsTest extends AbstractCacheBasedTest {
 	@Test
 	public void testLessThanAttValue() throws Exception {
 		String xml = "<InstdAmt Ccy=\"<EUR\">123.45</InstdAmt> ";
-		testDiagnosticsFor(xml, d(0, 14, 0, 20, XMLSyntaxErrorCode.LessthanInAttValue));
+		Diagnostic d = d(0, 14, 0, 20, XMLSyntaxErrorCode.LessthanInAttValue);
+		testDiagnosticsFor(xml, d);
+		// Without snippet support
+		testCodeActionsFor(xml, d, ca(d, te(0, 15, 0, 16, "&lt;")));
+		// With snippet support
+		testCodeActionsFor(xml, d, createSnippetEditSettings(),
+				caSnippet(d, sne(0, 15, 0, 16, "&lt;$0")));
 	}
 
 	@Test
@@ -675,7 +701,7 @@ public class XMLSyntaxDiagnosticsTest extends AbstractCacheBasedTest {
 	@Test
 	public void testNameRequiredInReference() throws Exception {
 		String xml = "<Nm>Virgay & Co</Nm>";
-		testDiagnosticsFor(xml, d(0, 12, 0, 12, XMLSyntaxErrorCode.NameRequiredInReference));
+		testDiagnosticsFor(xml, d(0, 11, 0, 12, XMLSyntaxErrorCode.NameRequiredInReference));
 	}
 
 	@Test
@@ -779,13 +805,13 @@ public class XMLSyntaxDiagnosticsTest extends AbstractCacheBasedTest {
 	@Test
 	public void testPITargetRequired() throws Exception {
 		String xml = "<? encoding=\"UTF-8\"?>";
-		testDiagnosticsFor(xml, d(0, 2, 0, 2, XMLSyntaxErrorCode.PITargetRequired));
+		testDiagnosticsFor(xml, d(0, 0, 0, 2, XMLSyntaxErrorCode.PITargetRequired));
 	}
 
 	@Test
 	public void testPseudoAttrNameExpected() throws Exception {
 		String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"><a></a>";
-		testDiagnosticsFor(xml, d(0, 36, 0, 36, XMLSyntaxErrorCode.PseudoAttrNameExpected));
+		testDiagnosticsFor(xml, d(0, 0, 0, 5, XMLSyntaxErrorCode.PseudoAttrNameExpected));
 	}
 
 	@Test
@@ -938,6 +964,20 @@ public class XMLSyntaxDiagnosticsTest extends AbstractCacheBasedTest {
 		d = d(0, 1, 0, 2, XMLSyntaxErrorCode.MarkupEntityMismatch);
 		testDiagnosticsFor(xml, d);
 		testCodeActionsFor(xml, d, ca(d, te(0, 5, 0, 5, "a>")));
+	}
+
+	// -- Code action tests for existing codes --
+
+	@Test
+	public void testContentIllegalInPrologCodeAction() throws Exception {
+		String xml = " ab?<xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"no\"?>";
+		Diagnostic d = d(0, 1, 0, 4, XMLSyntaxErrorCode.ContentIllegalInProlog);
+		testDiagnosticsFor(xml, d);
+		// Without snippet support
+		testCodeActionsFor(xml, d, ca(d, te(0, 1, 0, 4, "")));
+		// With snippet support
+		testCodeActionsFor(xml, d, createSnippetEditSettings(),
+				caSnippet(d, sne(0, 1, 0, 4, "$0")));
 	}
 
 	@Test

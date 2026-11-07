@@ -532,10 +532,10 @@ public class DTDDiagnosticsTest extends AbstractCacheBasedTest {
 		XMLAssert.testDiagnosticsFor(xml, d);
 		// Without snippet support
 		testCodeActionsFor(xml, d,
-				ca(d, te(10, 10, 10, 17, "")));
+				ca(d, te(10, 9, 10, 17, "")));
 		// With snippet support
 		testCodeActionsFor(xml, d, XMLAssert.createSnippetEditSettings(),
-				caSnippet(d, sne(10, 10, 10, 17, "$0")));
+				caSnippet(d, sne(10, 9, 10, 17, "$0")));
 	}
 
 	@Test

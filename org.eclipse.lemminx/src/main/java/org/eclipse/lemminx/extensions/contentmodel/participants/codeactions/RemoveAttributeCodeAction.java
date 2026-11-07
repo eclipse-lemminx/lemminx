@@ -42,6 +42,13 @@ public class RemoveAttributeCodeAction implements ICodeActionParticipant {
 			if (attr != null) {
 				int startOffset = attr.getStart();
 				int endOffset = attr.getEnd();
+				CharSequence text = document.getTextSequence();
+				if (startOffset > 0) {
+					char ch = text.charAt(startOffset - 1);
+					if (ch == ' ' || ch == '\t') {
+						startOffset--;
+					}
+				}
 				Range attrRange = new Range(document.positionAt(startOffset), document.positionAt(endOffset));
 				boolean snippetSupport = request.getSharedSettings().getWorkspaceSettings()
 						.isSnippetEditSupported();

@@ -183,9 +183,16 @@ public class XMLPositionUtility {
 	public static Range selectAttributeNameFromGivenNameAt(String attrName, int offset, DOMDocument document) {
 		DOMNode element = document.findNodeAt(offset);
 		if (element != null && element.hasAttributes()) {
-			DOMAttr attr = element.getAttributeNode(attrName);
-			if (attr != null) {
-				return createAttrNameRange(attr, document);
+			DOMAttr best = null;
+			for (DOMAttr attr : element.attributes()) {
+				if (attrName.equals(attr.getName())) {
+					if (best == null || Math.abs(attr.getStart() - offset) < Math.abs(best.getStart() - offset)) {
+						best = attr;
+					}
+				}
+			}
+			if (best != null) {
+				return createAttrNameRange(best, document);
 			}
 		}
 		return null;
