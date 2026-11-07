@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="server">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element ref="webApplication" minOccurs="0" maxOccurs="unbounded"/>
+        <xs:element ref="applicationManager" minOccurs="0" maxOccurs="unbounded"/>
+        <xs:element ref="httpEndpoint" minOccurs="0" maxOccurs="unbounded"/>
+      </xs:sequence>
+      <xs:attribute name="description" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="webApplication">
+    <xs:complexType>
+      <xs:attribute name="id" type="xs:string"/>
+      <xs:attribute name="location" type="xs:string"/>
+      <xs:attribute name="name" type="xs:string"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="applicationManager">
+    <xs:complexType>
+      <xs:attribute name="autoExpand" type="xs:boolean"/>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="httpEndpoint">
+    <xs:complexType>
+      <xs:attribute name="id" type="xs:string"/>
+      <xs:attribute name="httpPort" type="xs:int"/>
+      <xs:attribute name="httpsPort" type="xs:int"/>
+    </xs:complexType>
+  </xs:element>
+</xs:schema>

@@ -18,7 +18,11 @@ import org.eclipse.lemminx.commons.CodeActionFactory;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMElement;
 import org.eclipse.lemminx.dom.DOMNode;
+import org.eclipse.lemminx.dom.DOMText;
 import org.eclipse.lemminx.dom.LineIndentInfo;
+import org.eclipse.lemminx.extensions.contentmodel.model.CMDocument;
+import org.eclipse.lemminx.extensions.contentmodel.model.CMElementDeclaration;
+import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionParticipant;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionRequest;
 import org.eclipse.lemminx.utils.StringUtils;
@@ -59,8 +63,8 @@ public class CloseTagCodeAction implements ICodeActionParticipant {
 					doCodeActionsForStartTagUnclosed(element, document, diagnosticRange, diagnostic, codeActions,
 							snippetSupport);
 				} else {
-					doCodeActionsForStartTagClosed(element, document, diagnosticRange, diagnostic, codeActions,
-							snippetSupport);
+					doCodeActionsForStartTagClosed(element, document, diagnostic, codeActions,
+							snippetSupport, request);
 				}
 			}
 		} catch (BadLocationException e) {
@@ -155,76 +159,114 @@ public class CloseTagCodeAction implements ICodeActionParticipant {
 	 *
 	 * @throws BadLocationException
 	 */
-	private void doCodeActionsForStartTagClosed(DOMElement element, DOMDocument document, Range diagnosticRange,
-			Diagnostic diagnostic, List<CodeAction> codeActions, boolean snippetSupport) throws BadLocationException {
+	private void doCodeActionsForStartTagClosed(DOMElement element, DOMDocument document,
+			Diagnostic diagnostic, List<CodeAction> codeActions, boolean snippetSupport, ICodeActionRequest request)
+			throws BadLocationException {
 		// Here start tag element is closed with '>'.
 		CharSequence text = document.getTextSequence();
 		if (!element.hasEndTag()) {
 			// The element has no an end tag
 			// ex : <foo attr="" >
-			// // Close with '</foo>'
 			String tagName = element.getTagName();
-			// ex: <foo><
-			// ex: <foo> <
-			// ex: <foo></
-			// ex: <foo> </
-			if (!element.hasChildNodes()) {
-				// ex : <foo><bar></foo>
-				String insertText = "</" + tagName + ">";
-				int endOffset = element.getStartTagCloseOffset() + 1;
-				Position endPosition = document.positionAt(endOffset);
-				CodeAction closeEndTagAction = CodeActionFactory.insert("Close with '" + insertText + "'",
-						endPosition, snippetSupport ? insertText + "$0" : insertText,
-						document.getTextDocument(), diagnostic, snippetSupport);
-				codeActions.add(closeEndTagAction);
-			} else {
-				// the element have some children(Text node, Element node, etc)
-				boolean hasChildWithNoTagName = false;
-				// Search orphan elements in the children to replace
+
+			// Check if the grammar declares this element as EMPTY
+			boolean isEmptyByGrammar = isEmptyElement(element, request);
+
+			if (!isEmptyByGrammar) {
+				// No grammar info or element can have content:
+				// offer closing end tag (Strategy 1)
+				if (!element.hasChildNodes()) {
+					// ex : <foo><bar></foo>
+					// Close with '</foo>'
+					String insertText = "</" + tagName + ">";
+					int endOffset = element.getStartTagCloseOffset() + 1;
+					Position endPosition = document.positionAt(endOffset);
+					CodeAction closeEndTagAction = CodeActionFactory.insert("Close with '" + insertText + "'",
+							endPosition, snippetSupport ? insertText + "$0" : insertText,
+							document.getTextDocument(), diagnostic, snippetSupport);
+					codeActions.add(closeEndTagAction);
+				} else {
+					// the element have some children(Text node, Element node, etc)
+					boolean hasChildWithNoTagName = false;
+					// Search orphan elements in the children to replace
+					for (DOMNode child : element.children()) {
+						if (child.isElement()) {
+							DOMElement childElement = (DOMElement) child;
+							if (!childElement.hasTagName() || childElement.isOrphanEndTag()) {
+								// // ex : <a> <b> </c> --> the </c> breaks the <b> element, it should be
+								// replaced with </b>
+								// ex : <a> <b> </ --> the </ breaks the <b> element, it should be replaced
+								// with
+								// </b>
+								String replaceTagName = element.getTagName();
+								CodeAction replaceTagAction = replaceEndTagNameCodeAction(childElement,
+										replaceTagName, diagnostic, snippetSupport);
+								codeActions.add(replaceTagAction);
+								hasChildWithNoTagName = !childElement.hasTagName();
+							}
+						}
+					}
+					if (!hasChildWithNoTagName) {
+						// Here, there are no child end tag element with '</'
+						int endOffset = element.getLastChild().getEnd() - 1;
+						if (endOffset < text.length()) {
+							// remove whitespaces
+							char ch = text.charAt(endOffset);
+							while (Character.isWhitespace(ch)) {
+								endOffset--;
+								ch = text.charAt(endOffset);
+							}
+						}
+						endOffset++;
+						String label = "</" + tagName + ">";
+						String insertText = label;
+						boolean multiLine = hasElements(element);
+						if (multiLine) {
+							// The element have element node as children
+							// the </foo> must be inserted with a new line and indent
+							int elementLine = document.positionAt(element.getStart()).getLine();
+							LineIndentInfo indentInfo = document.getLineIndentInfo(elementLine);
+							insertText = indentInfo.getLineDelimiter() + indentInfo.getWhitespacesIndent()
+									+ insertText;
+						}
+						// ex : <foo>bar --> the </foo> must be inserted after bar text
+						// ex : <a> <b> </c> --> the </> must be inserted after the </c>
+						Position endPosition = document.positionAt(endOffset);
+						// Don't use SnippetTextEdit for multi-line inserts because
+						// VSCode adjustIndentation adds the current line's indent
+						// on top of the indent we already computed.
+						boolean useSnippet = snippetSupport && !multiLine;
+						CodeAction closeEndTagAction = CodeActionFactory.insert("Close with '" + label + "'",
+								endPosition, useSnippet ? insertText + "$0" : insertText,
+								document.getTextDocument(), diagnostic, useSnippet);
+						codeActions.add(closeEndTagAction);
+					}
+				}
+			} else if (element.hasChildNodes()) {
+				// EMPTY element with children: still offer orphan end-tag replacement
 				for (DOMNode child : element.children()) {
 					if (child.isElement()) {
 						DOMElement childElement = (DOMElement) child;
 						if (!childElement.hasTagName() || childElement.isOrphanEndTag()) {
-							// // ex : <a> <b> </c> --> the </c> breaks the <b> element, it should be
-							// replaced with </b>
-							// ex : <a> <b> </ --> the </ breaks the <b> element, it should be replaced with
-							// </b>
 							String replaceTagName = element.getTagName();
-							CodeAction replaceTagAction = replaceEndTagNameCodeAction(childElement, replaceTagName,
-									diagnostic, snippetSupport);
+							CodeAction replaceTagAction = replaceEndTagNameCodeAction(childElement,
+									replaceTagName, diagnostic, snippetSupport);
 							codeActions.add(replaceTagAction);
-							hasChildWithNoTagName = !childElement.hasTagName();
 						}
 					}
 				}
-				if (!hasChildWithNoTagName) {
-					// Here, there are no child end tag element with '</'
-					int endOffset = element.getLastChild().getEnd() - 1;
-					if (endOffset < text.length()) {
-						// remove whitespaces
-						char ch = text.charAt(endOffset);
-						while (Character.isWhitespace(ch)) {
-							endOffset--;
-							ch = text.charAt(endOffset);
-						}
-					}
-					endOffset++;
-					String label = "</" + tagName + ">";
-					String insertText = label;
-					if (hasElements(element)) {
-						// The element have element node as children
-						// the </foo> must be inserted with a new line and indent
-						LineIndentInfo indentInfo = document.getLineIndentInfo(diagnosticRange.getStart().getLine());
-						insertText = indentInfo.getLineDelimiter() + indentInfo.getWhitespacesIndent() + insertText;
-					}
-					// ex : <foo>bar --> the </foo> must be inserted after bar text
-					// ex : <a> <b> </c> --> the </> must be inserted after the </c>
-					Position endPosition = document.positionAt(endOffset);
-					CodeAction closeEndTagAction = CodeActionFactory.insert("Close with '" + label + "'",
-							endPosition, snippetSupport ? insertText + "$0" : insertText,
-							document.getTextDocument(), diagnostic, snippetSupport);
-					codeActions.add(closeEndTagAction);
-				}
+			}
+
+			// Offer self-close option (Strategy 2).
+			// When grammar says EMPTY, this is the only option offered.
+			// Suppress for document root elements with content children
+			// (elements, CDATA, non-whitespace text) that cannot legally
+			// follow the document element. Allow when children are only
+			// comments, PIs, or whitespace (valid XML misc content).
+			boolean isDocumentRoot = element.getParentNode() instanceof DOMDocument;
+			if (isEmptyByGrammar
+					|| !(isDocumentRoot && hasContentChildren(element))) {
+				addSelfCloseCodeAction(element, document, diagnostic, codeActions, snippetSupport);
 			}
 		} else {
 			// The element has an end tag
@@ -328,11 +370,63 @@ public class CloseTagCodeAction implements ICodeActionParticipant {
 		return false;
 	}
 
+	/**
+	 * Returns true if the given element has content children (elements, CDATA,
+	 * or non-whitespace text) that cannot appear after the document element.
+	 */
+	private static boolean hasContentChildren(DOMElement element) {
+		for (DOMNode node : element.children()) {
+			if (node.isElement() || node.isCDATA()) {
+				return true;
+			}
+			if (node.isText() && !((DOMText) node).isElementContentWhitespace()) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	private static boolean isCharAt(CharSequence text, int offset, char ch) {
 		if (text.length() <= offset) {
 			return false;
 		}
 		return text.charAt(offset) == ch;
+	}
+
+	/**
+	 * Add a code action to self-close the element by replacing '>' with '/>'.
+	 */
+	private static void addSelfCloseCodeAction(DOMElement element, DOMDocument document, Diagnostic diagnostic,
+			List<CodeAction> codeActions, boolean snippetSupport) throws BadLocationException {
+		int startTagCloseOffset = element.getStartTagCloseOffset();
+		Position startPosition = document.positionAt(startTagCloseOffset);
+		Position endPosition = document.positionAt(startTagCloseOffset + 1);
+		CodeAction selfCloseAction = CodeActionFactory.replace("Close with '/>'",
+				new Range(startPosition, endPosition),
+				snippetSupport ? "/>$0" : "/>",
+				document.getTextDocument(), diagnostic, snippetSupport);
+		codeActions.add(selfCloseAction);
+	}
+
+	/**
+	 * Returns true if the grammar declares the given element as EMPTY (cannot
+	 * contain children or text content) and false otherwise.
+	 */
+	private static boolean isEmptyElement(DOMElement element, ICodeActionRequest request) {
+		try {
+			ContentModelManager contentModelManager = request.getComponent(ContentModelManager.class);
+			if (contentModelManager != null) {
+				for (CMDocument cmDocument : contentModelManager.findCMDocument(element)) {
+					CMElementDeclaration elementDeclaration = cmDocument.findCMElement(element);
+					if (elementDeclaration != null) {
+						return elementDeclaration.isEmpty();
+					}
+				}
+			}
+		} catch (Exception e) {
+			// ignore - fall back to non-grammar behavior
+		}
+		return false;
 	}
 
 }
