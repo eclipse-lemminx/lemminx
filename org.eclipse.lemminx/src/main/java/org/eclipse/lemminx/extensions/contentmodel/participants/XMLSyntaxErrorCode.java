@@ -61,6 +61,8 @@ public enum XMLSyntaxErrorCode implements IXMLErrorCode {
 	AttributeNotUnique, // https://wiki.xmldation.com/Support/Validator/AttributeNotUnique
 	AttributeNSNotUnique, // https://wiki.xmldation.com/Support/Validator/AttributeNSNotUnique
 	AttributePrefixUnbound, //
+	CantBindXML, //
+	CantBindXMLNS, //
 	CDEndInContent, //
 	CDSectUnterminated, //
 	CommentUnterminated, //
@@ -69,6 +71,7 @@ public enum XMLSyntaxErrorCode implements IXMLErrorCode {
 	DashDashInComment, // https://wiki.xmldation.com/Support/Validator/DashDashInComment
 	ElementUnterminated, // https://wiki.xmldation.com/Support/Validator/ElementUnterminated
 	ElementPrefixUnbound, // https://wiki.xmldation.com/Support/Validator/ElementPrefixUnbound
+	ElementXMLNSPrefix, //
 	EmptyPrefixedAttName, // https://wiki.xmldation.com/Support/Validator/EmptyPrefixedAttName
 	EncodingDeclRequired, // https://wiki.xmldation.com/Support/Validator/EncodingDeclRequired
 	ETagRequired, // https://wiki.xmldation.com/Support/Validator/ETagRequired
@@ -159,6 +162,7 @@ public enum XMLSyntaxErrorCode implements IXMLErrorCode {
 		case SpaceRequiredBeforeEncodingInXMLDecl:
 		case VersionInfoRequired:
 		case ElementPrefixUnbound:
+		case ElementXMLNSPrefix:
 		case RootElementTypeMustMatchDoctypedecl:
 			return XMLPositionUtility.selectStartTagName(offset, document);
 		case EqRequiredInAttribute: {
@@ -183,6 +187,11 @@ public enum XMLSyntaxErrorCode implements IXMLErrorCode {
 		}
 		case AttributePrefixUnbound: {
 			return XMLPositionUtility.selectAttributePrefixFromGivenNameAt(getString(arguments[1]), offset, document);
+		}
+		case CantBindXML:
+		case CantBindXMLNS: {
+			String attrName = arguments[0] instanceof QName ? ((QName) arguments[0]).rawname : getString(arguments[0]);
+			return XMLPositionUtility.selectAttributeLocalPartFromGivenNameAt(attrName, offset, document);
 		}
 		case LessthanInAttValue: {
 			String attrName = getString(arguments[1]);
