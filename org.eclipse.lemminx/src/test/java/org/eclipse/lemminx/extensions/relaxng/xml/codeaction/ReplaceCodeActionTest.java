@@ -52,10 +52,10 @@ public class ReplaceCodeActionTest extends AbstractCacheBasedTest {
 		testDiagnosticsFor(xml, d);
 		// Without snippet support
 		testCodeActionsFor(xml, d,
-				ca(d, te(2, 8, 2, 15, "")));
+				ca(d, te(2, 7, 2, 15, "")));
 		// With snippet support
 		testCodeActionsFor(xml, d, XMLAssert.createSnippetEditSettings(),
-				caSnippet(d, sne(2, 8, 2, 15, "$0")));
+				caSnippet(d, sne(2, 7, 2, 15, "$0")));
 	}
 
 	/**
@@ -76,10 +76,10 @@ public class ReplaceCodeActionTest extends AbstractCacheBasedTest {
 		testDiagnosticsFor(xml, d);
 		// Without snippet support
 		testCodeActionsFor(xml, d,
-				ca(d, te(3, 10, 3, 19, "")));
+				ca(d, te(3, 9, 3, 19, "")));
 		// With snippet support
 		testCodeActionsFor(xml, d, XMLAssert.createSnippetEditSettings(),
-				caSnippet(d, sne(3, 10, 3, 19, "$0")));
+				caSnippet(d, sne(3, 9, 3, 19, "$0")));
 	}
 
 	/**
@@ -98,10 +98,10 @@ public class ReplaceCodeActionTest extends AbstractCacheBasedTest {
 		testDiagnosticsFor(xml, d);
 		// Without snippet support
 		testCodeActionsFor(xml, d,
-				ca(d, te(2, 24, 2, 35, "")));
+				ca(d, te(2, 23, 2, 35, "")));
 		// With snippet support
 		testCodeActionsFor(xml, d, XMLAssert.createSnippetEditSettings(),
-				caSnippet(d, sne(2, 24, 2, 35, "$0")));
+				caSnippet(d, sne(2, 23, 2, 35, "$0")));
 	}
 
 	// ---------- Replace element ----------

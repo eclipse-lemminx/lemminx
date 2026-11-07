@@ -26,15 +26,20 @@ import org.eclipse.lemminx.dom.DOMDocumentType;
 import org.eclipse.lemminx.dom.DOMElement;
 import org.eclipse.lemminx.dom.DOMNode;
 import org.eclipse.lemminx.dom.DTDDeclNode;
-import org.eclipse.lemminx.dom.DTDDeclParameter;
+import org.eclipse.lemminx.extensions.contentmodel.participants.codeactions.AttributeNotUniqueCodeAction;
+import org.eclipse.lemminx.extensions.contentmodel.participants.codeactions.ContentIllegalInPrologCodeAction;
+import org.eclipse.lemminx.extensions.contentmodel.participants.codeactions.DashDashInCommentCodeAction;
+import org.eclipse.lemminx.extensions.contentmodel.participants.codeactions.DoctypeNotAllowedCodeAction;
 import org.eclipse.lemminx.extensions.contentmodel.participants.codeactions.ETagRequiredCodeAction;
 import org.eclipse.lemminx.extensions.contentmodel.participants.codeactions.ETagUnterminatedCodeAction;
 import org.eclipse.lemminx.extensions.contentmodel.participants.codeactions.ElementUnterminatedCodeAction;
 import org.eclipse.lemminx.extensions.contentmodel.participants.codeactions.EqRequiredInAttributeCodeAction;
+import org.eclipse.lemminx.extensions.contentmodel.participants.codeactions.LessthanInAttValueCodeAction;
 import org.eclipse.lemminx.extensions.contentmodel.participants.codeactions.MarkupEntityMismatchCodeAction;
 import org.eclipse.lemminx.extensions.contentmodel.participants.codeactions.OpenQuoteExpectedCodeAction;
 import org.eclipse.lemminx.extensions.contentmodel.participants.codeactions.RootElementTypeMustMatchDoctypedeclCodeAction;
 import org.eclipse.lemminx.extensions.contentmodel.participants.codeactions.SemicolonRequiredInReferenceCodeAction;
+import org.eclipse.lemminx.extensions.contentmodel.participants.codeactions.XMLDeclUnterminatedCodeAction;
 import org.eclipse.lemminx.extensions.contentmodel.participants.codeactions.nogrammarconstraints.NoGrammarConstraintsCodeAction;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionParticipant;
 import org.eclipse.lemminx.services.extensions.diagnostics.IXMLErrorCode;
@@ -56,7 +61,11 @@ public enum XMLSyntaxErrorCode implements IXMLErrorCode {
 	AttributeNotUnique, // https://wiki.xmldation.com/Support/Validator/AttributeNotUnique
 	AttributeNSNotUnique, // https://wiki.xmldation.com/Support/Validator/AttributeNSNotUnique
 	AttributePrefixUnbound, //
+	CDEndInContent, //
+	CDSectUnterminated, //
+	CommentUnterminated, //
 	ContentIllegalInProlog, // https://wiki.xmldation.com/Support/Validator/ContentIllegalInProlog
+	ContentIllegalInTrailingMisc, //
 	DashDashInComment, // https://wiki.xmldation.com/Support/Validator/DashDashInComment
 	ElementUnterminated, // https://wiki.xmldation.com/Support/Validator/ElementUnterminated
 	ElementPrefixUnbound, // https://wiki.xmldation.com/Support/Validator/ElementPrefixUnbound
@@ -67,13 +76,23 @@ public enum XMLSyntaxErrorCode implements IXMLErrorCode {
 	EqRequiredInAttribute, // https://wiki.xmldation.com/Support/Validator/EqRequiredInAttribute
 	EqRequiredInXMLDecl, //
 	IllegalQName, //
+	InvalidCharInAttValue, //
+	InvalidCharInCDSect, //
+	InvalidCharInComment, //
+	InvalidCharInContent, //
+	InvalidCharInPI, //
+	InvalidCharInProlog, //
 	InvalidCommentStart, //
+	InvalidHighSurrogate, //
 	LessthanInAttValue, //
 	MarkupEntityMismatch, //
 	MarkupNotRecognizedInContent, //
+	MarkupNotRecognizedInMisc, //
+	MarkupNotRecognizedInProlog, //
 	NameRequiredInReference, //
 	OpenQuoteExpected, //
 	PITargetRequired, //
+	PIUnterminated, //
 	PseudoAttrNameExpected, //
 	QuoteRequiredInXMLDecl, //
 	RootElementTypeMustMatchDoctypedecl, //
@@ -282,9 +301,25 @@ public enum XMLSyntaxErrorCode implements IXMLErrorCode {
 		case IllegalQName:
 		case InvalidCommentStart:
 		case MarkupNotRecognizedInContent:
+		case MarkupNotRecognizedInProlog:
+		case MarkupNotRecognizedInMisc:
 			return XMLPositionUtility.createRange(offset, offset + 1, document);
-		case NameRequiredInReference:
-			break;
+		case InvalidCharInContent:
+		case InvalidCharInAttValue:
+		case InvalidCharInComment:
+		case InvalidCharInPI:
+		case InvalidCharInProlog:
+		case InvalidCharInCDSect:
+		case InvalidHighSurrogate:
+			return XMLPositionUtility.createRange(offset, offset + 1, document);
+		case NameRequiredInReference: {
+			CharSequence text = document.getTextSequence();
+			int refOffset = offset;
+			while (refOffset > 0 && text.charAt(refOffset) != '&') {
+				refOffset--;
+			}
+			return XMLPositionUtility.createRange(refOffset, refOffset + 1, document);
+		}
 		case OpenQuoteExpected: {
 			DOMNode node = document.findNodeAt(offset);
 			if (node instanceof DTDDeclNode) {
@@ -298,20 +333,77 @@ public enum XMLSyntaxErrorCode implements IXMLErrorCode {
 		case DoctypeNotAllowed:
 			DOMDocumentType docType = document.getDoctype();
 			return XMLPositionUtility.createRange(docType);
-		case PITargetRequired:
-			// Working
-			break;
-		case PseudoAttrNameExpected:
-			// Working
-			// Add better message
-			break;
+		case PITargetRequired: {
+			CharSequence piText = document.getTextSequence();
+			int piStart = offset;
+			while (piStart > 0 && piText.charAt(piStart) != '<') {
+				piStart--;
+			}
+			return XMLPositionUtility.createRange(piStart, piStart + 2, document);
+		}
+		case PseudoAttrNameExpected: {
+			int declEnd = Math.min(5, document.getTextSequence().length());
+			return XMLPositionUtility.createRange(0, declEnd, document);
+		}
 		case SpaceRequiredInPI:
 			int start = selectCurrentTagOffset(offset, document) + 1;
 			int end = offset + 1;
 			return XMLPositionUtility.createRange(start, end, document);
 		case PrematureEOF:
-		case XMLDeclUnterminated:
 			break;
+		case XMLDeclUnterminated: {
+			int declEnd = Math.min(5, document.getTextSequence().length());
+			return XMLPositionUtility.createRange(0, declEnd, document);
+		}
+		case CDSectUnterminated: {
+			CharSequence cdText = document.getTextSequence();
+			int cdStart = offset;
+			while (cdStart > 0 && cdText.charAt(cdStart) != '<') {
+				cdStart--;
+			}
+			int cdEnd = Math.min(cdStart + 9, cdText.length());
+			return XMLPositionUtility.createRange(cdStart, cdEnd, document);
+		}
+		case CDEndInContent: {
+			CharSequence cdEndText = document.getTextSequence();
+			int cdEndStart = offset;
+			while (cdEndStart > 0 && cdEndText.charAt(cdEndStart) != ']') {
+				cdEndStart--;
+			}
+			if (cdEndStart > 0 && cdEndText.charAt(cdEndStart - 1) == ']') {
+				cdEndStart--;
+			}
+			return XMLPositionUtility.createRange(cdEndStart, cdEndStart + 3, document);
+		}
+		case CommentUnterminated: {
+			CharSequence commentText = document.getTextSequence();
+			int commentStart = offset;
+			while (commentStart > 0 && commentText.charAt(commentStart) != '<') {
+				commentStart--;
+			}
+			int commentEnd = Math.min(commentStart + 4, commentText.length());
+			return XMLPositionUtility.createRange(commentStart, commentEnd, document);
+		}
+		case PIUnterminated: {
+			CharSequence piUnText = document.getTextSequence();
+			int piUnStart = offset;
+			while (piUnStart > 0 && piUnText.charAt(piUnStart) != '<') {
+				piUnStart--;
+			}
+			return XMLPositionUtility.createRange(piUnStart, piUnStart + 2, document);
+		}
+		case ContentIllegalInTrailingMisc: {
+			int trailingStart = offset + 1;
+			CharSequence trailingText = document.getTextSequence();
+			int trailingEnd = trailingText.length();
+			for (int i = trailingStart; i < trailingText.length(); i++) {
+				if (trailingText.charAt(i) == '<') {
+					trailingEnd = i;
+					break;
+				}
+			}
+			return XMLPositionUtility.createRange(trailingStart, trailingEnd, document);
+		}
 		default:
 		}
 
@@ -423,6 +515,14 @@ public enum XMLSyntaxErrorCode implements IXMLErrorCode {
 		codeActions.put(RootElementTypeMustMatchDoctypedecl.getCode(),
 				new RootElementTypeMustMatchDoctypedeclCodeAction());
 		codeActions.put(SemicolonRequiredInReference.getCode(), new SemicolonRequiredInReferenceCodeAction());
+		codeActions.put(DashDashInComment.getCode(), new DashDashInCommentCodeAction());
+		codeActions.put(LessthanInAttValue.getCode(), new LessthanInAttValueCodeAction());
+		codeActions.put(DoctypeNotAllowed.getCode(), new DoctypeNotAllowedCodeAction());
+		AttributeNotUniqueCodeAction removeAttrCodeAction = new AttributeNotUniqueCodeAction();
+		codeActions.put(AttributeNotUnique.getCode(), removeAttrCodeAction);
+		codeActions.put(AttributeNSNotUnique.getCode(), removeAttrCodeAction);
+		codeActions.put(XMLDeclUnterminated.getCode(), new XMLDeclUnterminatedCodeAction());
+		codeActions.put(ContentIllegalInProlog.getCode(), new ContentIllegalInPrologCodeAction());
 		if (sharedSettings != null
 				&& sharedSettings.getWorkspaceSettings().isResourceOperationSupported(ResourceOperationKind.Create)) {
 			codeActions.put(NoGrammarConstraints.getCode(), new NoGrammarConstraintsCodeAction());

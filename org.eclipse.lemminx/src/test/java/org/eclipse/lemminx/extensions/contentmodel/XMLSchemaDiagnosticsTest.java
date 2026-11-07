@@ -243,10 +243,10 @@ public class XMLSchemaDiagnosticsTest extends AbstractCacheBasedTest {
 		Diagnostic d = d(2, 7, 2, 11, XMLSchemaErrorCode.cvc_complex_type_3_2_2);
 		testDiagnosticsWithCatalogFor(xml, d);
 		// Without snippet support
-		testCodeActionsFor(xml, d, ca(d, te(2, 7, 2, 14, "")));
+		testCodeActionsFor(xml, d, ca(d, te(2, 6, 2, 14, "")));
 		// With snippet support
 		testCodeActionsFor(xml, d, createSnippetEditSettings(),
-				caSnippet(d, sne(2, 7, 2, 14, "$0")));
+				caSnippet(d, sne(2, 6, 2, 14, "$0")));
 	}
 
 	@Test
