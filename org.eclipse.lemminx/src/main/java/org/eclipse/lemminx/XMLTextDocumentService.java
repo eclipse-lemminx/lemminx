@@ -220,8 +220,9 @@ public class XMLTextDocumentService implements TextDocumentService {
 		final int generationAtRequest = settingsGeneration;
 		ConfigurationParams params = ConfigurationField.createConfigurationParams(
 				uri, XMLGeneralClientSettings.SCOPED_FIELDS);
-		return xmlLanguageServer.getLanguageClient()
-				.configuration(params)
+		CompletableFuture<List<Object>> configFuture = xmlLanguageServer.getLanguageClient()
+				.configuration(params);
+		return configFuture
 				.thenApply(results -> {
 					if (results == null) {
 						return sharedSettings;
@@ -242,11 +243,6 @@ public class XMLTextDocumentService implements TextDocumentService {
 						doc.setSettings(scoped);
 					}
 					return scoped;
-				})
-				.exceptionally(e -> {
-					LOGGER.log(Level.WARNING,
-							"Error pulling scoped configuration for '" + uri + "'.", e);
-					return sharedSettings;
 				});
 	}
 
@@ -265,16 +261,17 @@ public class XMLTextDocumentService implements TextDocumentService {
 		this.limitExceededWarner = null;
 		this.xmlValidatorDelayer = new ModelValidatorDelayer<DOMDocument>((document) -> {
 			DOMDocument xmlDocument = document.getModel();
-			validate(xmlDocument, Collections.emptyMap());
-
-			getXMLLanguageService().getDocumentLifecycleParticipants().forEach(participant -> {
-				try {
-					participant.didChange(xmlDocument);
-				} catch (Exception e) {
-					LOGGER.log(Level.SEVERE, "Error while processing didChange for the participant '"
-							+ participant.getClass().getName() + "'.", e);
-				}
-			});
+			validate(xmlDocument, Collections.emptyMap())
+					.thenRun(() -> {
+						getXMLLanguageService().getDocumentLifecycleParticipants().forEach(participant -> {
+							try {
+								participant.didChange(xmlDocument);
+							} catch (Exception e) {
+								LOGGER.log(Level.SEVERE, "Error while processing didChange for the participant '"
+										+ participant.getClass().getName() + "'.", e);
+							}
+						});
+					});
 		});
 	}
 
@@ -333,35 +330,49 @@ public class XMLTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<Either<List<CompletionItem>, CompletionList>> completion(CompletionParams params) {
-		return computeDOMAsync(params.getTextDocument(), (xmlDocument, cancelChecker) -> {
-			CompletionList list = getXMLLanguageService().doComplete(xmlDocument, params.getPosition(), sharedSettings,
-					cancelChecker);
-			return Either.forRight(list);
+		return computeDOMAsyncCompose(params.getTextDocument(), (xmlDocument, cancelChecker) -> {
+			return getOrPullScopedSettings(params.getTextDocument().getUri())
+					.thenApply(scopedSettings -> {
+						CompletionList list = getXMLLanguageService().doComplete(xmlDocument, params.getPosition(),
+								scopedSettings, cancelChecker);
+						return Either.forRight(list);
+					});
 		});
 	}
 
 	@Override
 	public CompletableFuture<CompletionItem> resolveCompletionItem(CompletionItem unresolved) {
-		return computeDOMAsync(unresolved, unresolved.getData(), (xmlDocument, cancelChecker) -> {
-			return getXMLLanguageService().resolveCompletionItem(unresolved, xmlDocument, sharedSettings,
-					cancelChecker);
+		return computeDOMAsyncCompose(unresolved, unresolved.getData(), (xmlDocument, cancelChecker) -> {
+			return getOrPullScopedSettings(xmlDocument.getDocumentURI())
+					.thenApply(scopedSettings -> {
+						cancelChecker.checkCanceled();
+						return getXMLLanguageService().resolveCompletionItem(unresolved, xmlDocument,
+								scopedSettings, cancelChecker);
+					});
 		});
 	}
 
 	@Override
 	public CompletableFuture<Either<List<InlineCompletionItem>, InlineCompletionList>> inlineCompletion(InlineCompletionParams params) {
-		return computeDOMAsync(params.getTextDocument(), (xmlDocument, cancelChecker) -> {
-			InlineCompletionContext context = params.getContext();
-			InlineCompletionList list = getXMLLanguageService().doInlineCompletion(xmlDocument, params.getPosition(), context,
-					sharedSettings, cancelChecker);
-			return Either.forRight(list);
+		return computeDOMAsyncCompose(params.getTextDocument(), (xmlDocument, cancelChecker) -> {
+			return getOrPullScopedSettings(params.getTextDocument().getUri())
+					.thenApply(scopedSettings -> {
+						InlineCompletionContext context = params.getContext();
+						InlineCompletionList list = getXMLLanguageService().doInlineCompletion(xmlDocument,
+								params.getPosition(), context, scopedSettings, cancelChecker);
+						return Either.forRight(list);
+					});
 		});
 	}
 
 	@Override
 	public CompletableFuture<Hover> hover(HoverParams params) {
-		return computeDOMAsync(params.getTextDocument(), (xmlDocument, cancelChecker) -> {
-			return getXMLLanguageService().doHover(xmlDocument, params.getPosition(), sharedSettings, cancelChecker);
+		return computeDOMAsyncCompose(params.getTextDocument(), (xmlDocument, cancelChecker) -> {
+			return getOrPullScopedSettings(params.getTextDocument().getUri())
+					.thenApply(scopedSettings -> {
+						return getXMLLanguageService().doHover(xmlDocument, params.getPosition(), scopedSettings,
+								cancelChecker);
+					});
 		});
 	}
 
@@ -620,8 +631,13 @@ public class XMLTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<CodeAction> resolveCodeAction(CodeAction unresolved) {
-		return computeDOMAsync(unresolved, unresolved.getData(), (xmlDocument, cancelChecker) -> {
-			return getXMLLanguageService().resolveCodeAction(unresolved, xmlDocument, sharedSettings, cancelChecker);
+		return computeDOMAsyncCompose(unresolved, unresolved.getData(), (xmlDocument, cancelChecker) -> {
+			return getOrPullScopedSettings(xmlDocument.getDocumentURI())
+					.thenApply(scopedSettings -> {
+						cancelChecker.checkCanceled();
+						return getXMLLanguageService().resolveCodeAction(unresolved, xmlDocument, scopedSettings,
+								cancelChecker);
+					});
 		});
 	}
 
@@ -757,15 +773,17 @@ public class XMLTextDocumentService implements TextDocumentService {
 		} else {
 			CompletableFuture.runAsync(() -> {
 				DOMDocument xmlDocument = ((ModelTextDocument<DOMDocument, SharedSettings>) document).getModel();
-				validate(xmlDocument, Collections.emptyMap());
-				getXMLLanguageService().getDocumentLifecycleParticipants().forEach(participant -> {
-					try {
-						participant.didOpen(xmlDocument);
-					} catch (Exception e) {
-						LOGGER.log(Level.SEVERE, "Error while processing didOpen for the participant '"
-								+ participant.getClass().getName() + "'.", e);
-					}
-				});
+				validate(xmlDocument, Collections.emptyMap())
+						.thenRun(() -> {
+							getXMLLanguageService().getDocumentLifecycleParticipants().forEach(participant -> {
+								try {
+									participant.didOpen(xmlDocument);
+								} catch (Exception e) {
+									LOGGER.log(Level.SEVERE, "Error while processing didOpen for the participant '"
+											+ participant.getClass().getName() + "'.", e);
+								}
+							});
+						});
 			});
 		}
 	}
@@ -775,18 +793,23 @@ public class XMLTextDocumentService implements TextDocumentService {
 	 *
 	 * @param xmlDocument    the DOM document.
 	 * @param validationArgs the validation arguments.
-	 *
-	 * @throws CancellationException when the DOM document content changed and
-	 *                               diagnostics must be stopped.
 	 */
-	void validate(DOMDocument xmlDocument, Map<String, Object> validationArgs) throws CancellationException {
+	CompletableFuture<Void> validate(DOMDocument xmlDocument, Map<String, Object> validationArgs) {
 		CancelChecker cancelChecker = xmlDocument.getCancelChecker();
 		cancelChecker.checkCanceled();
-		getXMLLanguageService().publishDiagnostics(xmlDocument,
-				params -> xmlLanguageServer.getLanguageClient().publishDiagnostics(params),
-				(doc) -> triggerValidationFor(doc, TriggeredBy.Other),
-				sharedSettings.getValidationSettings(),
-				validationArgs, cancelChecker);
+		return getOrPullScopedSettings(xmlDocument.getDocumentURI())
+				.thenAccept(scopedSettings -> {
+					try {
+						cancelChecker.checkCanceled();
+						getXMLLanguageService().publishDiagnostics(xmlDocument,
+								params -> xmlLanguageServer.getLanguageClient().publishDiagnostics(params),
+								(doc) -> triggerValidationFor(doc, TriggeredBy.Other),
+								scopedSettings.getValidationSettings(),
+								validationArgs, cancelChecker);
+					} catch (CancellationException e) {
+						// Document was modified while waiting for settings; skip validation
+					}
+				});
 	}
 
 	private XMLLanguageService getXMLLanguageService() {
@@ -910,6 +933,16 @@ public class XMLTextDocumentService implements TextDocumentService {
 		}
 		TextDocumentIdentifier identifier = new TextDocumentIdentifier(uri);
 		return computeDOMAsync(identifier, code);
+	}
+
+	private <R> CompletableFuture<R> computeDOMAsyncCompose(R unresolved, Object data,
+			BiFunction<DOMDocument, CancelChecker, CompletableFuture<R>> code) {
+		String uri = DataEntryField.getUri(data);
+		if (uri == null) {
+			return CompletableFuture.completedFuture(unresolved);
+		}
+		TextDocumentIdentifier identifier = new TextDocumentIdentifier(uri);
+		return computeDOMAsyncCompose(identifier, code);
 	}
 
 	/**

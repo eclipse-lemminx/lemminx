@@ -12,23 +12,28 @@
  */
 package org.eclipse.lemminx.extensions.contentmodel.settings;
 
+import org.eclipse.lemminx.commons.config.ConfigurationScope;
+import org.eclipse.lemminx.commons.config.Scope;
 import org.eclipse.lsp4j.DiagnosticSeverity;
 import org.eclipse.lsp4j.PublishDiagnosticsCapabilities;
 
 /**
  * XML validation settings for a given file.
- * 
+ *
  */
 public class XMLValidationSettings {
 
+	@Scope(ConfigurationScope.RESOURCE)
 	private Boolean enabled;
 
 	private XMLNamespacesSettings namespaces;
 
 	private XMLSchemaSettings schema;
 
+	@Scope(ConfigurationScope.RESOURCE)
 	private boolean disallowDocTypeDecl;
 
+	@Scope(ConfigurationScope.RESOURCE)
 	private boolean resolveExternalEntities;
 
 	private XMLXIncludeSettings xInclude;
@@ -39,6 +44,7 @@ public class XMLValidationSettings {
 	 *
 	 * Values are {ignore, hint, info, warning, error}
 	 */
+	@Scope(ConfigurationScope.RESOURCE)
 	private String noGrammar;
 
 	private PublishDiagnosticsCapabilities publishDiagnostics;
@@ -201,13 +207,13 @@ public class XMLValidationSettings {
 
 	public XMLValidationSettings merge(XMLValidationSettings settings) {
 		if (settings != null) {
-			this.namespaces = settings.namespaces;
-			this.schema = settings.schema;
+			this.namespaces = settings.namespaces != null ? new XMLNamespacesSettings(settings.namespaces) : null;
+			this.schema = settings.schema != null ? new XMLSchemaSettings(settings.schema) : null;
 			this.enabled = settings.enabled;
 			this.noGrammar = settings.noGrammar;
 			this.disallowDocTypeDecl = settings.disallowDocTypeDecl;
 			this.resolveExternalEntities = settings.resolveExternalEntities;
-			this.xInclude = settings.xInclude;
+			this.xInclude = settings.xInclude != null ? new XMLXIncludeSettings(settings.xInclude) : null;
 		}
 		return this;
 	}
