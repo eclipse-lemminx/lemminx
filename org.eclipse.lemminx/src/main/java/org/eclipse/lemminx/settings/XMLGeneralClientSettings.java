@@ -15,6 +15,7 @@ package org.eclipse.lemminx.settings;
 import java.util.List;
 
 import org.eclipse.lemminx.commons.config.ConfigurationField;
+import org.eclipse.lemminx.extensions.contentmodel.settings.XMLValidationRootSettings;
 import org.eclipse.lemminx.utils.JSONUtility;
 
 /**
@@ -58,6 +59,8 @@ public class XMLGeneralClientSettings {
 	private XMLInlayHintSettings inlayHint;
 
 	private XMLSemanticTokensSettings semanticTokens;
+
+	private XMLValidationRootSettings validation;
 
 	private XMLPreferences preferences;
 
