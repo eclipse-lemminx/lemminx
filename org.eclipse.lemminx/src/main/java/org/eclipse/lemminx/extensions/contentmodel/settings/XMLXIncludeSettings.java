@@ -12,6 +12,9 @@
  */
 package org.eclipse.lemminx.extensions.contentmodel.settings;
 
+import org.eclipse.lemminx.commons.config.ConfigurationScope;
+import org.eclipse.lemminx.commons.config.Scope;
+
 /**
  * XML xi:include settings.
  *
@@ -22,6 +25,11 @@ public class XMLXIncludeSettings {
 		setEnabled(false);
 	}
 
+	public XMLXIncludeSettings(XMLXIncludeSettings other) {
+		this.enabled = other.enabled;
+	}
+
+	@Scope(ConfigurationScope.RESOURCE)
 	private boolean enabled;
 
 	public void setEnabled(boolean enabled) {

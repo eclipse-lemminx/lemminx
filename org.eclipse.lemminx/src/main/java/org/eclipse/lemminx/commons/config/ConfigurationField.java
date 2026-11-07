@@ -30,27 +30,29 @@ import com.google.gson.JsonPrimitive;
 
 /**
  * Represents a configuration field discovered by scanning a settings class
- * hierarchy. Each instance pairs a reflective {@link Field} path (parent +
- * leaf) with a configuration section name (e.g.
- * {@code "xml.format.maxLineWidth"}). Used by the scoped
+ * hierarchy. Each instance pairs a reflective {@link Field} path (parent
+ * chain + leaf) with a configuration section name (e.g.
+ * {@code "xml.format.maxLineWidth"} or
+ * {@code "xml.validation.namespaces.enabled"}). Used by the scoped
  * {@code workspace/configuration} pull mechanism.
  *
  * <p>
  * The scan is driven by {@link Scope} annotations: only leaf fields annotated
  * with {@code @Scope(ConfigurationScope.RESOURCE)} are included. Object fields
- * without {@code @Scope} are recursed into automatically.
+ * without {@code @Scope} are recursed into automatically, supporting arbitrary
+ * nesting depth.
  * </p>
  */
 public class ConfigurationField {
 
 	private static final Logger LOGGER = Logger.getLogger(ConfigurationField.class.getName());
 
-	private final String parentFieldName;
+	private final String[] parentPath;
 	private final Field leafField;
 	private final String section;
 
-	private ConfigurationField(String parentFieldName, Field leafField, String section) {
-		this.parentFieldName = parentFieldName;
+	private ConfigurationField(String[] parentPath, Field leafField, String section) {
+		this.parentPath = parentPath;
 		this.leafField = leafField;
 		this.section = section;
 	}
@@ -76,11 +78,11 @@ public class ConfigurationField {
 	 */
 	public static List<ConfigurationField> computeConfigurationFields(Class<?> clazz, String prefix) {
 		List<ConfigurationField> fields = new ArrayList<>();
-		collectFields(clazz, prefix, null, fields);
+		collectFields(clazz, prefix, new String[0], fields);
 		return Collections.unmodifiableList(fields);
 	}
 
-	private static void collectFields(Class<?> clazz, String prefix, String parentFieldName,
+	private static void collectFields(Class<?> clazz, String prefix, String[] parentPath,
 			List<ConfigurationField> result) {
 		for (Class<?> c = clazz; c != null && c != Object.class; c = c.getSuperclass()) {
 			for (Field field : c.getDeclaredFields()) {
@@ -89,9 +91,12 @@ public class ConfigurationField {
 				}
 				field.setAccessible(true);
 				if (field.isAnnotationPresent(Scope.class)) {
-					result.add(new ConfigurationField(parentFieldName, field, prefix + field.getName()));
+					result.add(new ConfigurationField(parentPath, field, prefix + field.getName()));
 				} else if (!isLeafType(field.getType())) {
-					collectFields(field.getType(), prefix + field.getName() + ".", field.getName(), result);
+					String[] newPath = new String[parentPath.length + 1];
+					System.arraycopy(parentPath, 0, newPath, 0, parentPath.length);
+					newPath[parentPath.length] = field.getName();
+					collectFields(field.getType(), prefix + field.getName() + ".", newPath, result);
 				}
 			}
 		}
@@ -125,15 +130,9 @@ public class ConfigurationField {
 
 	/**
 	 * Apply the results of a {@code workspace/configuration} response to the
-	 * given root object. For each result, the method navigates to the parent
-	 * field (by name) on the root object, then sets the leaf field value.
-	 * Null results are skipped (the field retains its current value).
-	 *
-	 * <p>
-	 * The root object's field names must match the parent field names
-	 * discovered during scanning (e.g. both the scanned class and the root
-	 * must have a field named {@code "format"}).
-	 * </p>
+	 * given root object. For each result, the method navigates the parent path
+	 * on the root object, then sets the leaf field value. Null results are
+	 * skipped (the field retains its current value).
 	 *
 	 * @param root    the root object (e.g. a {@code SharedSettings} instance).
 	 * @param fields  the configuration fields, in the same order as the
@@ -149,27 +148,39 @@ public class ConfigurationField {
 			}
 			ConfigurationField cf = fields.get(i);
 			try {
-				Object target = root;
-				if (cf.parentFieldName != null) {
-					target = targetCache.computeIfAbsent(cf.parentFieldName, name -> {
-						try {
-							Field f = findField(root.getClass(), name);
-							f.setAccessible(true);
-							return f.get(root);
-						} catch (Exception e) {
-							LOGGER.log(Level.WARNING, "Cannot find parent field '" + name + "'.", e);
-							return null;
-						}
-					});
-					if (target == null) {
-						continue;
-					}
+				Object target = navigateToTarget(root, cf.parentPath, targetCache);
+				if (target == null) {
+					continue;
 				}
 				setFieldValue(target, cf.leafField, value);
 			} catch (Exception e) {
 				LOGGER.log(Level.WARNING, "Error setting configuration field '" + cf.section + "'.", e);
 			}
 		}
+	}
+
+	private static Object navigateToTarget(Object root, String[] parentPath, Map<String, Object> cache) {
+		if (parentPath.length == 0) {
+			return root;
+		}
+		String cacheKey = String.join(".", parentPath);
+		return cache.computeIfAbsent(cacheKey, key -> {
+			try {
+				Object current = root;
+				for (String step : parentPath) {
+					Field f = findField(current.getClass(), step);
+					f.setAccessible(true);
+					current = f.get(current);
+					if (current == null) {
+						return null;
+					}
+				}
+				return current;
+			} catch (Exception e) {
+				LOGGER.log(Level.WARNING, "Cannot navigate parent path '" + key + "'.", e);
+				return null;
+			}
+		});
 	}
 
 	/**
@@ -183,28 +194,14 @@ public class ConfigurationField {
 	 * @return {@code true} if all scoped values are equal.
 	 */
 	public static boolean haveSameValues(Object a, Object b, List<ConfigurationField> fields) {
-		Map<String, Object[]> targetCache = new HashMap<>();
+		Map<String, Object> cacheA = new HashMap<>();
+		Map<String, Object> cacheB = new HashMap<>();
 		for (ConfigurationField cf : fields) {
 			try {
-				Object targetA = a;
-				Object targetB = b;
-				if (cf.parentFieldName != null) {
-					Object[] cached = targetCache.computeIfAbsent(cf.parentFieldName, name -> {
-						try {
-							Field fa = findField(a.getClass(), name);
-							fa.setAccessible(true);
-							Field fb = findField(b.getClass(), name);
-							fb.setAccessible(true);
-							return new Object[] { fa.get(a), fb.get(b) };
-						} catch (Exception e) {
-							return null;
-						}
-					});
-					if (cached == null) {
-						return false;
-					}
-					targetA = cached[0];
-					targetB = cached[1];
+				Object targetA = navigateToTarget(a, cf.parentPath, cacheA);
+				Object targetB = navigateToTarget(b, cf.parentPath, cacheB);
+				if (targetA == null || targetB == null) {
+					return false;
 				}
 				Object v1 = cf.leafField.get(targetA);
 				Object v2 = cf.leafField.get(targetB);
@@ -229,6 +226,7 @@ public class ConfigurationField {
 		throw new NoSuchFieldException(name);
 	}
 
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private static void setFieldValue(Object target, Field field, Object value) throws Exception {
 		Class<?> type = field.getType();
 		if (value instanceof JsonPrimitive) {
@@ -243,6 +241,8 @@ public class ConfigurationField {
 				field.set(target, jp.getAsInt());
 			} else if (type == String.class) {
 				field.set(target, jp.getAsString());
+			} else if (type.isEnum() && jp.isString()) {
+				field.set(target, Enum.valueOf((Class<Enum>) type, jp.getAsString()));
 			}
 		} else if (value instanceof JsonArray && type == List.class) {
 			JsonArray arr = (JsonArray) value;
@@ -255,8 +255,12 @@ public class ConfigurationField {
 			field.set(target, value);
 		} else if (value instanceof Number && (type == int.class || type == Integer.class)) {
 			field.set(target, ((Number) value).intValue());
-		} else if (value instanceof String && type == String.class) {
-			field.set(target, value);
+		} else if (value instanceof String) {
+			if (type == String.class) {
+				field.set(target, value);
+			} else if (type.isEnum()) {
+				field.set(target, Enum.valueOf((Class<Enum>) type, (String) value));
+			}
 		} else if (value instanceof List && type == List.class) {
 			field.set(target, value);
 		}
