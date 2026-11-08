@@ -47,6 +47,7 @@ public class LSPXMLEntityManager extends XMLEntityManager {
 	private final AbstractLSPErrorReporter errorReporter;
 	private final LSPXMLGrammarPool grammarPool;
 	private boolean hasProblemsWithReferencedDTD;
+	private boolean resolvingSchemaEntity;
 
 	public LSPXMLEntityManager() {
 		this(null, null);
@@ -61,9 +62,11 @@ public class LSPXMLEntityManager extends XMLEntityManager {
 	@Override
 	public XMLInputSource resolveEntity(XMLResourceIdentifier resourceIdentifier) throws IOException, XNIException {
 		if (resourceIdentifier instanceof XMLSchemaDescription) {
+			resolvingSchemaEntity = true;
 			try {
 				return super.resolveEntity(resourceIdentifier);
 			} catch (IOException e) {
+				resolvingSchemaEntity = false;
 				// Here we have a "schema_reference.4" error, in this case, the XSD validator
 				// reports
 				// the error but without the original exception.
@@ -91,7 +94,9 @@ public class LSPXMLEntityManager extends XMLEntityManager {
 			throws IOException, XNIException {
 
 		String systemId = xmlInputSource.getSystemId();
-		if (DOMUtils.isXSD(systemId)) {
+		boolean isSchemaEntity = resolvingSchemaEntity;
+		resolvingSchemaEntity = false;
+		if (isSchemaEntity || DOMUtils.isXSD(systemId)) {
 			try {
 				return super.setupCurrentEntity(name, xmlInputSource, literal, isExternal);
 			} catch (IOException e) {
