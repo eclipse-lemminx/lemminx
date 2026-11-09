@@ -36,9 +36,8 @@ public class s4s_elt_invalid_content_3CodeAction implements ICodeActionParticipa
 	public void doCodeAction(ICodeActionRequest request, List<CodeAction> codeActions, CancelChecker cancelChecker) {
 		Diagnostic diagnostic = request.getDiagnostic();
 		DOMDocument document = request.getDocument();
-		Range range = request.getRange();
 		try {
-			int offset = document.offsetAt(range.getStart());
+			int offset = document.offsetAt(diagnostic.getRange().getStart());
 			DOMNode node = document.findNodeAt(offset);
 			if (node != null && node.isElement()) {
 				DOMElement element = (DOMElement) node;
