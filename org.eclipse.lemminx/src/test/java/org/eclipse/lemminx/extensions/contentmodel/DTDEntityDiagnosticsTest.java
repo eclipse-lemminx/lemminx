@@ -45,7 +45,7 @@ public class DTDEntityDiagnosticsTest extends AbstractCacheBasedTest {
 				"	<!ENTITY copyright \"Copyright W3Schools.\"  \r\n" + //
 				"]>\r\n" + //
 				"<Person Likes=\"\" />"; // <- error on @Likes value
-		XMLAssert.testDiagnosticsFor(xml, d(2, 42, 43, DTDErrorCode.EntityDeclUnterminated));
+		XMLAssert.testDiagnosticsFor(xml, d(2, 20, 42, DTDErrorCode.EntityDeclUnterminated));
 	}
 
 	@Test
@@ -247,7 +247,7 @@ public class DTDEntityDiagnosticsTest extends AbstractCacheBasedTest {
 				"	<!NOTATION png PUBLIC \"PNG 1.0\" \"image/png\"  \r\n" + //
 				"]>\r\n" + //
 				"<Person Likes=\"\" />"; // <- error on @Likes value
-		XMLAssert.testDiagnosticsFor(xml, d(2, 44, 45, DTDErrorCode.NotationDeclUnterminated));
+		XMLAssert.testDiagnosticsFor(xml, d(2, 33, 44, DTDErrorCode.NotationDeclUnterminated));
 	}
 
 	@Test

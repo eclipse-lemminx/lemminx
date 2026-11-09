@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.eclipse.lemminx.dom.DTDEntityDecl;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -851,6 +852,202 @@ public class DOMParserForInternalDTDTest {
 		assertTrue(documentType.getChild(1) instanceof DTDNotationDecl);
 	}
 
+
+	@Test
+	public void testAttlistWithEnumerationType() {
+		String dtd =
+		"<!DOCTYPE root [\n" +
+		"  <!ATTLIST root status (one|two|three) \"one\">\n" +
+		"]>";
+
+		DOMDocument actual = createDOMDocument(dtd);
+		DOMDocumentType documentType = (DOMDocumentType) actual.getChild(0);
+		assertEquals(1, documentType.getChildren().size());
+		DTDAttlistDecl attlistDecl = (DTDAttlistDecl) documentType.getChild(0);
+
+		assertEquals("root", attlistDecl.getElementName());
+		assertEquals("status", attlistDecl.getAttributeName());
+		assertEquals("(one|two|three)", attlistDecl.getAttributeType());
+		assertEquals("\"one\"", attlistDecl.getAttributeValue());
+		assertNull(attlistDecl.getInternalChildren());
+	}
+
+	@Test
+	public void testAttlistEnumerationTypeWithPrologAndElement() {
+		String dtd =
+		"<?xml version = \"1.0\"?>\n" +
+		"<!DOCTYPE root [\n" +
+		"\t<!ELEMENT root (#PCDATA)>\n" +
+		"\t<!ATTLIST root status (one|two|three) \"four\">\n" +
+		"]>\n" +
+		"<root />";
+
+		DOMDocument actual = createDOMDocument(dtd);
+		DOMDocumentType documentType = actual.getDoctype();
+		assertNotNull(documentType);
+		assertEquals(2, documentType.getChildren().size());
+
+		assertTrue(documentType.getChild(1) instanceof DTDAttlistDecl);
+		DTDAttlistDecl attlistDecl = (DTDAttlistDecl) documentType.getChild(1);
+		assertEquals("root", attlistDecl.getElementName());
+		assertEquals("status", attlistDecl.getAttributeName());
+		assertEquals("(one|two|three)", attlistDecl.getAttributeType());
+		assertEquals("\"four\"", attlistDecl.getAttributeValue());
+
+		assertNotNull(attlistDecl.attributeType);
+		CharSequence text = actual.getTextSequence();
+		assertEquals('(', text.charAt(attlistDecl.attributeType.getStart()));
+		assertEquals(')', text.charAt(attlistDecl.attributeType.getEnd() - 1));
+	}
+
+	@Test
+	public void testAttlistWithSingleValueEnumType() {
+		String dtd =
+		"<!DOCTYPE root [\n" +
+		"  <!ATTLIST root flag (yes) #REQUIRED>\n" +
+		"]>";
+
+		DOMDocument actual = createDOMDocument(dtd);
+		DOMDocumentType documentType = (DOMDocumentType) actual.getChild(0);
+		DTDAttlistDecl attlistDecl = (DTDAttlistDecl) documentType.getChild(0);
+
+		assertEquals("root", attlistDecl.getElementName());
+		assertEquals("flag", attlistDecl.getAttributeName());
+		assertEquals("(yes)", attlistDecl.getAttributeType());
+		assertEquals("#REQUIRED", attlistDecl.getAttributeValue());
+	}
+
+	@Test
+	public void testAttlistWithIDType() {
+		String dtd =
+		"<!DOCTYPE root [\n" +
+		"  <!ATTLIST root id ID #REQUIRED>\n" +
+		"]>";
+
+		DOMDocument actual = createDOMDocument(dtd);
+		DOMDocumentType documentType = (DOMDocumentType) actual.getChild(0);
+		DTDAttlistDecl attlistDecl = (DTDAttlistDecl) documentType.getChild(0);
+
+		assertEquals("root", attlistDecl.getElementName());
+		assertEquals("id", attlistDecl.getAttributeName());
+		assertEquals("ID", attlistDecl.getAttributeType());
+		assertEquals("#REQUIRED", attlistDecl.getAttributeValue());
+	}
+
+	@Test
+	public void testAttlistWithNMTOKENSType() {
+		String dtd =
+		"<!DOCTYPE root [\n" +
+		"  <!ATTLIST root vals NMTOKENS #IMPLIED>\n" +
+		"]>";
+
+		DOMDocument actual = createDOMDocument(dtd);
+		DOMDocumentType documentType = (DOMDocumentType) actual.getChild(0);
+		DTDAttlistDecl attlistDecl = (DTDAttlistDecl) documentType.getChild(0);
+
+		assertEquals("root", attlistDecl.getElementName());
+		assertEquals("vals", attlistDecl.getAttributeName());
+		assertEquals("NMTOKENS", attlistDecl.getAttributeType());
+		assertEquals("#IMPLIED", attlistDecl.getAttributeValue());
+	}
+
+	@Test
+	public void testAttlistWithFixedValue() {
+		String dtd =
+		"<!DOCTYPE root [\n" +
+		"  <!ATTLIST root ver CDATA #FIXED \"1.0\">\n" +
+		"]>";
+
+		DOMDocument actual = createDOMDocument(dtd);
+		DOMDocumentType documentType = (DOMDocumentType) actual.getChild(0);
+		DTDAttlistDecl attlistDecl = (DTDAttlistDecl) documentType.getChild(0);
+
+		assertEquals("root", attlistDecl.getElementName());
+		assertEquals("ver", attlistDecl.getAttributeName());
+		assertEquals("CDATA", attlistDecl.getAttributeType());
+		assertEquals("#FIXED \"1.0\"", attlistDecl.getAttributeValue());
+	}
+
+	@Test
+	public void testAttlistEnumWithMultipleAttributesOnSameDecl() {
+		String dtd =
+		"<!DOCTYPE root [\n" +
+		"  <!ATTLIST root\n" +
+		"    status (active|inactive) #REQUIRED\n" +
+		"    flag (yes|no) \"yes\">\n" +
+		"]>";
+
+		DOMDocument actual = createDOMDocument(dtd);
+		DOMDocumentType documentType = (DOMDocumentType) actual.getChild(0);
+		DTDAttlistDecl attlistDecl = (DTDAttlistDecl) documentType.getChild(0);
+
+		assertEquals("root", attlistDecl.getElementName());
+		assertEquals("status", attlistDecl.getAttributeName());
+		assertEquals("(active|inactive)", attlistDecl.getAttributeType());
+		assertEquals("#REQUIRED", attlistDecl.getAttributeValue());
+
+		assertNotNull(attlistDecl.getInternalChildren());
+		assertEquals(1, attlistDecl.getInternalChildren().size());
+
+		DTDAttlistDecl internalDecl = attlistDecl.getInternalChildren().get(0);
+		assertEquals("flag", internalDecl.getAttributeName());
+		assertEquals("(yes|no)", internalDecl.getAttributeType());
+		assertEquals("\"yes\"", internalDecl.getAttributeValue());
+	}
+
+	@Test
+	public void testEntityWithNDATA() {
+		String xml = "<?xml version = \"1.0\"?>\n" +
+				"<!DOCTYPE root [\n" +
+				"\t<!ELEMENT root EMPTY>\n" +
+				"\t<!ENTITY logo SYSTEM \"logo.gif\" NDATA gif>\n" +
+				"]>\n" +
+				"<root />";
+		DOMDocument doc = createDOMDocument(xml);
+		DOMDocumentType docType = doc.getDoctype();
+		assertNotNull(docType);
+
+		// Entity should be a child of the DOCTYPE
+		boolean foundEntity = false;
+		for (DOMNode child : docType.getChildren()) {
+			if (child instanceof DTDEntityDecl) {
+				DTDEntityDecl entity = (DTDEntityDecl) child;
+				if ("logo".equals(entity.getName())) {
+					foundEntity = true;
+					assertEquals("SYSTEM", entity.getKind());
+					assertEquals("logo.gif", entity.getSystemId());
+					assertNotNull(entity.unrecognized);
+				}
+			}
+		}
+		assertTrue(foundEntity, "Entity 'logo' should be found in DOCTYPE children");
+	}
+
+	@Test
+	public void testMixedContentElement() {
+		// Verify that content is properly set for mixed content models
+		String xml = "<?xml version = \"1.0\"?>\n" +
+				"<!DOCTYPE root [\n" +
+				"\t<!ELEMENT root (#PCDATA|item|item)*>\n" +
+				"]>\n" +
+				"<root />";
+		DOMDocument doc = createDOMDocument(xml);
+		DOMDocumentType docType = doc.getDoctype();
+		assertNotNull(docType);
+
+		boolean found = false;
+		for (DOMNode child : docType.getChildren()) {
+			if (child instanceof DTDElementDecl) {
+				DTDElementDecl elementDecl = (DTDElementDecl) child;
+				if ("root".equals(elementDecl.getName())) {
+					found = true;
+					assertNotNull(elementDecl.content, "content should not be null for mixed content");
+					assertEquals("(#PCDATA|item|item)*", elementDecl.getContent());
+				}
+			}
+		}
+		assertTrue(found, "DTDElementDecl 'root' should be found");
+	}
 
 	private static DOMDocument createDOMDocument(String xml) {
 		return DOMParser.getInstance().parse(xml, "uri", null);

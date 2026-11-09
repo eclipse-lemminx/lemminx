@@ -180,6 +180,59 @@ public class XMLPositionUtility {
 		return null;
 	}
 
+	/**
+	 * Returns the range of a specific token within a space-separated attribute
+	 * value. Falls back to the whole attribute value range if the token is not
+	 * found.
+	 *
+	 * <p>
+	 * Example: {@code refs="a b"} with token {@code "a"} → highlights just
+	 * {@code a}.
+	 * </p>
+	 *
+	 * @param attrName the attribute name to search.
+	 * @param token    the token to find within the attribute value.
+	 * @param offset   the offset within the element.
+	 * @param document the DOM document.
+	 * @return the range of the token, or the whole attribute value range.
+	 */
+	public static Range selectAttributeValueTokenAt(String attrName, String token, int offset,
+			DOMDocument document) {
+		DOMNode element = document.findNodeAt(offset);
+		if (element == null || !element.hasAttributes()) {
+			return null;
+		}
+		DOMAttr attr = element.getAttributeNode(attrName);
+		if (attr == null) {
+			return null;
+		}
+		DOMRange attrValueNode = attr.getNodeAttrValue();
+		if (attrValueNode == null) {
+			return createAttrValueRange(attr, document);
+		}
+		CharSequence text = document.getTextSequence();
+		int valueStart = attrValueNode.getStart() + 1;
+		int valueEnd = attrValueNode.getEnd() - 1;
+		int tokenLen = token.length();
+		for (int i = valueStart; i <= valueEnd - tokenLen; i++) {
+			boolean match = true;
+			for (int j = 0; j < tokenLen; j++) {
+				if (text.charAt(i + j) != token.charAt(j)) {
+					match = false;
+					break;
+				}
+			}
+			if (match) {
+				boolean atStart = (i == valueStart) || text.charAt(i - 1) == ' ';
+				boolean atEnd = (i + tokenLen == valueEnd) || text.charAt(i + tokenLen) == ' ';
+				if (atStart && atEnd) {
+					return createRange(i, i + tokenLen, document);
+				}
+			}
+		}
+		return createAttrValueRange(attr, document);
+	}
+
 	public static Range selectAttributeNameFromGivenNameAt(String attrName, int offset, DOMDocument document) {
 		DOMNode element = document.findNodeAt(offset);
 		if (element != null && element.hasAttributes()) {
@@ -915,6 +968,11 @@ public class XMLPositionUtility {
 	 * 1 character after '(content)'
 	 */
 	public static Range getLastValidDTDDeclParameterOrUnrecognized(int offset, DOMDocument document) {
+		return getLastValidDTDDeclParameterOrUnrecognized(offset, document, false);
+	}
+
+	public static Range getLastValidDTDDeclParameterOrUnrecognized(int offset, DOMDocument document,
+			boolean selectWholeParameter) {
 		DOMNode node = document.findNodeBefore(offset);
 		if (node instanceof DTDDeclNode) {
 			DTDDeclNode decl = (DTDDeclNode) node;
@@ -931,6 +989,9 @@ public class XMLPositionUtility {
 			}
 			DTDDeclParameter finalParam = params.get(params.size() - 1);
 			if (decl.unrecognized != null && decl.unrecognized.equals(finalParam)) {
+				return createRange(finalParam.getStart(), finalParam.getEnd(), document);
+			}
+			if (selectWholeParameter) {
 				return createRange(finalParam.getStart(), finalParam.getEnd(), document);
 			}
 			return createRange(finalParam.getEnd(), finalParam.getEnd() + 1, document);
@@ -963,11 +1024,245 @@ public class XMLPositionUtility {
 		DOMNode node = document.findNodeAt(offset);
 		if (node instanceof DTDDeclNode) {
 			DTDDeclNode declNode = (DTDDeclNode) node;
-			return createRange(declNode.declType.getStart(), declNode.declType.getEnd(), document);
+			if (declNode.declType != null) {
+				return createRange(declNode.declType.getStart(), declNode.declType.getEnd(), document);
+			}
 		}
 		return null;
 	}
 
+	/**
+	 * Returns the range of the declared name (e.g. 'root' in
+	 * {@code <!ELEMENT root ...>}) for the DTD declaration node at the given
+	 * offset.
+	 *
+	 * @param offset   the offset within the DTD declaration.
+	 * @param document the DOM document.
+	 * @return the range of the declared name, or null if not found.
+	 */
+	public static Range selectDTDDeclNameAt(int offset, DOMDocument document) {
+		DOMNode node = document.findNodeAt(offset);
+		if (node instanceof DTDDeclNode) {
+			DTDDeclNode declNode = (DTDDeclNode) node;
+			DTDDeclParameter nameParam = declNode.getNameParameter();
+			if (nameParam != null) {
+				return createRange(nameParam.getStart(), nameParam.getEnd(), document);
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Returns the range of the given attribute name within the ATTLIST declaration
+	 * at the given offset, searching both the root declaration and its internal
+	 * children.
+	 *
+	 * @param attrName the attribute name to find.
+	 * @param offset   the offset within the ATTLIST declaration.
+	 * @param document the DOM document.
+	 * @return the range of the matching attribute name, or null if not found.
+	 */
+	public static Range selectAttlistAttributeAt(String attrName, int offset, DOMDocument document) {
+		DOMNode node = document.findNodeAt(offset);
+		if (node instanceof DTDAttlistDecl) {
+			DTDAttlistDecl attlist = (DTDAttlistDecl) node;
+			if (attrName.equals(attlist.getAttributeName()) && attlist.attributeName != null) {
+				return createRange(attlist.attributeName.getStart(), attlist.attributeName.getEnd(), document);
+			}
+			List<DTDAttlistDecl> internalChildren = attlist.getInternalChildren();
+			if (internalChildren != null) {
+				for (DTDAttlistDecl child : internalChildren) {
+					if (attrName.equals(child.getAttributeName()) && child.attributeName != null) {
+						return createRange(child.attributeName.getStart(), child.attributeName.getEnd(), document);
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Returns the range of the attribute value (e.g. {@code "four"}) in the
+	 * ATTLIST declaration at the given offset.
+	 *
+	 * <p>
+	 * Example: {@code <!ATTLIST root status (one|two|three) "four">} →
+	 * highlights {@code "four"}.
+	 * </p>
+	 *
+	 * @param offset   the offset within the ATTLIST declaration.
+	 * @param document the DOM document.
+	 * @return the range of the attribute value, or null if not found.
+	 */
+	public static Range selectAttlistAttributeValueAt(int offset, DOMDocument document) {
+		DOMNode node = document.findNodeAt(offset);
+		if (node instanceof DTDAttlistDecl) {
+			DTDAttlistDecl attlist = (DTDAttlistDecl) node;
+			if (attlist.attributeValue != null) {
+				return createRange(attlist.attributeValue.getStart(), attlist.attributeValue.getEnd(), document);
+			}
+			List<DTDAttlistDecl> internalChildren = attlist.getInternalChildren();
+			if (internalChildren != null) {
+				for (DTDAttlistDecl child : internalChildren) {
+					if (child.attributeValue != null) {
+						return createRange(child.attributeValue.getStart(), child.attributeValue.getEnd(), document);
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Returns the range of the second (duplicate) occurrence of a token in an
+	 * ATTLIST enumeration type, including the preceding {@code |} for clean
+	 * removal.
+	 *
+	 * <p>
+	 * Example: {@code (one|two|one)} with tokenName {@code "one"} → highlights
+	 * {@code |one} (the duplicate).
+	 * </p>
+	 *
+	 * @param tokenName the duplicate token name to find.
+	 * @param offset    the offset within the ATTLIST declaration.
+	 * @param document  the DOM document.
+	 * @return the range of the duplicate token, or null if not found.
+	 */
+	public static Range selectDuplicateEnumTokenAt(String tokenName, int offset, DOMDocument document) {
+		DOMNode node = document.findNodeAt(offset);
+		if (!(node instanceof DTDAttlistDecl)) {
+			return null;
+		}
+		DTDAttlistDecl attlist = (DTDAttlistDecl) node;
+		List<DTDAttlistDecl> children = attlist.getInternalChildren();
+		if (children != null) {
+			for (DTDAttlistDecl child : children) {
+				Range r = findDuplicateTokenInType(child, tokenName, document);
+				if (r != null) {
+					return r;
+				}
+			}
+		}
+		return findDuplicateTokenInType(attlist, tokenName, document);
+	}
+
+	/**
+	 * Scans the attribute type text of the given ATTLIST declaration for the
+	 * second occurrence of {@code tokenName}, returning a range that includes
+	 * the preceding {@code |} delimiter.
+	 */
+	private static Range findDuplicateTokenInType(DTDAttlistDecl attlist, String tokenName, DOMDocument document) {
+		if (attlist.attributeType == null) {
+			return null;
+		}
+		CharSequence text = document.getTextSequence();
+		int start = attlist.attributeType.getStart();
+		int end = attlist.attributeType.getEnd();
+		int found = 0;
+		int wordStart = -1;
+		for (int i = start; i < end; i++) {
+			char c = text.charAt(i);
+			if (c == '(' || c == '|' || c == ')' || c == ' ') {
+				if (wordStart != -1) {
+					int wordLen = i - wordStart;
+					if (wordLen == tokenName.length()) {
+						boolean match = true;
+						for (int j = 0; j < wordLen; j++) {
+							if (text.charAt(wordStart + j) != tokenName.charAt(j)) {
+								match = false;
+								break;
+							}
+						}
+						if (match) {
+							found++;
+							if (found >= 2) {
+								// Include the preceding '|' for clean removal
+								int rangeStart = wordStart;
+								if (rangeStart > start && text.charAt(rangeStart - 1) == '|') {
+									rangeStart--;
+								}
+								return createRange(rangeStart, i, document);
+							}
+						}
+					}
+					wordStart = -1;
+				}
+			} else {
+				if (wordStart == -1) {
+					wordStart = i;
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Returns the range of the second (duplicate) occurrence of
+	 * {@code typeName} in a mixed content model, including the preceding
+	 * {@code |} separator.
+	 *
+	 * <pre>
+	 * &lt;!ELEMENT root (#PCDATA|item|item)*&gt;
+	 *                              |--| ← returned range (without preceding '|')
+	 * </pre>
+	 *
+	 * @param typeName    the duplicate element type name (e.g. {@code "item"}).
+	 * @param elementDecl the {@code <!ELEMENT>} declaration containing the
+	 *                    mixed content model.
+	 * @param document    the DOM document.
+	 * @return the range covering {@code |typeName} for the second occurrence,
+	 *         or {@code null} if not found.
+	 */
+	public static Range selectDuplicateMixedContentType(String typeName, DTDElementDecl elementDecl,
+			DOMDocument document) {
+		if (elementDecl.content == null) {
+			return null;
+		}
+		CharSequence text = document.getTextSequence();
+		int start = elementDecl.content.getStart();
+		int end = elementDecl.content.getEnd();
+		int found = 0;
+		int wordStart = -1;
+		for (int i = start; i < end; i++) {
+			char c = text.charAt(i);
+			if (c == '(' || c == '|' || c == ')' || c == '*' || c == ' ' || c == '#') {
+				if (wordStart != -1) {
+					int wordLen = i - wordStart;
+					if (wordLen == typeName.length()) {
+						boolean match = true;
+						for (int j = 0; j < wordLen; j++) {
+							if (text.charAt(wordStart + j) != typeName.charAt(j)) {
+								match = false;
+								break;
+							}
+						}
+						if (match) {
+							found++;
+							if (found >= 2) {
+								return createRange(wordStart, i, document);
+							}
+						}
+					}
+					wordStart = -1;
+				}
+			} else {
+				if (wordStart == -1) {
+					wordStart = i;
+				}
+			}
+		}
+		return null;
+	}
+
+	/**
+	 * Returns the range of the last content parameter in a {@code <!ELEMENT>}
+	 * declaration. For single-parameter declarations, returns the element name;
+	 * for multi-parameter declarations, returns the content model.
+	 *
+	 * <p>
+	 * Example: {@code <!ELEMENT root (bar>} → highlights {@code (bar}.
+	 * </p>
+	 */
 	public static Range getElementDeclMissingContentOrCategory(int offset, DOMDocument document) {
 		DOMNode node = document.findNodeAt(offset);
 		if (node instanceof DTDElementDecl) {
@@ -978,7 +1273,7 @@ public class XMLPositionUtility {
 			}
 			if (params.size() == 1) {
 				DTDDeclParameter param = params.get(0);
-				return createRange(param.getEnd(), param.getEnd() + 1, document);
+				return createRange(param.getStart(), param.getEnd(), document);
 			} else {
 				return createRange(params.get(1).getStart(), params.get(1).getEnd(), document);
 			}
