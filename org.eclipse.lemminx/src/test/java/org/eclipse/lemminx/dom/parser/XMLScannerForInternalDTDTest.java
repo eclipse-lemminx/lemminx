@@ -202,6 +202,64 @@ public class XMLScannerForInternalDTDTest {
 	}
 
 	@Test
+	public void testAttlistWithIDType() {
+		// Verify keyword type scanning for ID, IDREF, IDREFS
+		String xml = "<!DOCTYPE root [\n" + //
+				"  <!ATTLIST root id ID #REQUIRED>\n" + //
+				"]>";
+		scanner = XMLScanner.createScanner(xml);
+		assertOffsetAndToken(0, TokenType.DTDStartDoctypeTag);
+		assertOffsetAndToken(9, TokenType.Whitespace);
+		assertOffsetAndToken(10, TokenType.DTDDoctypeName);
+		assertOffsetAndToken(14, TokenType.Whitespace);
+		assertOffsetAndToken(15, TokenType.DTDStartInternalSubset);
+		assertOffsetAndToken(16, TokenType.Content);
+		assertOffsetAndToken(19, TokenType.DTDStartAttlist);
+		assertOffsetAndToken(28, TokenType.Whitespace);
+		assertOffsetAndToken(29, TokenType.DTDAttlistElementName);
+		assertOffsetAndToken(33, TokenType.Whitespace);
+		assertOffsetAndToken(34, TokenType.DTDAttlistAttributeName);
+		assertOffsetAndToken(36, TokenType.Whitespace);
+		assertOffsetAndToken(37, TokenType.DTDAttlistAttributeType, "ID");
+		assertOffsetAndToken(39, TokenType.Whitespace);
+		assertOffsetAndToken(40, TokenType.DTDAttlistAttributeValue, "#REQUIRED");
+		assertOffsetAndToken(49, TokenType.DTDEndTag);
+		assertOffsetAndToken(50, TokenType.Content);
+		assertOffsetAndToken(51, TokenType.DTDEndInternalSubset);
+		assertOffsetAndToken(52, TokenType.DTDEndDoctypeTag);
+		assertOffsetAndToken(53, TokenType.EOS);
+	}
+
+	@Test
+	public void testAttlistWithThreeValueEnumeration() {
+		// <!ATTLIST root status (one|two|three) "four"> → (one|two|three) is a single token
+		String xml = "<!DOCTYPE root [\n" + //
+				"  <!ATTLIST root status (one|two|three) \"four\">\n" + //
+				"]>";
+		scanner = XMLScanner.createScanner(xml);
+		assertOffsetAndToken(0, TokenType.DTDStartDoctypeTag);
+		assertOffsetAndToken(9, TokenType.Whitespace);
+		assertOffsetAndToken(10, TokenType.DTDDoctypeName);
+		assertOffsetAndToken(14, TokenType.Whitespace);
+		assertOffsetAndToken(15, TokenType.DTDStartInternalSubset);
+		assertOffsetAndToken(16, TokenType.Content);
+		assertOffsetAndToken(19, TokenType.DTDStartAttlist);
+		assertOffsetAndToken(28, TokenType.Whitespace);
+		assertOffsetAndToken(29, TokenType.DTDAttlistElementName);
+		assertOffsetAndToken(33, TokenType.Whitespace);
+		assertOffsetAndToken(34, TokenType.DTDAttlistAttributeName);
+		assertOffsetAndToken(40, TokenType.Whitespace);
+		assertOffsetAndToken(41, TokenType.DTDAttlistAttributeType, "(one|two|three)");
+		assertOffsetAndToken(56, TokenType.Whitespace);
+		assertOffsetAndToken(57, TokenType.DTDAttlistAttributeValue, "\"four\"");
+		assertOffsetAndToken(63, TokenType.DTDEndTag);
+		assertOffsetAndToken(64, TokenType.Content);
+		assertOffsetAndToken(65, TokenType.DTDEndInternalSubset);
+		assertOffsetAndToken(66, TokenType.DTDEndDoctypeTag);
+		assertOffsetAndToken(67, TokenType.EOS);
+	}
+
+	@Test
 	public void testDocumentTypeSystemAndEmptyInternalDTD() {
 
 		String xml = "<!DOCTYPE html SYSTEM\n" + //
@@ -429,6 +487,370 @@ public class XMLScannerForInternalDTDTest {
 
 		assertOffsetAndToken(33, TokenType.Content);
 		assertOffsetAndToken(40, TokenType.EOS);
+	}
+
+	@Test
+	public void testAttlistWithCDATAType() {
+		String xml = "<!DOCTYPE root [\n" + //
+				"  <!ATTLIST root name CDATA #IMPLIED>\n" + //
+				"]>";
+		scanner = XMLScanner.createScanner(xml);
+		assertOffsetAndToken(0, TokenType.DTDStartDoctypeTag);
+		assertOffsetAndToken(9, TokenType.Whitespace);
+		assertOffsetAndToken(10, TokenType.DTDDoctypeName);
+		assertOffsetAndToken(14, TokenType.Whitespace);
+		assertOffsetAndToken(15, TokenType.DTDStartInternalSubset);
+		assertOffsetAndToken(16, TokenType.Content);
+		assertOffsetAndToken(19, TokenType.DTDStartAttlist);
+		assertOffsetAndToken(28, TokenType.Whitespace);
+		assertOffsetAndToken(29, TokenType.DTDAttlistElementName);
+		assertOffsetAndToken(33, TokenType.Whitespace);
+		assertOffsetAndToken(34, TokenType.DTDAttlistAttributeName);
+		assertOffsetAndToken(38, TokenType.Whitespace);
+		assertOffsetAndToken(39, TokenType.DTDAttlistAttributeType, "CDATA");
+		assertOffsetAndToken(44, TokenType.Whitespace);
+		assertOffsetAndToken(45, TokenType.DTDAttlistAttributeValue, "#IMPLIED");
+		assertOffsetAndToken(53, TokenType.DTDEndTag);
+		assertOffsetAndToken(54, TokenType.Content);
+		assertOffsetAndToken(55, TokenType.DTDEndInternalSubset);
+		assertOffsetAndToken(56, TokenType.DTDEndDoctypeTag);
+		assertOffsetAndToken(57, TokenType.EOS);
+	}
+
+	@Test
+	public void testAttlistWithIDREFType() {
+		String xml = "<!DOCTYPE root [\n" + //
+				"  <!ATTLIST root ref IDREF #IMPLIED>\n" + //
+				"]>";
+		scanner = XMLScanner.createScanner(xml);
+		assertOffsetAndToken(0, TokenType.DTDStartDoctypeTag);
+		assertOffsetAndToken(9, TokenType.Whitespace);
+		assertOffsetAndToken(10, TokenType.DTDDoctypeName);
+		assertOffsetAndToken(14, TokenType.Whitespace);
+		assertOffsetAndToken(15, TokenType.DTDStartInternalSubset);
+		assertOffsetAndToken(16, TokenType.Content);
+		assertOffsetAndToken(19, TokenType.DTDStartAttlist);
+		assertOffsetAndToken(28, TokenType.Whitespace);
+		assertOffsetAndToken(29, TokenType.DTDAttlistElementName);
+		assertOffsetAndToken(33, TokenType.Whitespace);
+		assertOffsetAndToken(34, TokenType.DTDAttlistAttributeName);
+		assertOffsetAndToken(37, TokenType.Whitespace);
+		assertOffsetAndToken(38, TokenType.DTDAttlistAttributeType, "IDREF");
+		assertOffsetAndToken(43, TokenType.Whitespace);
+		assertOffsetAndToken(44, TokenType.DTDAttlistAttributeValue, "#IMPLIED");
+		assertOffsetAndToken(52, TokenType.DTDEndTag);
+		assertOffsetAndToken(53, TokenType.Content);
+		assertOffsetAndToken(54, TokenType.DTDEndInternalSubset);
+		assertOffsetAndToken(55, TokenType.DTDEndDoctypeTag);
+		assertOffsetAndToken(56, TokenType.EOS);
+	}
+
+	@Test
+	public void testAttlistWithIDREFSType() {
+		String xml = "<!DOCTYPE root [\n" + //
+				"  <!ATTLIST root refs IDREFS #IMPLIED>\n" + //
+				"]>";
+		scanner = XMLScanner.createScanner(xml);
+		assertOffsetAndToken(0, TokenType.DTDStartDoctypeTag);
+		assertOffsetAndToken(9, TokenType.Whitespace);
+		assertOffsetAndToken(10, TokenType.DTDDoctypeName);
+		assertOffsetAndToken(14, TokenType.Whitespace);
+		assertOffsetAndToken(15, TokenType.DTDStartInternalSubset);
+		assertOffsetAndToken(16, TokenType.Content);
+		assertOffsetAndToken(19, TokenType.DTDStartAttlist);
+		assertOffsetAndToken(28, TokenType.Whitespace);
+		assertOffsetAndToken(29, TokenType.DTDAttlistElementName);
+		assertOffsetAndToken(33, TokenType.Whitespace);
+		assertOffsetAndToken(34, TokenType.DTDAttlistAttributeName);
+		assertOffsetAndToken(38, TokenType.Whitespace);
+		assertOffsetAndToken(39, TokenType.DTDAttlistAttributeType, "IDREFS");
+		assertOffsetAndToken(45, TokenType.Whitespace);
+		assertOffsetAndToken(46, TokenType.DTDAttlistAttributeValue, "#IMPLIED");
+		assertOffsetAndToken(54, TokenType.DTDEndTag);
+		assertOffsetAndToken(55, TokenType.Content);
+		assertOffsetAndToken(56, TokenType.DTDEndInternalSubset);
+		assertOffsetAndToken(57, TokenType.DTDEndDoctypeTag);
+		assertOffsetAndToken(58, TokenType.EOS);
+	}
+
+	@Test
+	public void testAttlistWithNMTOKENType() {
+		String xml = "<!DOCTYPE root [\n" + //
+				"  <!ATTLIST root tok NMTOKEN #IMPLIED>\n" + //
+				"]>";
+		scanner = XMLScanner.createScanner(xml);
+		assertOffsetAndToken(0, TokenType.DTDStartDoctypeTag);
+		assertOffsetAndToken(9, TokenType.Whitespace);
+		assertOffsetAndToken(10, TokenType.DTDDoctypeName);
+		assertOffsetAndToken(14, TokenType.Whitespace);
+		assertOffsetAndToken(15, TokenType.DTDStartInternalSubset);
+		assertOffsetAndToken(16, TokenType.Content);
+		assertOffsetAndToken(19, TokenType.DTDStartAttlist);
+		assertOffsetAndToken(28, TokenType.Whitespace);
+		assertOffsetAndToken(29, TokenType.DTDAttlistElementName);
+		assertOffsetAndToken(33, TokenType.Whitespace);
+		assertOffsetAndToken(34, TokenType.DTDAttlistAttributeName);
+		assertOffsetAndToken(37, TokenType.Whitespace);
+		assertOffsetAndToken(38, TokenType.DTDAttlistAttributeType, "NMTOKEN");
+		assertOffsetAndToken(45, TokenType.Whitespace);
+		assertOffsetAndToken(46, TokenType.DTDAttlistAttributeValue, "#IMPLIED");
+		assertOffsetAndToken(54, TokenType.DTDEndTag);
+		assertOffsetAndToken(55, TokenType.Content);
+		assertOffsetAndToken(56, TokenType.DTDEndInternalSubset);
+		assertOffsetAndToken(57, TokenType.DTDEndDoctypeTag);
+		assertOffsetAndToken(58, TokenType.EOS);
+	}
+
+	@Test
+	public void testAttlistWithNMTOKENSType() {
+		String xml = "<!DOCTYPE root [\n" + //
+				"  <!ATTLIST root toks NMTOKENS #IMPLIED>\n" + //
+				"]>";
+		scanner = XMLScanner.createScanner(xml);
+		assertOffsetAndToken(0, TokenType.DTDStartDoctypeTag);
+		assertOffsetAndToken(9, TokenType.Whitespace);
+		assertOffsetAndToken(10, TokenType.DTDDoctypeName);
+		assertOffsetAndToken(14, TokenType.Whitespace);
+		assertOffsetAndToken(15, TokenType.DTDStartInternalSubset);
+		assertOffsetAndToken(16, TokenType.Content);
+		assertOffsetAndToken(19, TokenType.DTDStartAttlist);
+		assertOffsetAndToken(28, TokenType.Whitespace);
+		assertOffsetAndToken(29, TokenType.DTDAttlistElementName);
+		assertOffsetAndToken(33, TokenType.Whitespace);
+		assertOffsetAndToken(34, TokenType.DTDAttlistAttributeName);
+		assertOffsetAndToken(38, TokenType.Whitespace);
+		assertOffsetAndToken(39, TokenType.DTDAttlistAttributeType, "NMTOKENS");
+		assertOffsetAndToken(47, TokenType.Whitespace);
+		assertOffsetAndToken(48, TokenType.DTDAttlistAttributeValue, "#IMPLIED");
+		assertOffsetAndToken(56, TokenType.DTDEndTag);
+		assertOffsetAndToken(57, TokenType.Content);
+		assertOffsetAndToken(58, TokenType.DTDEndInternalSubset);
+		assertOffsetAndToken(59, TokenType.DTDEndDoctypeTag);
+		assertOffsetAndToken(60, TokenType.EOS);
+	}
+
+	@Test
+	public void testAttlistWithENTITYType() {
+		String xml = "<!DOCTYPE root [\n" + //
+				"  <!ATTLIST root pic ENTITY #IMPLIED>\n" + //
+				"]>";
+		scanner = XMLScanner.createScanner(xml);
+		assertOffsetAndToken(0, TokenType.DTDStartDoctypeTag);
+		assertOffsetAndToken(9, TokenType.Whitespace);
+		assertOffsetAndToken(10, TokenType.DTDDoctypeName);
+		assertOffsetAndToken(14, TokenType.Whitespace);
+		assertOffsetAndToken(15, TokenType.DTDStartInternalSubset);
+		assertOffsetAndToken(16, TokenType.Content);
+		assertOffsetAndToken(19, TokenType.DTDStartAttlist);
+		assertOffsetAndToken(28, TokenType.Whitespace);
+		assertOffsetAndToken(29, TokenType.DTDAttlistElementName);
+		assertOffsetAndToken(33, TokenType.Whitespace);
+		assertOffsetAndToken(34, TokenType.DTDAttlistAttributeName);
+		assertOffsetAndToken(37, TokenType.Whitespace);
+		assertOffsetAndToken(38, TokenType.DTDAttlistAttributeType, "ENTITY");
+		assertOffsetAndToken(44, TokenType.Whitespace);
+		assertOffsetAndToken(45, TokenType.DTDAttlistAttributeValue, "#IMPLIED");
+		assertOffsetAndToken(53, TokenType.DTDEndTag);
+		assertOffsetAndToken(54, TokenType.Content);
+		assertOffsetAndToken(55, TokenType.DTDEndInternalSubset);
+		assertOffsetAndToken(56, TokenType.DTDEndDoctypeTag);
+		assertOffsetAndToken(57, TokenType.EOS);
+	}
+
+	@Test
+	public void testAttlistWithENTITIESType() {
+		String xml = "<!DOCTYPE root [\n" + //
+				"  <!ATTLIST root pics ENTITIES #IMPLIED>\n" + //
+				"]>";
+		scanner = XMLScanner.createScanner(xml);
+		assertOffsetAndToken(0, TokenType.DTDStartDoctypeTag);
+		assertOffsetAndToken(9, TokenType.Whitespace);
+		assertOffsetAndToken(10, TokenType.DTDDoctypeName);
+		assertOffsetAndToken(14, TokenType.Whitespace);
+		assertOffsetAndToken(15, TokenType.DTDStartInternalSubset);
+		assertOffsetAndToken(16, TokenType.Content);
+		assertOffsetAndToken(19, TokenType.DTDStartAttlist);
+		assertOffsetAndToken(28, TokenType.Whitespace);
+		assertOffsetAndToken(29, TokenType.DTDAttlistElementName);
+		assertOffsetAndToken(33, TokenType.Whitespace);
+		assertOffsetAndToken(34, TokenType.DTDAttlistAttributeName);
+		assertOffsetAndToken(38, TokenType.Whitespace);
+		assertOffsetAndToken(39, TokenType.DTDAttlistAttributeType, "ENTITIES");
+		assertOffsetAndToken(47, TokenType.Whitespace);
+		assertOffsetAndToken(48, TokenType.DTDAttlistAttributeValue, "#IMPLIED");
+		assertOffsetAndToken(56, TokenType.DTDEndTag);
+		assertOffsetAndToken(57, TokenType.Content);
+		assertOffsetAndToken(58, TokenType.DTDEndInternalSubset);
+		assertOffsetAndToken(59, TokenType.DTDEndDoctypeTag);
+		assertOffsetAndToken(60, TokenType.EOS);
+	}
+
+	@Test
+	public void testAttlistWithNOTATIONType() {
+		String xml = "<!DOCTYPE root [\n" + //
+				"  <!ATTLIST root fmt NOTATION #IMPLIED>\n" + //
+				"]>";
+		scanner = XMLScanner.createScanner(xml);
+		assertOffsetAndToken(0, TokenType.DTDStartDoctypeTag);
+		assertOffsetAndToken(9, TokenType.Whitespace);
+		assertOffsetAndToken(10, TokenType.DTDDoctypeName);
+		assertOffsetAndToken(14, TokenType.Whitespace);
+		assertOffsetAndToken(15, TokenType.DTDStartInternalSubset);
+		assertOffsetAndToken(16, TokenType.Content);
+		assertOffsetAndToken(19, TokenType.DTDStartAttlist);
+		assertOffsetAndToken(28, TokenType.Whitespace);
+		assertOffsetAndToken(29, TokenType.DTDAttlistElementName);
+		assertOffsetAndToken(33, TokenType.Whitespace);
+		assertOffsetAndToken(34, TokenType.DTDAttlistAttributeName);
+		assertOffsetAndToken(37, TokenType.Whitespace);
+		assertOffsetAndToken(38, TokenType.DTDAttlistAttributeType, "NOTATION");
+		assertOffsetAndToken(46, TokenType.Whitespace);
+		assertOffsetAndToken(47, TokenType.DTDAttlistAttributeValue, "#IMPLIED");
+		assertOffsetAndToken(55, TokenType.DTDEndTag);
+		assertOffsetAndToken(56, TokenType.Content);
+		assertOffsetAndToken(57, TokenType.DTDEndInternalSubset);
+		assertOffsetAndToken(58, TokenType.DTDEndDoctypeTag);
+		assertOffsetAndToken(59, TokenType.EOS);
+	}
+
+	@Test
+	public void testAttlistWithSingleValueEnumeration() {
+		String xml = "<!DOCTYPE root [\n" + //
+				"  <!ATTLIST root status (active) #REQUIRED>\n" + //
+				"]>";
+		scanner = XMLScanner.createScanner(xml);
+		assertOffsetAndToken(0, TokenType.DTDStartDoctypeTag);
+		assertOffsetAndToken(9, TokenType.Whitespace);
+		assertOffsetAndToken(10, TokenType.DTDDoctypeName);
+		assertOffsetAndToken(14, TokenType.Whitespace);
+		assertOffsetAndToken(15, TokenType.DTDStartInternalSubset);
+		assertOffsetAndToken(16, TokenType.Content);
+		assertOffsetAndToken(19, TokenType.DTDStartAttlist);
+		assertOffsetAndToken(28, TokenType.Whitespace);
+		assertOffsetAndToken(29, TokenType.DTDAttlistElementName);
+		assertOffsetAndToken(33, TokenType.Whitespace);
+		assertOffsetAndToken(34, TokenType.DTDAttlistAttributeName);
+		assertOffsetAndToken(40, TokenType.Whitespace);
+		assertOffsetAndToken(41, TokenType.DTDAttlistAttributeType, "(active)");
+		assertOffsetAndToken(49, TokenType.Whitespace);
+		assertOffsetAndToken(50, TokenType.DTDAttlistAttributeValue, "#REQUIRED");
+		assertOffsetAndToken(59, TokenType.DTDEndTag);
+		assertOffsetAndToken(60, TokenType.Content);
+		assertOffsetAndToken(61, TokenType.DTDEndInternalSubset);
+		assertOffsetAndToken(62, TokenType.DTDEndDoctypeTag);
+		assertOffsetAndToken(63, TokenType.EOS);
+	}
+
+	@Test
+	public void testAttlistWithTwoValueEnumeration() {
+		String xml = "<!DOCTYPE root [\n" + //
+				"  <!ATTLIST root flag (yes|no) \"yes\">\n" + //
+				"]>";
+		scanner = XMLScanner.createScanner(xml);
+		assertOffsetAndToken(0, TokenType.DTDStartDoctypeTag);
+		assertOffsetAndToken(9, TokenType.Whitespace);
+		assertOffsetAndToken(10, TokenType.DTDDoctypeName);
+		assertOffsetAndToken(14, TokenType.Whitespace);
+		assertOffsetAndToken(15, TokenType.DTDStartInternalSubset);
+		assertOffsetAndToken(16, TokenType.Content);
+		assertOffsetAndToken(19, TokenType.DTDStartAttlist);
+		assertOffsetAndToken(28, TokenType.Whitespace);
+		assertOffsetAndToken(29, TokenType.DTDAttlistElementName);
+		assertOffsetAndToken(33, TokenType.Whitespace);
+		assertOffsetAndToken(34, TokenType.DTDAttlistAttributeName);
+		assertOffsetAndToken(38, TokenType.Whitespace);
+		assertOffsetAndToken(39, TokenType.DTDAttlistAttributeType, "(yes|no)");
+		assertOffsetAndToken(47, TokenType.Whitespace);
+		assertOffsetAndToken(48, TokenType.DTDAttlistAttributeValue, "\"yes\"");
+		assertOffsetAndToken(53, TokenType.DTDEndTag);
+		assertOffsetAndToken(54, TokenType.Content);
+		assertOffsetAndToken(55, TokenType.DTDEndInternalSubset);
+		assertOffsetAndToken(56, TokenType.DTDEndDoctypeTag);
+		assertOffsetAndToken(57, TokenType.EOS);
+	}
+
+	@Test
+	public void testAttlistWithFixedValue() {
+		String xml = "<!DOCTYPE root [\n" + //
+				"  <!ATTLIST root ver CDATA #FIXED \"1.0\">\n" + //
+				"]>";
+		scanner = XMLScanner.createScanner(xml);
+		assertOffsetAndToken(0, TokenType.DTDStartDoctypeTag);
+		assertOffsetAndToken(9, TokenType.Whitespace);
+		assertOffsetAndToken(10, TokenType.DTDDoctypeName);
+		assertOffsetAndToken(14, TokenType.Whitespace);
+		assertOffsetAndToken(15, TokenType.DTDStartInternalSubset);
+		assertOffsetAndToken(16, TokenType.Content);
+		assertOffsetAndToken(19, TokenType.DTDStartAttlist);
+		assertOffsetAndToken(28, TokenType.Whitespace);
+		assertOffsetAndToken(29, TokenType.DTDAttlistElementName);
+		assertOffsetAndToken(33, TokenType.Whitespace);
+		assertOffsetAndToken(34, TokenType.DTDAttlistAttributeName);
+		assertOffsetAndToken(37, TokenType.Whitespace);
+		assertOffsetAndToken(38, TokenType.DTDAttlistAttributeType, "CDATA");
+		assertOffsetAndToken(43, TokenType.Whitespace);
+		assertOffsetAndToken(44, TokenType.DTDAttlistAttributeValue, "#FIXED \"1.0\"");
+		assertOffsetAndToken(56, TokenType.DTDEndTag);
+		assertOffsetAndToken(57, TokenType.Content);
+		assertOffsetAndToken(58, TokenType.DTDEndInternalSubset);
+		assertOffsetAndToken(59, TokenType.DTDEndDoctypeTag);
+		assertOffsetAndToken(60, TokenType.EOS);
+	}
+
+	@Test
+	public void testAttlistKeywordNotConfusedWithPrefix() {
+		// "IDENTITY" starts with "ID" but is not a keyword — must be unrecognized
+		String xml = "<!DOCTYPE root [\n" + //
+				"  <!ATTLIST root attr IDENTITY #IMPLIED>\n" + //
+				"]>";
+		scanner = XMLScanner.createScanner(xml);
+		assertOffsetAndToken(0, TokenType.DTDStartDoctypeTag);
+		assertOffsetAndToken(9, TokenType.Whitespace);
+		assertOffsetAndToken(10, TokenType.DTDDoctypeName);
+		assertOffsetAndToken(14, TokenType.Whitespace);
+		assertOffsetAndToken(15, TokenType.DTDStartInternalSubset);
+		assertOffsetAndToken(16, TokenType.Content);
+		assertOffsetAndToken(19, TokenType.DTDStartAttlist);
+		assertOffsetAndToken(28, TokenType.Whitespace);
+		assertOffsetAndToken(29, TokenType.DTDAttlistElementName);
+		assertOffsetAndToken(33, TokenType.Whitespace);
+		assertOffsetAndToken(34, TokenType.DTDAttlistAttributeName);
+		assertOffsetAndToken(38, TokenType.Whitespace);
+		// "IDENTITY" should NOT match "ID" keyword — must go to unrecognized
+		assertOffsetAndToken(39, TokenType.DTDUnrecognizedParameters);
+		assertOffsetAndToken(56, TokenType.DTDEndTag);
+		assertOffsetAndToken(57, TokenType.Content);
+		assertOffsetAndToken(58, TokenType.DTDEndInternalSubset);
+		assertOffsetAndToken(59, TokenType.DTDEndDoctypeTag);
+		assertOffsetAndToken(60, TokenType.EOS);
+	}
+
+	@Test
+	public void testAttlistEnumerationUnclosed() {
+		// (one|two → missing closing paren
+		String xml = "<!DOCTYPE root [\n" + //
+				"  <!ATTLIST root status (one|two>\n" + //
+				"]>";
+		scanner = XMLScanner.createScanner(xml);
+		assertOffsetAndToken(0, TokenType.DTDStartDoctypeTag);
+		assertOffsetAndToken(9, TokenType.Whitespace);
+		assertOffsetAndToken(10, TokenType.DTDDoctypeName);
+		assertOffsetAndToken(14, TokenType.Whitespace);
+		assertOffsetAndToken(15, TokenType.DTDStartInternalSubset);
+		assertOffsetAndToken(16, TokenType.Content);
+		assertOffsetAndToken(19, TokenType.DTDStartAttlist);
+		assertOffsetAndToken(28, TokenType.Whitespace);
+		assertOffsetAndToken(29, TokenType.DTDAttlistElementName);
+		assertOffsetAndToken(33, TokenType.Whitespace);
+		assertOffsetAndToken(34, TokenType.DTDAttlistAttributeName);
+		assertOffsetAndToken(40, TokenType.Whitespace);
+		// Unclosed enumeration: no ')' before '>' → must go to unrecognized
+		assertOffsetAndToken(41, TokenType.DTDUnrecognizedParameters);
+		assertOffsetAndToken(49, TokenType.DTDEndTag);
+		assertOffsetAndToken(50, TokenType.Content);
+		assertOffsetAndToken(51, TokenType.DTDEndInternalSubset);
+		assertOffsetAndToken(52, TokenType.DTDEndDoctypeTag);
+		assertOffsetAndToken(53, TokenType.EOS);
 	}
 
 	public void assertOffsetAndToken(int tokenOffset, TokenType tokenType) {

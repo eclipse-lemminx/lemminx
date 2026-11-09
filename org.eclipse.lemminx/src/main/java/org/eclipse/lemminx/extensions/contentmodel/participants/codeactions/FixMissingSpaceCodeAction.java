@@ -23,8 +23,10 @@ import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
 /**
- * Adds a space at the end of the diagnostic range
+ * Code action to fix missing space errors in DTD declarations by inserting a
+ * space after the highlighted token.
  *
+ * {@code <!ELEMENTroot EMPTY>} → inserts space after {@code <!ELEMENT}
  */
 public class FixMissingSpaceCodeAction implements ICodeActionParticipant {
 
@@ -33,16 +35,19 @@ public class FixMissingSpaceCodeAction implements ICodeActionParticipant {
 		Diagnostic diagnostic = request.getDiagnostic();
 		DOMDocument document = request.getDocument();
 		Range diagnosticRange = diagnostic.getRange();
+		boolean snippetSupport = request.getSharedSettings().getWorkspaceSettings().isSnippetEditSupported();
 		try {
 			int startOffset = document.offsetAt(diagnosticRange.getStart());
 			int endOffset = document.offsetAt(diagnosticRange.getEnd());
 			CharSequence text = document.getTextSequence();
 			String value = StringUtils.getString(text, startOffset, endOffset);
-			codeActions.add(CodeActionFactory.insert("Add space after '" + value + "'", diagnosticRange.getEnd(), " ",
-					document.getTextDocument(), diagnostic));
+			codeActions.add(CodeActionFactory.insert("Add space after '" + value + "'", diagnosticRange.getEnd(),
+					snippetSupport ? " $0" : " ",
+					document.getTextDocument(), diagnostic, snippetSupport));
 		} catch (BadLocationException | IndexOutOfBoundsException e) {
-			codeActions.add(CodeActionFactory.insert("Add space", diagnosticRange.getEnd(), " ",
-					document.getTextDocument(), diagnostic));
+			codeActions.add(CodeActionFactory.insert("Add space", diagnosticRange.getEnd(),
+					snippetSupport ? " $0" : " ",
+					document.getTextDocument(), diagnostic, snippetSupport));
 		}
 	}
 

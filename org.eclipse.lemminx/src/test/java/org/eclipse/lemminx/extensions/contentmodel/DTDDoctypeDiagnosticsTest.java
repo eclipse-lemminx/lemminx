@@ -47,7 +47,7 @@ public class DTDDoctypeDiagnosticsTest extends AbstractCacheBasedTest {
 				"  <!ELEMENT surname (#PCDATA)\r\n" + // <- error
 				"]>\r\n" + //
 				"<student />";
-		XMLAssert.testDiagnosticsFor(xml, d(3, 29, 30, DTDErrorCode.ElementDeclUnterminated));
+		XMLAssert.testDiagnosticsFor(xml, d(3, 20, 29, DTDErrorCode.ElementDeclUnterminated));
 	}
 
 	@Test
@@ -58,7 +58,7 @@ public class DTDDoctypeDiagnosticsTest extends AbstractCacheBasedTest {
 				"]>\r\n" + //
 				"<student />";
 		XMLAssert.testDiagnosticsFor(xml,
-				d(2, 19, 20, DTDErrorCode.MSG_OPEN_PAREN_OR_ELEMENT_TYPE_REQUIRED_IN_CHILDREN));
+				d(2, 12, 19, DTDErrorCode.MSG_OPEN_PAREN_OR_ELEMENT_TYPE_REQUIRED_IN_CHILDREN));
 	}
 
 	@Test

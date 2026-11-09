@@ -16,6 +16,7 @@ import static org.eclipse.lemminx.utils.StringUtils.isSimilar;
 
 import java.text.Collator;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.TreeSet;
 
@@ -62,10 +63,18 @@ public class ReplaceAttributeValueCodeAction implements ICodeActionParticipant {
 										diagnosticRange.getStart().getCharacter() + 1),
 								new Position(diagnosticRange.getEnd().getLine(),
 										diagnosticRange.getEnd().getCharacter() - 1));
+						Collection<String> candidateValues = cmAttribute.getEnumerationValues();
+						if (candidateValues.isEmpty()) {
+							String defaultValue = cmAttribute.getDefaultValue();
+							if (defaultValue != null) {
+								candidateValues = Collections.singletonList(defaultValue);
+							}
+						}
+
 						Collection<String> similarValues = new TreeSet<String>(Collator.getInstance());
 						Collection<String> otherValues = new TreeSet<String>(Collator.getInstance());
 
-						for (String enumValue : cmAttribute.getEnumerationValues()) {
+						for (String enumValue : candidateValues) {
 							if (isSimilar(enumValue, attributeValue)) {
 								similarValues.add(enumValue);
 							} else {

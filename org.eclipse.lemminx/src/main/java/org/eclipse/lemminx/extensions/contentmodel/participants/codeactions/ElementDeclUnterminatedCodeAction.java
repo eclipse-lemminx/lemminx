@@ -24,8 +24,14 @@ import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
 /**
- * Code action to fix ElementDeclUnterminated error.
+ * Code action to fix unterminated DTD declaration errors by inserting a closing
+ * {@code >}.
  *
+ * <ul>
+ * <li>{@code <!ELEMENT root EMPTY} → inserts {@code >}</li>
+ * <li>{@code <!ENTITY myEntity "value"} → inserts {@code >}</li>
+ * <li>{@code <!NOTATION name SYSTEM "id"} → inserts {@code >}</li>
+ * </ul>
  */
 public class ElementDeclUnterminatedCodeAction implements ICodeActionParticipant {
 
@@ -34,10 +40,12 @@ public class ElementDeclUnterminatedCodeAction implements ICodeActionParticipant
 		Diagnostic diagnostic = request.getDiagnostic();
 		DOMDocument document = request.getDocument();
 		Range diagnosticRange = diagnostic.getRange();
+		boolean snippetSupport = request.getSharedSettings().getWorkspaceSettings().isSnippetEditSupported();
 
 		// Close with '>
-		CodeAction closeAction = CodeActionFactory.insert("Close with '>'", diagnosticRange.getEnd(), ">",
-				document.getTextDocument(), diagnostic);
+		CodeAction closeAction = CodeActionFactory.insert("Close with '>'", diagnosticRange.getEnd(),
+				snippetSupport ? ">$0" : ">",
+				document.getTextDocument(), diagnostic, snippetSupport);
 		codeActions.add(closeAction);
 	}
 

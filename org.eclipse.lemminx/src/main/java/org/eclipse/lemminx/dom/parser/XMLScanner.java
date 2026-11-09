@@ -757,7 +757,7 @@ public class XMLScanner implements Scanner {
 				return finishToken(offset, TokenType.Whitespace);
 			}
 
-			if (!stream.advanceIfRegExpGroup1(Constants.DTD_ATTLIST_ATTRIBUTE_TYPE).equals("")) {
+			if (advanceIfAttlistType()) {
 				state = ScannerState.DTDAfterAttlistAttributeType;
 				return finishToken(offset, TokenType.DTDAttlistAttributeType);
 			}
@@ -1045,6 +1045,74 @@ public class XMLScanner implements Scanner {
 
 	public static Scanner createScanner(CharSequence input) {
 		return createScanner(input, false);
+	}
+
+	/**
+	 * Advances past a DTD ATTLIST attribute type token.
+	 *
+	 * <p>
+	 * Handles keyword types ({@code CDATA}, {@code ID}, {@code IDREF},
+	 * {@code IDREFS}, {@code ENTITY}, {@code ENTITIES}, {@code NMTOKEN},
+	 * {@code NMTOKENS}, {@code NOTATION}, {@code xml:}) and enumeration types
+	 * ({@code (value1|value2|...)}).
+	 * </p>
+	 *
+	 * @return true if the stream advanced past a valid attribute type.
+	 */
+	private boolean advanceIfAttlistType() {
+		if (stream.peekChar() == _ORB) {
+			// Enumeration: (value1|value2|...)
+			int saved = stream.pos();
+			stream.advance(1);
+			if (stream.advanceUntilChar(_CRB)) {
+				stream.advance(1);
+				return true;
+			}
+			stream.goBackTo(saved);
+			return false;
+		}
+		return tryAdvanceKeyword("CDATA")
+				|| tryAdvanceKeyword("IDREFS")
+				|| tryAdvanceKeyword("IDREF")
+				|| tryAdvanceKeyword("ID")
+				|| tryAdvanceKeyword("NMTOKENS")
+				|| tryAdvanceKeyword("NMTOKEN")
+				|| tryAdvanceKeyword("ENTITIES")
+				|| tryAdvanceKeyword("ENTITY")
+				|| tryAdvanceKeyword("NOTATION")
+				|| tryAdvanceKeyword("xml:");
+	}
+
+	/**
+	 * Tries to match and advance past the given keyword, only if followed by a
+	 * DTD type delimiter (whitespace, {@code <}, {@code >}, {@code "} or
+	 * {@code '}).
+	 *
+	 * @param keyword the keyword to match (e.g. {@code "CDATA"}).
+	 * @return true if the keyword was matched and the stream advanced.
+	 */
+	private boolean tryAdvanceKeyword(String keyword) {
+		int len = keyword.length();
+		for (int i = 0; i < len; i++) {
+			if (stream.peekChar(i) != keyword.charAt(i)) {
+				return false;
+			}
+		}
+		int nextCh = stream.peekChar(len);
+		if (!isDTDTypeDelimiter(nextCh)) {
+			return false;
+		}
+		stream.advance(len);
+		return true;
+	}
+
+	/**
+	 * Returns true if the character can follow an attribute type keyword in a
+	 * DTD ATTLIST declaration (whitespace, {@code <}, {@code >}, {@code "} or
+	 * {@code '}).
+	 */
+	private static boolean isDTDTypeDelimiter(int ch) {
+		return Character.isWhitespace(ch) || ch == _LAN || ch == _RAN || ch == _DQO || ch == _SIQ;
 	}
 
 	public static Scanner createScanner(CharSequence input, boolean isDTD) {

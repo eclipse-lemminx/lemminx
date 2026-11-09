@@ -92,9 +92,6 @@ public class Constants {
 
 	public static final Pattern DTD_PCDATA = Pattern.compile("^#PCDATA");
 
-	public static final Pattern DTD_ATTLIST_ATTRIBUTE_TYPE = Pattern
-			.compile("^(CDATA|IDREFS|IDREF|ID|NMTOKENS|NMTOKEN|ENTITIES|ENTITY|NOTATION|xml:|\\(.*\\))([\\s<>\"'])");
-
 	public static final Pattern DTD_ATTLIST_ATTRIBUTE_VALUE = Pattern
 			.compile("^(#REQUIRED|#IMPLIED|\".*\"|#FIXED \".*\")([\\s<>\"'])");
 

@@ -51,6 +51,7 @@ public class MSG_CONTENT_INCOMPLETECodeAction implements ICodeActionParticipant 
 			DOMElement element = (DOMElement) node;
 
 			if (!element.isEmpty()) {
+				new MSG_CONTENT_INVALIDCodeAction().doCodeAction(request, codeActions, cancelChecker);
 				return;
 			}
 

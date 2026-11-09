@@ -34,7 +34,7 @@ public class DTDDiagnosticsTest extends AbstractCacheBasedTest {
 	public void EntityDeclUnterminated() throws Exception {
 		String dtd = "<!ENTITY copyright \"Copyright W3Schools.\"\r\n" + //
 				"<!ELEMENT element-name (#PCDATA)>";
-		testDiagnosticsFor(dtd, "test.dtd", d(0, 41, 42, DTDErrorCode.EntityDeclUnterminated));
+		testDiagnosticsFor(dtd, "test.dtd", d(0, 19, 41, DTDErrorCode.EntityDeclUnterminated));
 	}
 
 	@Test
