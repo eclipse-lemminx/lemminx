@@ -315,18 +315,48 @@ public class XMLElementGenerator {
 	}
 
 	public String generate(Collection<CMAttributeDeclaration> attributes, String tagName) {
+		return generate(attributes, tagName, true);
+	}
+
+	/**
+	 * Generates attribute text for the given attributes.
+	 *
+	 * @param attributes       the attributes to generate.
+	 * @param tagName          the tag name of the element.
+	 * @param filterRequired   when {@code true}, only attributes where
+	 *                         {@link CMAttributeDeclaration#isRequired()} returns
+	 *                         {@code true} are generated; when {@code false}, all
+	 *                         given attributes are generated.
+	 * @return the generated attribute text.
+	 */
+	public String generate(Collection<CMAttributeDeclaration> attributes, String tagName, boolean filterRequired) {
+		return generate(attributes, tagName, filterRequired, null);
+	}
+
+	public String generate(Collection<CMAttributeDeclaration> attributes, String tagName, boolean filterRequired,
+			DOMElement element) {
 		XMLBuilder xml = new XMLBuilder(sharedSettings, whitespacesIndent, lineDelimiter);
-		generate(attributes, 0, 0, xml, tagName, false);
+		generate(attributes, 0, 0, xml, tagName, false, filterRequired, element);
 		return xml.toString();
 	}
 
 	private int generate(Collection<CMAttributeDeclaration> attributes, int level, int snippetIndex, XMLBuilder xml,
 			String tagName, boolean hasExtraAttributes) {
+		return generate(attributes, level, snippetIndex, xml, tagName, hasExtraAttributes, true, null);
+	}
+
+	private int generate(Collection<CMAttributeDeclaration> attributes, int level, int snippetIndex, XMLBuilder xml,
+			String tagName, boolean hasExtraAttributes, boolean filterRequired) {
+		return generate(attributes, level, snippetIndex, xml, tagName, hasExtraAttributes, filterRequired, null);
+	}
+
+	private int generate(Collection<CMAttributeDeclaration> attributes, int level, int snippetIndex, XMLBuilder xml,
+			String tagName, boolean hasExtraAttributes, boolean filterRequired, DOMElement element) {
 		Map<String /* namespaceURI */, String /* prefix */> prefixes = null;
-		List<CMAttributeDeclaration> requiredAttributes = new ArrayList<>();
+		List<CMAttributeDeclaration> selectedAttributes = new ArrayList<>();
 		// Loop for attributes to collect :
-		// - required attributes
-		// - mapping between namespace / prefix for required attributes
+		// - selected attributes (required-only or all, depending on filterRequired)
+		// - mapping between namespace / prefix for attributes
 		boolean generateXmlnsAttr = false;
 
 		SplitAttributes splitAttr = sharedSettings.getFormattingSettings().getSplitAttributes();
@@ -335,45 +365,48 @@ public class XMLElementGenerator {
 		boolean isFirstAttrOfElement = !hasExtraAttributes;
 
 		for (CMAttributeDeclaration att : attributes) {
-			// required attributes
-			if (att.isRequired()) {
-				requiredAttributes.add(att);
-				// mapping between namespace / prefix for attributes
-				String namespace = att.getNamespace();
-				if (!StringUtils.isEmpty(namespace)) {
-					// Attribute has a namespace, get the prefix from the XML DOM document or from
-					// the grammar.
-					String prefix = prefixes != null ? prefixes.get(namespace) : null;
+			if (filterRequired && !att.isRequired()) {
+				continue;
+			}
+			selectedAttributes.add(att);
+			// mapping between namespace / prefix for attributes
+			String namespace = att.getNamespace();
+			if (!StringUtils.isEmpty(namespace)) {
+				// Attribute has a namespace, get the prefix from the XML DOM document or from
+				// the grammar.
+				String prefix = prefixes != null ? prefixes.get(namespace) : null;
+				if (prefix == null) {
+					// Find the prefix from the DOM node
+					prefix = findPrefixFromDOMNode(namespace);
 					if (prefix == null) {
-						// Find the prefix from the DOM node
-						prefix = findPrefixFromDOMNode(namespace);
-						if (prefix == null) {
-							// Find the prefix from the grammar
-							prefix = att.getOwnerElementDeclaration().getPrefix(namespace);
-							if (prefix != null) {
-								if (!"xml".equals(prefix)) {
-									if (isFirstAttrOfElement && keepFirstOnTagLine) {
-										xml.addSingleAttribute("xmlns:" + prefix, namespace, true);
-										isFirstAttrOfElement = false;
-									} else {
-										xml.addAttribute("xmlns:" + prefix, namespace, level, true);
-									}
-									generateXmlnsAttr = true;
+						// Find the prefix from the grammar
+						CMElementDeclaration owner = att.getOwnerElementDeclaration();
+						if (owner != null) {
+							prefix = owner.getPrefix(namespace);
+						}
+						if (prefix != null) {
+							if (!"xml".equals(prefix)) {
+								if (isFirstAttrOfElement && keepFirstOnTagLine) {
+									xml.addSingleAttribute("xmlns:" + prefix, namespace, true);
+									isFirstAttrOfElement = false;
+								} else {
+									xml.addAttribute("xmlns:" + prefix, namespace, level, true);
 								}
+								generateXmlnsAttr = true;
 							}
 						}
 					}
-					if (prefix != null) {
-						if (prefixes == null) {
-							prefixes = new HashMap<>();
-						}
-						prefixes.put(namespace, prefix);
+				}
+				if (prefix != null) {
+					if (prefixes == null) {
+						prefixes = new HashMap<>();
 					}
+					prefixes.put(namespace, prefix);
 				}
 			}
 		}
-		int attributesSize = requiredAttributes.size();
-		for (CMAttributeDeclaration attributeDeclaration : requiredAttributes) {
+		int attributesSize = selectedAttributes.size();
+		for (CMAttributeDeclaration attributeDeclaration : selectedAttributes) {
 			if (canSupportSnippets) {
 				snippetIndex++;
 			}
@@ -381,7 +414,7 @@ public class XMLElementGenerator {
 			if (defaultValue == null && useTypeDefaults) {
 				defaultValue = attributeDeclaration.getTypeAwareDefaultValue();
 			}
-			Collection<String> enumerationValues = attributeDeclaration.getEnumerationValues();
+			Collection<String> enumerationValues = attributeDeclaration.getEnumerationValues(element);
 			String value = generateAttributeValue(defaultValue, enumerationValues, canSupportSnippets, snippetIndex,
 					false, sharedSettings);
 			String attrName = attributeDeclaration.getName(prefixes);

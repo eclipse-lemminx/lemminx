@@ -12,12 +12,18 @@
 package com.thaiopensource.relaxng.pattern;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.eclipse.lemminx.dom.DOMElement;
 import org.eclipse.lemminx.extensions.contentmodel.model.CMAttributeDeclaration;
 import org.eclipse.lemminx.extensions.contentmodel.model.CMElementDeclaration;
+import org.eclipse.lemminx.extensions.relaxng.utils.RelaxNGUtils;
 import org.eclipse.lemminx.services.extensions.ISharedSettingsRequest;
 
 import com.thaiopensource.xml.util.Name;
@@ -37,6 +43,16 @@ import com.thaiopensource.xml.util.Name;
  *
  */
 public class CMRelaxNGAttributeDeclaration implements CMAttributeDeclaration {
+
+	private static final Logger LOGGER = Logger.getLogger(CMRelaxNGAttributeDeclaration.class.getName());
+
+	private static final String RELAXNG_NS = "http://relaxng.org/ns/structure/1.0";
+
+	private static final String TYPE_ATTR = RelaxNGUtils.TYPE_ATTR;
+
+	private static final List<String> BUILTIN_DATATYPE_VALUES = Arrays.asList("string", "token");
+
+	private static List<String> xsdDatatypeValues;
 
 	private final CMRelaxNGElementDeclaration cmElement;
 	private final AttributePattern pattern;
@@ -134,8 +150,83 @@ public class CMRelaxNGAttributeDeclaration implements CMAttributeDeclaration {
 					}
 				}
 			}
+			if (values.isEmpty()) {
+				values = getDatatypeValues();
+			}
 		}
 		return values;
+	}
+
+	@Override
+	public Collection<String> getEnumerationValues(DOMElement element) {
+		Collection<String> allValues = getEnumerationValues();
+		if (element == null) {
+			return allValues;
+		}
+		if (!TYPE_ATTR.equals(getLocalName()) || !RELAXNG_NS.equals(cmElement.getNamespace())) {
+			return allValues;
+		}
+		String elementName = cmElement.getLocalName();
+		if (!RelaxNGUtils.DATA_TAG.equals(elementName) && !RelaxNGUtils.VALUE_TAG.equals(elementName)) {
+			return allValues;
+		}
+		String datatypeLibrary = RelaxNGUtils.getEffectiveDatatypeLibrary(element);
+		if (datatypeLibrary != null && !datatypeLibrary.isEmpty()) {
+			return allValues;
+		}
+		return BUILTIN_DATATYPE_VALUES;
+	}
+
+	private List<String> getDatatypeValues() {
+		if (TYPE_ATTR.equals(getLocalName()) && RELAXNG_NS.equals(cmElement.getNamespace())) {
+			String elementName = cmElement.getLocalName();
+			if (RelaxNGUtils.DATA_TAG.equals(elementName) || RelaxNGUtils.VALUE_TAG.equals(elementName)) {
+				List<String> result = new ArrayList<>(BUILTIN_DATATYPE_VALUES);
+				result.addAll(getXSDDatatypeValues());
+				return result;
+			}
+		}
+		return new ArrayList<>();
+	}
+
+	/**
+	 * Returns the builtin RelaxNG datatype values ({@code "string"},
+	 * {@code "token"}) available without a {@code datatypeLibrary} attribute.
+	 *
+	 * @return an unmodifiable list of builtin type names.
+	 */
+	public static List<String> getBuiltinDatatypeValues() {
+		return BUILTIN_DATATYPE_VALUES;
+	}
+
+	/**
+	 * Returns the XSD datatype values retrieved via reflection from Jing's
+	 * {@code DatatypeLibraryImpl.typeMap}, excluding the builtin types
+	 * ({@code "string"}, {@code "token"}) which are already covered by
+	 * {@link #getBuiltinDatatypeValues()}. The result is sorted alphabetically
+	 * and cached after the first call.
+	 *
+	 * @return a sorted list of XSD type names (e.g. {@code "boolean"},
+	 *         {@code "integer"}, {@code "date"}, ...).
+	 */
+	public static synchronized List<String> getXSDDatatypeValues() {
+		if (xsdDatatypeValues != null) {
+			return xsdDatatypeValues;
+		}
+		try {
+			com.thaiopensource.datatype.xsd.DatatypeLibraryImpl xsdLib = new com.thaiopensource.datatype.xsd.DatatypeLibraryImpl(
+					new com.thaiopensource.datatype.xsd.regex.java.RegexEngineImpl());
+			Map<String, ?> typeMap = org.eclipse.lemminx.extensions.xerces.ReflectionUtils.getFieldValue(xsdLib,
+					"typeMap");
+			List<String> types = new ArrayList<>(typeMap.keySet());
+			types.removeAll(BUILTIN_DATATYPE_VALUES);
+			Collections.sort(types);
+			xsdDatatypeValues = types;
+		} catch (Exception e) {
+			LOGGER.log(Level.WARNING, "Failed to retrieve XSD datatype values via reflection", e);
+			xsdDatatypeValues = Collections.emptyList();
+		}
+		return xsdDatatypeValues;
 	}
 
 	@Override

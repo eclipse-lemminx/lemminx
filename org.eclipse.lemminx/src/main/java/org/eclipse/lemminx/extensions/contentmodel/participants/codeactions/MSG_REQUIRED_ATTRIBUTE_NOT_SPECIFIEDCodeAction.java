@@ -12,93 +12,19 @@
  */
 package org.eclipse.lemminx.extensions.contentmodel.participants.codeactions;
 
-import java.util.List;
-import java.util.stream.Collectors;
+import java.util.Collection;
 
-import org.eclipse.lemminx.commons.CodeActionFactory;
-import org.eclipse.lemminx.dom.DOMAttr;
-import org.eclipse.lemminx.dom.DOMDocument;
-import org.eclipse.lemminx.dom.DOMElement;
-import org.eclipse.lemminx.dom.DOMNode;
-import org.eclipse.lemminx.extensions.contentmodel.generator.XMLElementGenerator;
 import org.eclipse.lemminx.extensions.contentmodel.model.CMAttributeDeclaration;
-import org.eclipse.lemminx.extensions.contentmodel.model.CMDocument;
-import org.eclipse.lemminx.extensions.contentmodel.model.CMElementDeclaration;
-import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
-import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionParticipant;
-import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionRequest;
-import org.eclipse.lemminx.settings.SharedSettings;
-import org.eclipse.lsp4j.CodeAction;
-import org.eclipse.lsp4j.Diagnostic;
-import org.eclipse.lsp4j.Position;
-import org.eclipse.lsp4j.Range;
-import org.eclipse.lsp4j.jsonrpc.CancelChecker;
+import org.eclipse.lemminx.services.extensions.codeaction.InsertAttributeCodeAction;
 
 /**
  * Code action to fix DTD MSG_REQUIRED_ATTRIBUTE_NOT_SPECIFIED error by
  * inserting missing required attributes.
  */
-public class MSG_REQUIRED_ATTRIBUTE_NOT_SPECIFIEDCodeAction implements ICodeActionParticipant {
+public class MSG_REQUIRED_ATTRIBUTE_NOT_SPECIFIEDCodeAction extends InsertAttributeCodeAction {
 
 	@Override
-	public void doCodeAction(ICodeActionRequest request, List<CodeAction> codeActions, CancelChecker cancelChecker) {
-		Diagnostic diagnostic = request.getDiagnostic();
-		DOMDocument document = request.getDocument();
-		Range range = request.getRange();
-		if (diagnostic == null) {
-			return;
-		}
-
-		Range diagnosticRange = diagnostic.getRange();
-		try {
-			int offset = document.offsetAt(range.getStart());
-			DOMNode node = document.findNodeAt(offset);
-			if (!node.isElement()) {
-				return;
-			}
-			SharedSettings sharedSettings = request.getSharedSettings();
-			DOMElement element = (DOMElement) node;
-			ContentModelManager contentModelManager = request.getComponent(ContentModelManager.class);
-			for (CMDocument cmDocument : contentModelManager.findCMDocument(element)) {
-				CMElementDeclaration elementDeclaration = cmDocument.findCMElement(element);
-				if (elementDeclaration != null) {
-					List<CMAttributeDeclaration> requiredAttributes = elementDeclaration.getAttributes().stream()
-							.filter(CMAttributeDeclaration::isRequired)
-							.filter(cmAttr -> !element.hasAttribute(cmAttr.getLocalName()))
-							.collect(Collectors.toList());
-
-					boolean snippetSupport = sharedSettings.getWorkspaceSettings()
-							.isSnippetEditSupported();
-					XMLElementGenerator generator = new XMLElementGenerator(sharedSettings, "", "", snippetSupport, 0);
-					String xmlAttributes = generator.generate(requiredAttributes, element.getTagName());
-
-					Position insertPosition = getInsertAttrPosition(element, document, diagnosticRange);
-					CodeAction insertRequiredAttributesAction = CodeActionFactory.insert(
-							"Insert required attributes",
-							insertPosition, xmlAttributes, document.getTextDocument(), diagnostic,
-							snippetSupport);
-					codeActions.add(insertRequiredAttributesAction);
-				}
-			}
-		} catch (Exception e) {
-			// Do nothing
-		}
-	}
-
-	private static Position getInsertAttrPosition(DOMElement element, DOMDocument document, Range diagnosticRange) {
-		if (element.hasAttributes()) {
-			DOMAttr lastAttr = null;
-			for (DOMAttr attr : element.attributes()) {
-				lastAttr = attr;
-			}
-			if (lastAttr != null) {
-				try {
-					return document.positionAt(lastAttr.getEnd());
-				} catch (Exception e) {
-					// Fall through to default
-				}
-			}
-		}
-		return diagnosticRange.getEnd();
+	protected String getCodeActionTitle(Collection<CMAttributeDeclaration> attributes) {
+		return "Insert required attributes";
 	}
 }

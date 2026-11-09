@@ -365,7 +365,7 @@ public class ContentModelCompletionParticipant extends CompletionParticipantAdap
 			if (!parentElement.hasAttribute(attrName)) {
 				CompletionItem item = new AttributeCompletionItem(attrName, canSupportSnippet, fullRange,
 						generateValue,
-						attributeDeclaration.getDefaultValue(), attributeDeclaration.getEnumerationValues(),
+						attributeDeclaration.getDefaultValue(), attributeDeclaration.getEnumerationValues(parentElement),
 						request.getSharedSettings());
 				if (declareNamespace) {
 					// Insert with additional text edit, the declaration of the namespace (ex :
@@ -444,7 +444,7 @@ public class ContentModelCompletionParticipant extends CompletionParticipantAdap
 		CMAttributeDeclaration cmAttribute = cmElement.findCMAttribute(attr);
 		if (cmAttribute != null) {
 			Range fullRange = request.getReplaceRange();
-			cmAttribute.getEnumerationValues().forEach(value -> {
+			cmAttribute.getEnumerationValues(attr.getOwnerElement()).forEach(value -> {
 				CompletionItem item = new CompletionItem();
 				String insertText = request.getInsertAttrValue(value);
 				item.setLabel(value);

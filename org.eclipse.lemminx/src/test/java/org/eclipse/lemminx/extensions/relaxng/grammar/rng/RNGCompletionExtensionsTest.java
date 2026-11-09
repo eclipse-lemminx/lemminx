@@ -106,7 +106,7 @@ public class RNGCompletionExtensionsTest extends BaseFileTempTest {
 				c("group", te(7, 4, 7, 5, "<group></group>"), "<group"), //
 				c("attribute", te(7, 4, 7, 5, "<attribute></attribute>"), "<attribute"), //
 				c("text", te(7, 4, 7, 5, "<text></text>"), "<text"), //
-				c("data", te(7, 4, 7, 5, "<data type=\"\"></data>"), "<data"), //
+				c("data", te(7, 4, 7, 5, "<data type=\"string\"></data>"), "<data"), //
 				c("oneOrMore", te(7, 4, 7, 5, "<oneOrMore></oneOrMore>"), "<oneOrMore"), //
 				c("externalRef", te(7, 4, 7, 5, "<externalRef href=\"\"></externalRef>"), "<externalRef"), //
 				c("list", te(7, 4, 7, 5, "<list></list>"), "<list"), //
@@ -167,6 +167,39 @@ public class RNGCompletionExtensionsTest extends BaseFileTempTest {
 				2, //
 				c("root-element", te(7, 19, 7, 19, "root-element"), "root-element"), //
 				c("asdf", te(7, 19, 7, 19, "asdf"), "asdf"));
+	}
+
+	@Test
+	public void completionOnDataTypeAttributeValueBuiltin() throws BadLocationException {
+		String xml = "<grammar xmlns=\"http://relaxng.org/ns/structure/1.0\">\r\n" + //
+				"  <start>\r\n" + //
+				"    <element name=\"name\">\r\n" + //
+				"      <data type=\"|\"></data>\r\n" + //
+				"    </element>\r\n" + //
+				"  </start>\r\n" + //
+				"</grammar>";
+		testCompletionFor(xml, //
+				2, //
+				c("string", te(3, 18, 3, 18, "string"), "string"), //
+				c("token", te(3, 18, 3, 18, "token"), "token"));
+	}
+
+	@Test
+	public void completionOnDataTypeAttributeValueXSD() throws BadLocationException {
+		String xml = "<grammar xmlns=\"http://relaxng.org/ns/structure/1.0\"\r\n" + //
+				"  datatypeLibrary=\"http://www.w3.org/2001/XMLSchema-datatypes\">\r\n" + //
+				"  <start>\r\n" + //
+				"    <element name=\"name\">\r\n" + //
+				"      <data type=\"|\"></data>\r\n" + //
+				"    </element>\r\n" + //
+				"  </start>\r\n" + //
+				"</grammar>";
+		testCompletionFor(xml, //
+				46, //
+				c("string", te(4, 18, 4, 18, "string"), "string"), //
+				c("token", te(4, 18, 4, 18, "token"), "token"), //
+				c("boolean", te(4, 18, 4, 18, "boolean"), "boolean"), //
+				c("integer", te(4, 18, 4, 18, "integer"), "integer"));
 	}
 
 	private static void testCompletionFor(String value, Integer expectedCount, CompletionItem... expectedItems)

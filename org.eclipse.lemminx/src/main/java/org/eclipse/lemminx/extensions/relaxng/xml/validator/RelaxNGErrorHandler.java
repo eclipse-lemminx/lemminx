@@ -19,9 +19,17 @@ import org.eclipse.lemminx.extensions.relaxng.RelaxNGConstants;
 
 /**
  * {@link XMLErrorHandler} Xerces implementation for RelaxNG.
- * 
+ *
+ * <p>
+ * Jing provides no structured error codes—only English message strings via
+ * {@code SAXParseException}. This handler matches those messages by
+ * prefix/suffix/contains patterns and maps them to {@link RelaxNGErrorCode}
+ * enum values for precise diagnostic ranges and code actions.
+ * </p>
+ *
  * @author Angelo ZERR
  *
+ * @see RelaxNGErrorCode
  */
 public class RelaxNGErrorHandler implements XMLErrorHandler {
 
@@ -175,10 +183,33 @@ public class RelaxNGErrorHandler implements XMLErrorHandler {
 			return new RelaxNGReportInfo(RelaxNGErrorCode.reference_to_undefined, patternName);
 		}
 
-		if (message.startsWith("found ") && message.endsWith("element but expected a pattern")) {
-			// expected_pattern=found \"{0}\" element but expected a pattern
+		if (message.startsWith("found ") && message.contains("element but expected")) {
 			String tagName = extractArg("found ", message);
-			return new RelaxNGReportInfo(RelaxNGErrorCode.expected_pattern, tagName);
+			if (message.contains("expected \"define\" or \"start\" or \"include\" or \"div\" element")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.expected_define, tagName);
+			}
+			if (message.contains("expected empty content")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.expected_empty, tagName);
+			}
+			if (message.contains("expected \"except\"")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.expected_except, tagName);
+			}
+			if (message.contains("expected \"grammar\" element")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.expected_grammar, tagName);
+			}
+			if (message.contains("expected a name-class")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.expected_name_class, tagName);
+			}
+			if (message.contains("expected a name")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.expected_name, tagName);
+			}
+			if (message.contains("expected no further content")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.expected_one_name_class, tagName);
+			}
+			if (message.contains("expected a pattern")) {
+				// expected_pattern=found \"{0}\" element but expected a pattern
+				return new RelaxNGReportInfo(RelaxNGErrorCode.expected_pattern, tagName);
+			}
 		}
 		if (message.startsWith("illegal attribute ")) {
 			// illegal_attribute_ignored=illegal attribute \"{0}\" ignored
@@ -208,6 +239,243 @@ public class RelaxNGErrorHandler implements XMLErrorHandler {
 		if (message.equals("missing \"type\" attribute")) {
 			// missing_type_attribute=missing \"type\" attribute
 			return new RelaxNGReportInfo(RelaxNGErrorCode.missing_type_attribute);
+		}
+		if (message.equals("missing \"href\" attribute")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.missing_href_attribute);
+		}
+
+		// RNG SAX parse errors - exact and prefix matches
+		if (message.equals("\"attribute\" pattern must contain at most one pattern")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.attribute_multi_pattern);
+		}
+		if (message.equals("\"start\" pattern must contain at most one pattern")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.start_multi_pattern);
+		}
+		if (message.equals("only \"param\" and \"except\" child elements are allowed")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.expected_param_except);
+		}
+		if (message.startsWith("at most one \"except\" child element")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.multiple_except);
+		}
+		if (message.startsWith("too many child elements")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.too_many_children);
+		}
+		if (message.equals("illegal characters ignored")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.illegal_characters_ignored);
+		}
+		if (message.equals("\"name\" element cannot contain foreign elements")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.name_contains_foreign_element);
+		}
+		if (message.equals("\"param\" is not allowed after \"except\"")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.param_after_except);
+		}
+		if (message.equals("\"param\" element cannot contain foreign elements")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.param_contains_foreign_element);
+		}
+		if (message.equals("\"value\" element cannot contain foreign elements")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.value_contains_foreign_element);
+		}
+		if (message.startsWith("bad value") && message.contains("for \"combine\" attribute")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.combine_attribute_bad_value);
+		}
+		if (message.startsWith("undefined prefix")) {
+			String prefix = extractArg("undefined prefix ", message);
+			return new RelaxNGReportInfo(RelaxNGErrorCode.undefined_prefix, prefix);
+		}
+		if (message.startsWith("attribute name") && message.contains("incorrectly qualified")) {
+			String attrName = extractArg("attribute name ", message);
+			return new RelaxNGReportInfo(RelaxNGErrorCode.qualified_attribute, attrName);
+		}
+		if (message.startsWith("namespace URI of document element must be")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.root_bad_namespace_uri);
+		}
+		if (message.startsWith("namespace URI has wrong version")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.wrong_uri_version);
+		}
+		if (message.startsWith("URI in value of \"datatypeLibrary\" attribute must not have a fragment")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.fragment_identifier_datatype_library);
+		}
+		if (message.startsWith("fragment identifier ignored in value of \"href\"")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.href_fragment_id);
+		}
+		if (message.startsWith("URI in value of \"datatypeLibrary\" attribute must not be relative")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.relative_datatype_library);
+		}
+		if (message.endsWith("is not a valid URI reference according to RFC 2396")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.invalid_uri);
+		}
+
+		// "except" in ... contains ...
+		if (message.startsWith("\"except\" in")) {
+			if (message.contains("\"anyName\" contains \"anyName\"")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.any_name_except_contains_any_name);
+			}
+			if (message.contains("\"nsName\" contains \"anyName\"")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.ns_name_except_contains_any_name);
+			}
+			if (message.contains("\"nsName\" contains \"nsName\"")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.ns_name_except_contains_ns_name);
+			}
+		}
+
+		// Pattern-level schema errors
+		if (message.startsWith("bad recursive reference to pattern")) {
+			String patternName = extractArg("bad recursive reference to pattern ", message);
+			return new RelaxNGReportInfo(RelaxNGErrorCode.recursive_reference, patternName);
+		}
+		if (message.startsWith("recursive inclusion of URL")) {
+			String url = extractArg("recursive inclusion of URL ", message);
+			return new RelaxNGReportInfo(RelaxNGErrorCode.recursive_include, url);
+		}
+		if (message.startsWith("conflicting values of \"combine\" attribute for definition of start")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.conflict_combine_start);
+		}
+		if (message.startsWith("conflicting values of \"combine\" attribute for definition of")) {
+			String defineName = extractArg("for definition of ", message);
+			return new RelaxNGReportInfo(RelaxNGErrorCode.conflict_combine_define, defineName);
+		}
+		if (message.equals("\"start\" in \"include\" does not override anything")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.missing_start_replacement);
+		}
+		if (message.startsWith("definition of") && message.contains("in \"include\" does not override anything")) {
+			String defineName = extractArg("definition of ", message);
+			return new RelaxNGReportInfo(RelaxNGErrorCode.missing_define_replacement, defineName);
+		}
+		if (message.startsWith("interleave of \"string\" or \"data\"")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.interleave_string);
+		}
+		if (message.startsWith("group of \"string\" or \"data\"")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.group_string);
+		}
+		if (message.startsWith("repeat of \"string\" or \"data\"")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.one_or_more_string);
+		}
+		if (message.startsWith("datatype library") && message.endsWith("not recognized")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.unrecognized_datatype_library);
+		}
+		if (message.startsWith("no such builtin datatype")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.unrecognized_builtin_datatype);
+		}
+		if (message.endsWith("is not a valid value of the datatype")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.invalid_value);
+		}
+		if (message.equals("reference to non-existent parent grammar")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.parent_ref_outside_grammar);
+		}
+		if (message.equals("reference to non-existent grammar")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.ref_outside_grammar);
+		}
+		if (message.contains("builtin datatypes do not have any parameters")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.builtin_param);
+		}
+		if (message.startsWith("datatype cannot be used without parameters")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.datatype_requires_parameter);
+		}
+		if (message.startsWith("duplicate attribute")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.duplicate_attribute);
+		}
+		if (message.startsWith("overlapping element names")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.interleave_element_overlap);
+		}
+		if (message.equals("both operands of \"interleave\" contain \"text\"")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.interleave_text_overlap);
+		}
+		if (message.startsWith("attribute using \"nsName\" or \"anyName\" must be in \"oneOrMore\"")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.open_name_class_not_repeated);
+		}
+		if (message.equals("attribute must not be named \"xmlns\"")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.xmlns_attribute);
+		}
+		if (message.startsWith("attribute must not have namespace URI")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.xmlns_uri_attribute);
+		}
+
+		// Section 7.1 restriction violations
+		if (message.startsWith("an attribute pattern must not contain")) {
+			if (message.contains("contain an attribute")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.attribute_contains_attribute);
+			}
+			if (message.contains("contain an element")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.attribute_contains_element);
+			}
+		}
+		if (message.startsWith("a data pattern must not exclude")) {
+			if (message.contains("an attribute")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.data_except_contains_attribute);
+			}
+			if (message.contains("an element")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.data_except_contains_element);
+			}
+			if (message.contains("an empty")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.data_except_contains_empty);
+			}
+			if (message.contains("a group")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.data_except_contains_group);
+			}
+			if (message.contains("an interleaved")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.data_except_contains_interleave);
+			}
+			if (message.contains("a list")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.data_except_contains_list);
+			}
+			if (message.contains("a repetition")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.data_except_contains_one_or_more);
+			}
+			if (message.contains("a text")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.data_except_contains_text);
+			}
+		}
+		if (message.startsWith("a list pattern must not contain")) {
+			if (message.contains("contain an attribute")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.list_contains_attribute);
+			}
+			if (message.contains("contain an element")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.list_contains_element);
+			}
+			if (message.contains("contain a list")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.list_contains_list);
+			}
+			if (message.contains("contain a text")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.list_contains_text);
+			}
+			if (message.contains("contain an interleave")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.list_contains_interleave);
+			}
+		}
+		if (message.startsWith("a group of attributes must not be repeatable")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.one_or_more_contains_group_contains_attribute);
+		}
+		if (message.startsWith("an interleaved group of attributes must not be repeatable")) {
+			return new RelaxNGReportInfo(RelaxNGErrorCode.one_or_more_contains_interleave_contains_attribute);
+		}
+		if (message.startsWith("found element matching the prohibited path start//")) {
+			if (message.contains("start//attribute")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.start_contains_attribute);
+			}
+			if (message.contains("start//data")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.start_contains_data);
+			}
+			if (message.contains("start//empty")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.start_contains_empty);
+			}
+			if (message.contains("start//group")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.start_contains_group);
+			}
+			if (message.contains("start//interleave")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.start_contains_interleave);
+			}
+			if (message.contains("start//list")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.start_contains_list);
+			}
+			if (message.contains("start//oneOrMore")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.start_contains_one_or_more);
+			}
+			if (message.contains("start//text")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.start_contains_text);
+			}
+			if (message.contains("start//value")) {
+				return new RelaxNGReportInfo(RelaxNGErrorCode.start_contains_value);
+			}
 		}
 
 		return new RelaxNGReportInfo(RelaxNGErrorCode.to_implement);

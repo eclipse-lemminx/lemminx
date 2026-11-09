@@ -15,6 +15,7 @@ package org.eclipse.lemminx.extensions.contentmodel.model;
 import java.util.Collection;
 import java.util.Map;
 
+import org.eclipse.lemminx.dom.DOMElement;
 import org.eclipse.lemminx.services.extensions.ISharedSettingsRequest;
 import org.eclipse.lemminx.utils.StringUtils;
 
@@ -110,11 +111,23 @@ public interface CMAttributeDeclaration {
 	/**
 	 * Returns enumeration values of the declared attribute and empty collection
 	 * otherwise.
-	 * 
+	 *
 	 * @return enumeration values of the declared attribute and empty collection
 	 *         otherwise.
 	 */
 	Collection<String> getEnumerationValues();
+
+	/**
+	 * Returns enumeration values of the declared attribute filtered by the
+	 * context of the given DOM element. Grammars that need context-dependent
+	 * filtering (e.g. RelaxNG {@code datatypeLibrary}) override this method.
+	 *
+	 * @param element the DOM element providing context for filtering.
+	 * @return the filtered enumeration values.
+	 */
+	default Collection<String> getEnumerationValues(DOMElement element) {
+		return getEnumerationValues();
+	}
 
 	/**
 	 * Returns formatted documentation of the declared attribute according to
