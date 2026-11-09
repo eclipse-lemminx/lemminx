@@ -242,11 +242,111 @@ public class XMLSchemaDiagnosticsTest extends AbstractCacheBasedTest {
 				"</beans>";
 		Diagnostic d = d(2, 7, 2, 11, XMLSchemaErrorCode.cvc_complex_type_3_2_2);
 		testDiagnosticsWithCatalogFor(xml, d);
-		// Without snippet support
-		testCodeActionsFor(xml, d, ca(d, te(2, 6, 2, 14, "")));
+	}
+
+	@Test
+	public void cvc_complex_type_3_2_2_didYouMean() throws Exception {
+		String xml = "<root xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
+				" xsi:noNamespaceSchemaLocation=\"src/test/resources/xsd/inlayHintDefaultAttr.xsd\">\r\n" + //
+				"  <item statu=\"test\">\r\n" + //
+				"    <name>test</name>\r\n" + //
+				"  </item>\r\n" + //
+				"</root>";
+		Diagnostic d = d(2, 8, 2, 13, XMLSchemaErrorCode.cvc_complex_type_3_2_2);
+		testDiagnosticsFor(xml, d);
+		// Without snippet support - "Did you mean 'status'?" and "Remove attribute"
+		testCodeActionsFor(xml, d,
+				ca(d, te(2, 8, 2, 13, "status")),
+				ca(d, te(2, 7, 2, 20, "")));
 		// With snippet support
 		testCodeActionsFor(xml, d, createSnippetEditSettings(),
-				caSnippet(d, sne(2, 6, 2, 14, "$0")));
+				caSnippet(d, sne(2, 8, 2, 13, "status$0")),
+				caSnippet(d, sne(2, 7, 2, 20, "$0")));
+	}
+
+	@Test
+	public void cvc_complex_type_3_2_2_replaceWithSchemaAttribute() throws Exception {
+		// XXXX is not similar to any attribute name, so it should suggest
+		// schema attributes (status, visible) sorted alphabetically, then remove.
+		String xml = "<root xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
+				" xsi:noNamespaceSchemaLocation=\"src/test/resources/xsd/inlayHintDefaultAttr.xsd\">\r\n" + //
+				"  <item XXXX=\"\">\r\n" + //
+				"    <name>test</name>\r\n" + //
+				"  </item>\r\n" + //
+				"</root>";
+		Diagnostic d = d(2, 8, 2, 12, XMLSchemaErrorCode.cvc_complex_type_3_2_2);
+		testDiagnosticsFor(xml, d);
+		// Without snippet support - "Replace with" for each schema attr + "Remove attribute"
+		testCodeActionsFor(xml, d,
+				ca(d, te(2, 8, 2, 12, "status")),
+				ca(d, te(2, 8, 2, 12, "visible")),
+				ca(d, te(2, 7, 2, 15, "")));
+		// With snippet support
+		testCodeActionsFor(xml, d, createSnippetEditSettings(),
+				caSnippet(d, sne(2, 8, 2, 12, "status$0")),
+				caSnippet(d, sne(2, 8, 2, 12, "visible$0")),
+				caSnippet(d, sne(2, 7, 2, 15, "$0")));
+	}
+
+	@Test
+	public void cvc_complex_type_3_2_2_filterAlreadyDeclared() throws Exception {
+		// visible is already declared, so only status should be suggested
+		String xml = "<root xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
+				" xsi:noNamespaceSchemaLocation=\"src/test/resources/xsd/inlayHintDefaultAttr.xsd\">\r\n" + //
+				"  <item visible=\"false\" XXXX=\"test\">\r\n" + //
+				"    <name>test</name>\r\n" + //
+				"  </item>\r\n" + //
+				"</root>";
+		Diagnostic d = d(2, 24, 2, 28, XMLSchemaErrorCode.cvc_complex_type_3_2_2);
+		testDiagnosticsFor(xml, d);
+		// Without snippet support - only "Replace with 'status'" + "Remove attribute"
+		testCodeActionsFor(xml, d,
+				ca(d, te(2, 24, 2, 28, "status")),
+				ca(d, te(2, 23, 2, 35, "")));
+		// With snippet support
+		testCodeActionsFor(xml, d, createSnippetEditSettings(),
+				caSnippet(d, sne(2, 24, 2, 28, "status$0")),
+				caSnippet(d, sne(2, 23, 2, 35, "$0")));
+	}
+
+	@Test
+	public void cvc_complex_type_3_1() throws Exception {
+		String xml = "<root xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
+				" xsi:noNamespaceSchemaLocation=\"src/test/resources/xsd/inlayHintDefaultAttr.xsd\">\r\n" + //
+				"  <item status=\"inactive\">\r\n" + //
+				"    <name>test</name>\r\n" + //
+				"  </item>\r\n" + //
+				"</root>";
+		Diagnostic d = d(2, 15, 2, 25, XMLSchemaErrorCode.cvc_complex_type_3_1);
+		testDiagnosticsFor(xml, d);
+		// Without snippet support - replace with fixed value and remove attribute
+		testCodeActionsFor(xml, d,
+				ca(d, te(2, 16, 2, 24, "active")),
+				ca(d, te(2, 7, 2, 25, "")));
+		// With snippet support
+		testCodeActionsFor(xml, d, createSnippetEditSettings(),
+				caSnippet(d, sne(2, 16, 2, 24, "active$0")),
+				caSnippet(d, sne(2, 7, 2, 25, "$0")));
+	}
+
+	@Test
+	public void cvc_complex_type_3_1_requiredFixed() throws Exception {
+		String xml = "<root xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
+				" xsi:noNamespaceSchemaLocation=\"src/test/resources/xsd/requiredFixedAttr.xsd\">\r\n" + //
+				"  <item status=\"inactive\">\r\n" + //
+				"    <name>test</name>\r\n" + //
+				"  </item>\r\n" + //
+				"</root>";
+		Diagnostic d = d(2, 15, 2, 25, XMLSchemaErrorCode.cvc_complex_type_3_1);
+		testDiagnosticsFor(xml, d);
+		// Without snippet support - replace with fixed value (preferred for required attrs)
+		testCodeActionsFor(xml, d,
+				ca(d, te(2, 16, 2, 24, "active")),
+				ca(d, te(2, 7, 2, 25, "")));
+		// With snippet support
+		testCodeActionsFor(xml, d, createSnippetEditSettings(),
+				caSnippet(d, sne(2, 16, 2, 24, "active$0")),
+				caSnippet(d, sne(2, 7, 2, 25, "$0")));
 	}
 
 	@Test
@@ -1505,7 +1605,7 @@ public class XMLSchemaDiagnosticsTest extends AbstractCacheBasedTest {
 		testDiagnosticsFor(xml,
 				d(1, 1, 1, 20, XMLSchemaErrorCode.cvc_elt_1_a,
 						"cvc-elt.1.a: Cannot find the declaration of element 'setup:Configuration'."), //
-				d(11, 67, 11, 67, XMLSchemaErrorCode.cvc_elt_4_2,
+				d(11, 24, 11, 41, XMLSchemaErrorCode.cvc_elt_4_2,
 						"cvc-elt.4.2: Cannot resolve 'setup.p2:P2Task' to a type definition for element 'setupTask'."));
 
 		// on schema valid

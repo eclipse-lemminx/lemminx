@@ -544,6 +544,249 @@ public class XSDValidationExtensionsTest extends AbstractCacheBasedTest {
 		testDiagnosticsFor(xsd, d1, d2);
 	}
 
+	// ---------- Code action tests for new registrations ----------
+
+	@Test
+	public void s4s_elt_invalid_content_1CodeAction() throws BadLocationException {
+		String xml = "<?xml version=\"1.1\"?>\r\n" + //
+				"<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"\r\n" + //
+				"	elementFormDefault=\"qualified\" attributeFormDefault=\"unqualified\">\r\n" + //
+				"	<foo></foo>\r\n" + //
+				"</xs:schema>";
+		Diagnostic d = d(3, 2, 3, 5, XSDErrorCode.s4s_elt_invalid_content_1);
+		testDiagnosticsFor(xml, d);
+		// Without snippet support
+		testCodeActionsFor(xml, d, ca(d, te(3, 1, 3, 12, "")));
+		// With snippet support
+		testCodeActionsFor(xml, d, createSnippetEditSettings(),
+				caSnippet(d, sne(3, 1, 3, 12, "$0")));
+	}
+
+	@Test
+	public void s4s_elt_invalid_content_1CodeActionSelfClosing() throws BadLocationException {
+		String xml = "<?xml version=\"1.1\"?>\r\n" + //
+				"<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"\r\n" + //
+				"	elementFormDefault=\"qualified\" attributeFormDefault=\"unqualified\">\r\n" + //
+				"	<foo/>\r\n" + //
+				"</xs:schema>";
+		Diagnostic d = d(3, 2, 3, 5, XSDErrorCode.s4s_elt_invalid_content_1);
+		testDiagnosticsFor(xml, d);
+		// Without snippet support
+		testCodeActionsFor(xml, d, ca(d, te(3, 1, 3, 7, "")));
+		// With snippet support
+		testCodeActionsFor(xml, d, createSnippetEditSettings(),
+				caSnippet(d, sne(3, 1, 3, 7, "$0")));
+	}
+
+	@Test
+	public void s4s_att_not_allowedCodeAction() throws BadLocationException {
+		String xml = "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\r\n" + //
+				"	<xs:element name=\"foo\" bar=\"baz\" type=\"xs:string\"/>\r\n" + //
+				"</xs:schema>";
+		Diagnostic d = d(1, 24, 1, 27, XSDErrorCode.s4s_att_not_allowed);
+		// Without snippet support
+		testCodeActionsFor(xml, d, ca(d, te(1, 23, 1, 33, "")));
+		// With snippet support
+		testCodeActionsFor(xml, d, createSnippetEditSettings(),
+				caSnippet(d, sne(1, 23, 1, 33, "$0")));
+	}
+
+	@Test
+	public void emptyTargetNamespaceCodeAction() throws BadLocationException {
+		String xml = "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"\r\n" + //
+				"	targetNamespace=\"\">\r\n" + //
+				"</xs:schema>";
+		Diagnostic d = d(1, 17, 1, 19, XSDErrorCode.EmptyTargetNamespace);
+		testDiagnosticsFor(xml, d);
+		// Without snippet support
+		testCodeActionsFor(xml, d, ca(d, te(1, 0, 1, 19, "")));
+		// With snippet support
+		testCodeActionsFor(xml, d, createSnippetEditSettings(),
+				caSnippet(d, sne(1, 0, 1, 19, "$0")));
+	}
+
+	@Test
+	public void p_props_correct_2_1CodeAction() throws BadLocationException {
+		String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\r\n" + //
+				"<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\r\n" + //
+				"	<xs:complexType name=\"testType\">\r\n" + //
+				"		<xs:all>\r\n" + //
+				"			<xs:element name=\"testEle\" minOccurs=\"1\" maxOccurs=\"0\" type=\"xs:string\"/>\r\n" + //
+				"		</xs:all>\r\n" + //
+				"	</xs:complexType>\r\n" + //
+				"</xs:schema>";
+		Diagnostic d = d(4, 30, 4, 43, XSDErrorCode.p_props_correct_2_1);
+		testDiagnosticsFor(xml, d);
+		// Without snippet support
+		testCodeActionsFor(xml, d, ca(d, te(4, 29, 4, 43, "")));
+		// With snippet support
+		testCodeActionsFor(xml, d, createSnippetEditSettings(),
+				caSnippet(d, sne(4, 29, 4, 43, "$0")));
+	}
+
+	@Test
+	public void src_element_1() throws BadLocationException {
+		String xml = "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\r\n" + //
+				"	<xs:element name=\"foo\" type=\"xs:string\" default=\"a\" fixed=\"b\"/>\r\n" + //
+				"</xs:schema>";
+		Diagnostic d = d(1, 2, 1, 12, XSDErrorCode.src_element_1);
+		testDiagnosticsFor(xml, d);
+		// Without snippet support
+		testCodeActionsFor(xml, d,
+				ca(d, te(1, 40, 1, 52, "")),
+				ca(d, te(1, 52, 1, 62, "")));
+		// With snippet support
+		testCodeActionsFor(xml, d, createSnippetEditSettings(),
+				caSnippet(d, sne(1, 40, 1, 52, "$0")),
+				caSnippet(d, sne(1, 52, 1, 62, "$0")));
+	}
+
+	@Test
+	public void src_attribute_1() throws BadLocationException {
+		String xml = "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\r\n" + //
+				"	<xs:attribute name=\"foo\" type=\"xs:string\" default=\"a\" fixed=\"b\"/>\r\n" + //
+				"</xs:schema>";
+		Diagnostic d = d(1, 2, 1, 14, XSDErrorCode.src_attribute_1);
+		testDiagnosticsFor(xml, d);
+		// Without snippet support
+		testCodeActionsFor(xml, d,
+				ca(d, te(1, 42, 1, 54, "")),
+				ca(d, te(1, 54, 1, 64, "")));
+		// With snippet support
+		testCodeActionsFor(xml, d, createSnippetEditSettings(),
+				caSnippet(d, sne(1, 42, 1, 54, "$0")),
+				caSnippet(d, sne(1, 54, 1, 64, "$0")));
+	}
+
+	@Test
+	public void src_single_facet_value() throws BadLocationException {
+		String xml = "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\r\n" + //
+				"	<xs:simpleType name=\"myType\">\r\n" + //
+				"		<xs:restriction base=\"xs:integer\">\r\n" + //
+				"			<xs:minInclusive value=\"0\"/>\r\n" + //
+				"			<xs:minInclusive value=\"1\"/>\r\n" + //
+				"		</xs:restriction>\r\n" + //
+				"	</xs:simpleType>\r\n" + //
+				"</xs:schema>";
+		Diagnostic d = d(4, 4, 4, 19, XSDErrorCode.src_single_facet_value);
+		testDiagnosticsFor(xml, d);
+		// Without snippet support
+		testCodeActionsFor(xml, d, ca(d, te(4, 3, 4, 31, "")));
+		// With snippet support
+		testCodeActionsFor(xml, d, createSnippetEditSettings(),
+				caSnippet(d, sne(4, 3, 4, 31, "$0")));
+	}
+
+	// ---------- cos-applicable-facets ----------
+
+	@Test
+	public void cos_applicable_facets() throws BadLocationException {
+		String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" + //
+				"<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\r\n" + //
+				"    <xs:simpleType name=\"badFacetType\">\r\n" + //
+				"        <xs:restriction base=\"xs:string\">\r\n" + //
+				"            <xs:totalDigits value=\"5\"/>\r\n" + //
+				"        </xs:restriction>\r\n" + //
+				"    </xs:simpleType>\r\n" + //
+				"    <xs:element name=\"root\" type=\"badFacetType\"/>\r\n" + //
+				"</xs:schema>";
+		Diagnostic d = d(4, 13, 4, 27, XSDErrorCode.cos_applicable_facets);
+		testDiagnosticsFor(xml, d);
+		// Without snippet support - remove facet element
+		testCodeActionsFor(xml, d, ca(d, te(4, 12, 4, 39, "")));
+		// With snippet support
+		testCodeActionsFor(xml, d, createSnippetEditSettings(),
+				caSnippet(d, sne(4, 12, 4, 39, "$0")));
+	}
+
+	// ---------- ag-props-correct ----------
+
+	@Test
+	public void ag_props_correct_2() throws BadLocationException {
+		String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" + //
+				"<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\r\n" + //
+				"    <xs:attributeGroup name=\"myGroup\">\r\n" + //
+				"        <xs:attribute name=\"attr1\" type=\"xs:string\"/>\r\n" + //
+				"        <xs:attribute name=\"attr1\" type=\"xs:integer\"/>\r\n" + //
+				"    </xs:attributeGroup>\r\n" + //
+				"</xs:schema>";
+		Diagnostic d = d(4, 28, 4, 33, XSDErrorCode.ag_props_correct_2);
+		testDiagnosticsFor(xml, d);
+		// Without snippet support - remove duplicate element
+		testCodeActionsFor(xml, d, ca(d, te(4, 8, 4, 54, "")));
+		// With snippet support
+		testCodeActionsFor(xml, d, createSnippetEditSettings(),
+				caSnippet(d, sne(4, 8, 4, 54, "$0")));
+	}
+
+	@Test
+	public void ag_props_correct_3() throws BadLocationException {
+		String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" + //
+				"<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\r\n" + //
+				"    <xs:attributeGroup name=\"myGroup\">\r\n" + //
+				"        <xs:attribute name=\"id1\" type=\"xs:ID\"/>\r\n" + //
+				"        <xs:attribute name=\"id2\" type=\"xs:ID\"/>\r\n" + //
+				"    </xs:attributeGroup>\r\n" + //
+				"</xs:schema>";
+		Diagnostic d = d(4, 39, 4, 44, XSDErrorCode.ag_props_correct_3);
+		testDiagnosticsFor(xml, d);
+		// Without snippet support - remove 'type' attribute
+		testCodeActionsFor(xml, d, ca(d, te(4, 32, 4, 45, "")));
+		// With snippet support
+		testCodeActionsFor(xml, d, createSnippetEditSettings(),
+				caSnippet(d, sne(4, 32, 4, 45, "$0")));
+	}
+
+	// ---------- ct-props-correct ----------
+
+	@Test
+	public void ct_props_correct_5() throws BadLocationException {
+		String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" + //
+				"<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\r\n" + //
+				"    <xs:element name=\"root\">\r\n" + //
+				"        <xs:complexType>\r\n" + //
+				"            <xs:attribute name=\"id1\" type=\"xs:ID\"/>\r\n" + //
+				"            <xs:attribute name=\"id2\" type=\"xs:ID\"/>\r\n" + //
+				"        </xs:complexType>\r\n" + //
+				"    </xs:element>\r\n" + //
+				"</xs:schema>";
+		Diagnostic d = d(5, 43, 5, 48, XSDErrorCode.ct_props_correct_5);
+		testDiagnosticsFor(xml, d);
+		// Without snippet support - remove 'type' attribute
+		testCodeActionsFor(xml, d, ca(d, te(5, 36, 5, 49, "")));
+		// With snippet support
+		testCodeActionsFor(xml, d, createSnippetEditSettings(),
+				caSnippet(d, sne(5, 36, 5, 49, "$0")));
+	}
+
+	// ---------- a-props-correct ----------
+
+	@Test
+	public void a_props_correct_3() throws BadLocationException {
+		String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" + //
+				"<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\">\r\n" + //
+				"    <xs:attribute name=\"badIdAttr\" type=\"xs:ID\" default=\"defaultId\"/>\r\n" + //
+				"</xs:schema>";
+		Diagnostic d = d(2, 48, 2, 55, XSDErrorCode.a_props_correct_3);
+		testDiagnosticsFor(xml, d);
+		// Without snippet support - remove 'default' attribute
+		testCodeActionsFor(xml, d, ca(d, te(2, 47, 2, 67, "")));
+		// With snippet support
+		testCodeActionsFor(xml, d, createSnippetEditSettings(),
+				caSnippet(d, sne(2, 47, 2, 67, "$0")));
+	}
+
+	// ---------- Error range tests for new toLSPRange categories ----------
+
+	@Test
+	public void src_import_1_1() throws BadLocationException {
+		String xml = "<xs:schema xmlns:xs=\"http://www.w3.org/2001/XMLSchema\"\r\n" + //
+				"	targetNamespace=\"http://example.org\">\r\n" + //
+				"	<xs:import namespace=\"http://example.org\"/>\r\n" + //
+				"</xs:schema>";
+		testDiagnosticsFor(xml, d(2, 22, 2, 42, XSDErrorCode.src_import_1_1));
+	}
+
 	private static void testDiagnosticsFor(String xml, Diagnostic... expected) throws BadLocationException {
 		XMLAssert.testDiagnosticsFor(xml, null, null, "test.xsd", expected);
 	}

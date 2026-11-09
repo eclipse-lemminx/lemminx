@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:attributeGroup name="myGroup">
+        <xs:attribute name="id1" type="xs:ID"/>
+        <xs:attribute name="id2" type="xs:ID"/>
+    </xs:attributeGroup>
+</xs:schema>

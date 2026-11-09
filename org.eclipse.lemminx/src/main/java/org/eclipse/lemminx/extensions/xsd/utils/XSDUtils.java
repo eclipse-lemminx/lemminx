@@ -54,6 +54,11 @@ public class XSDUtils {
 	public static final String SCHEMA_LOCATION_ATTR = "schemaLocation";
 	public static final String TARGET_NAMESPACE_ATTR = "targetNamespace";
 	public static final String NAMESPACE_ATTR = "namespace";
+	public static final String NAME_ATTR = "name";
+	public static final String TYPE_ATTR = "type";
+	public static final String DEFAULT_ATTR = "default";
+	public static final String FIXED_ATTR = "fixed";
+	public static final String ATTRIBUTE_TAG = "attribute";
 
 	public static final String XS_IMPORT_TAG = "xs:import";
 	public static final String XS_SCHEMA_TAG = "xs:schema";
