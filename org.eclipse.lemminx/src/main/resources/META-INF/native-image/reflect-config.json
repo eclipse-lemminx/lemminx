@@ -2557,5 +2557,11 @@
 			"name": "allocateInstance",
 			"parameterTypes": ["java.lang.Class"]
 		}]
+	},
+	{
+		"name": "com.thaiopensource.datatype.xsd.DatatypeLibraryImpl",
+		"fields": [{
+			"name": "typeMap"
+		}]
 	}
 ]

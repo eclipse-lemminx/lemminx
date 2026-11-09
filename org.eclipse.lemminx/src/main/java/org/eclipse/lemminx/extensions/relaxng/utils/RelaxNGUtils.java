@@ -46,13 +46,47 @@ import com.google.common.base.Objects;
 public class RelaxNGUtils {
 
 	public static final String GRAMMAR_TAG = "grammar";
+	public static final String DATA_TAG = "data";
+	public static final String VALUE_TAG = "value";
 	private static final String REF_TAG = "ref";
 	private static final String INCLUDE_TAG = "include";
 	private static final String EXTERNAL_REF_TAG = "externalRef";
 
 	private static final String DEFINE_TAG = "define";
 	public static final String NAME_ATTR = "name";
-	private static final String HREF_ATTR = "href";
+	public static final String HREF_ATTR = "href";
+	public static final String TYPE_ATTR = "type";
+	public static final String DATATYPE_LIBRARY_ATTR = "datatypeLibrary";
+
+	public static final String[] PATTERN_ELEMENTS = { "element", "attribute", "group", "interleave", "choice",
+			"optional", "zeroOrMore", "oneOrMore", "list", "mixed", "ref", "parentRef", "empty", "text",
+			"value", "data", "notAllowed", "externalRef", "grammar" };
+
+	public static final String[] GRAMMAR_ELEMENTS = { "define", "start", "include", "div" };
+
+	public static final String[] ANYNAME_EXCEPT_ELEMENTS = { "nsName", "name" };
+
+	public static final String[] NSNAME_EXCEPT_ELEMENTS = { "name" };
+
+	/**
+	 * Returns the effective {@code datatypeLibrary} attribute value for the
+	 * given element by walking up the DOM ancestors. Returns {@code null} if no
+	 * ancestor defines a {@code datatypeLibrary} attribute.
+	 *
+	 * @param element the element to start from.
+	 * @return the effective datatypeLibrary URI, or {@code null}.
+	 */
+	public static String getEffectiveDatatypeLibrary(DOMElement element) {
+		DOMNode current = element;
+		while (current != null && current.isElement()) {
+			String value = ((DOMElement) current).getAttribute(DATATYPE_LIBRARY_ATTR);
+			if (value != null) {
+				return value;
+			}
+			current = current.getParentNode();
+		}
+		return null;
+	}
 
 	public static FilesChangedTracker createFilesChangedTracker(RelaxNGGrammar grammar) {
 		FilesChangedTracker tracker = new FilesChangedTracker();

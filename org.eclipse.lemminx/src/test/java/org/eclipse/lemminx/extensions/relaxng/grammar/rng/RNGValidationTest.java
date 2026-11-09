@@ -225,6 +225,7 @@ public class RNGValidationTest extends AbstractCacheBasedTest {
 				d(9, 3, 8, RelaxNGErrorCode.duplicate_start));
 	}
 
+	@Test
 	public void duplicate_define() throws Exception {
 		String xml = "<grammar xmlns=\"http://relaxng.org/ns/structure/1.0\"\r\n" + //
 				"  datatypeLibrary=\"http://www.w3.org/2001/XMLSchema-datatypes\">\r\n" + //
