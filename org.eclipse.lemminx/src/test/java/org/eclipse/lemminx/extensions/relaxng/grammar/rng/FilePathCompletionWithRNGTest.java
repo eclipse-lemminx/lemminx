@@ -36,8 +36,8 @@ public class FilePathCompletionWithRNGTest extends AbstractFilePathCompletionTes
 				+ "	<include href=\"|\" />\n"
 				+ "</grammar>";
 		CompletionItem[] items = getCompletionItemList(2, 16, 16, "folderA", "folderB", "folderC", "NestedA",
-				"main.xsd", "main.dtd", "main.xml", "main.xsl");
-		testCompletionFor(xml, 8, items);
+				"main.xsd", "main.dtd", "main.xml", "main.xsl", "main.rnc");
+		testCompletionFor(xml, 9, items);
 	}
 
 	@Test
@@ -47,7 +47,7 @@ public class FilePathCompletionWithRNGTest extends AbstractFilePathCompletionTes
 				+ "	<externalRef href=\"|\" />\n"
 				+ "</grammar>";
 		CompletionItem[] items = getCompletionItemList(2, 20, 20, "folderA", "folderB", "folderC", "NestedA",
-				"main.xsd", "main.dtd", "main.xml", "main.xsl");
-		testCompletionFor(xml, 8, items);
+				"main.xsd", "main.dtd", "main.xml", "main.xsl", "main.rnc");
+		testCompletionFor(xml, 9, items);
 	}
 }

@@ -129,6 +129,20 @@ public class XMLCompletionSettings {
 	}
 
 	/**
+	 * Returns whether the client supports the given markup kind in completion
+	 * item documentation.
+	 *
+	 * @param kind the markup kind (e.g. {@code MarkupKind.MARKDOWN}).
+	 * @return {@code true} if the kind is supported, {@code false} otherwise.
+	 */
+	public boolean canSupportMarkupKind(String kind) {
+		return completionCapabilities != null
+				&& completionCapabilities.getCompletionItem() != null
+				&& completionCapabilities.getCompletionItem().getDocumentationFormat() != null
+				&& completionCapabilities.getCompletionItem().getDocumentationFormat().contains(kind);
+	}
+
+	/**
 	 * Merge only the given completion settings (and not the capability) in the
 	 * settings.
 	 *

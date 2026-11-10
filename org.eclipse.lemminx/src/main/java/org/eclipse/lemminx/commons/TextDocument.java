@@ -13,6 +13,7 @@
 package org.eclipse.lemminx.commons;
 
 import java.util.List;
+import java.util.function.Predicate;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -171,6 +172,63 @@ public class TextDocument extends TextDocumentItem {
 		return lineDelimiter;
 	}
 
+	/**
+	 * Returns the {@link Range} of the word surrounding the given offset, where
+	 * word boundaries are determined by the provided character predicate.
+	 *
+	 * <p>Scans left from {@code textOffset} to find the start of the word, and
+	 * right to find the end. Characters for which {@code isValidChar} returns
+	 * {@code true} are considered part of the word.</p>
+	 *
+	 * <p>Use cases:</p>
+	 * <ul>
+	 *   <li>RNC hover/rename: finding the identifier under the cursor
+	 *       (letters, digits, {@code _}, {@code -}, {@code .})</li>
+	 *   <li>Any language service that needs a word range with custom word
+	 *       boundary rules</li>
+	 * </ul>
+	 *
+	 * @param textOffset  the offset within the document text.
+	 * @param isValidChar predicate that returns {@code true} for characters
+	 *                    that belong to the word.
+	 * @return the range of the word, or {@code null} if the offset is invalid.
+	 */
+	public Range getWordRangeAt(int textOffset, Predicate<Character> isValidChar) {
+		try {
+			int start = StringUtils.findStartWord(textSequence, textOffset, isValidChar);
+			if (start == -1) {
+				start = textOffset;
+			}
+			int end = StringUtils.findEndWord(textSequence, textOffset, isValidChar);
+			if (end == -1) {
+				end = textOffset;
+			}
+			return new Range(positionAt(start), positionAt(end));
+		} catch (BadLocationException e) {
+			return null;
+		}
+	}
+
+	/**
+	 * Returns the {@link Range} of the word at the given offset, where word
+	 * boundaries are determined by the provided regex pattern.
+	 *
+	 * <p>Extracts the line text up to the cursor, then uses the regex to find
+	 * the last match that ends exactly at the cursor position. This variant
+	 * is useful when word boundaries follow a regex pattern rather than a
+	 * simple character predicate.</p>
+	 *
+	 * <p>Use cases:</p>
+	 * <ul>
+	 *   <li>XML element name detection: using {@code ELEMENT_NAME_REGEX} to
+	 *       match qualified names including namespace prefixes</li>
+	 * </ul>
+	 *
+	 * @param textOffset     the offset within the document text.
+	 * @param wordDefinition regex pattern that matches valid words.
+	 * @return the range of the matched word, or {@code null} if the offset is
+	 *         invalid.
+	 */
 	public Range getWordRangeAt(int textOffset, Pattern wordDefinition) {
 		try {
 			Position pos = positionAt(textOffset);

@@ -1,0 +1,229 @@
+{
+  "": {
+    "description": "Built-in RELAX NG datatypes",
+    "string": {
+      "markdown": "**string**\n\nBuilt-in RELAX NG datatype. Compares values as-is (whitespace-sensitive).\n\nSee [RELAX NG Spec](https://relaxng.org/spec-20011203.html#data-pattern)",
+      "plaintext": "string\n\nBuilt-in RELAX NG datatype. Compares values as-is (whitespace-sensitive)."
+    },
+    "token": {
+      "markdown": "**token**\n\nBuilt-in RELAX NG datatype. Normalizes whitespace before comparison (leading/trailing stripped, internal collapsed to single space).\n\nSee [RELAX NG Spec](https://relaxng.org/spec-20011203.html#data-pattern)",
+      "plaintext": "token\n\nBuilt-in RELAX NG datatype. Normalizes whitespace before comparison."
+    }
+  },
+  "http://relaxng.org/ns/compatibility/datatypes/1.0": {
+    "description": "XML compatibility datatypes",
+    "defaultPrefix": "compat",
+    "ID": {
+      "markdown": "**ID**\n\nXML compatibility datatype. Unique identifier for an element.\n\nSee [RELAX NG DTD Compatibility](https://relaxng.org/compatibility-20011203.html)",
+      "plaintext": "ID\n\nXML compatibility datatype. Unique identifier for an element."
+    },
+    "IDREF": {
+      "markdown": "**IDREF**\n\nXML compatibility datatype. Reference to an element's ID.\n\nSee [RELAX NG DTD Compatibility](https://relaxng.org/compatibility-20011203.html)",
+      "plaintext": "IDREF\n\nXML compatibility datatype. Reference to an element's ID."
+    },
+    "IDREFS": {
+      "markdown": "**IDREFS**\n\nXML compatibility datatype. Space-separated list of ID references.\n\nSee [RELAX NG DTD Compatibility](https://relaxng.org/compatibility-20011203.html)",
+      "plaintext": "IDREFS\n\nXML compatibility datatype. Space-separated list of ID references."
+    }
+  },
+  "http://www.w3.org/2001/XMLSchema-datatypes": {
+    "description": "W3C XML Schema datatypes",
+    "defaultPrefix": "xsd",
+    "anySimpleType": {
+      "markdown": "**anySimpleType**\n\nBase type of all simple types.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#anySimpleType)",
+      "plaintext": "anySimpleType\n\nBase type of all simple types.\n\nSee https://www.w3.org/TR/xmlschema11-2/#anySimpleType"
+    },
+    "anyAtomicType": {
+      "markdown": "**anyAtomicType**\n\nBase type of all atomic types.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#anyAtomicType)",
+      "plaintext": "anyAtomicType\n\nBase type of all atomic types.\n\nSee https://www.w3.org/TR/xmlschema11-2/#anyAtomicType"
+    },
+    "string": {
+      "markdown": "**string**\n\nFinite-length sequence of characters.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#string)",
+      "plaintext": "string\n\nFinite-length sequence of characters.\n\nSee https://www.w3.org/TR/xmlschema11-2/#string"
+    },
+    "boolean": {
+      "markdown": "**boolean**\n\nBinary-valued logic: `true`, `false`, `1`, `0`.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#boolean)",
+      "plaintext": "boolean\n\nBinary-valued logic: true, false, 1, 0.\n\nSee https://www.w3.org/TR/xmlschema11-2/#boolean"
+    },
+    "decimal": {
+      "markdown": "**decimal**\n\nArbitrary-precision decimal number.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#decimal)",
+      "plaintext": "decimal\n\nArbitrary-precision decimal number.\n\nSee https://www.w3.org/TR/xmlschema11-2/#decimal"
+    },
+    "float": {
+      "markdown": "**float**\n\nIEEE single-precision 32-bit floating point.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#float)",
+      "plaintext": "float\n\nIEEE single-precision 32-bit floating point.\n\nSee https://www.w3.org/TR/xmlschema11-2/#float"
+    },
+    "double": {
+      "markdown": "**double**\n\nIEEE double-precision 64-bit floating point.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#double)",
+      "plaintext": "double\n\nIEEE double-precision 64-bit floating point.\n\nSee https://www.w3.org/TR/xmlschema11-2/#double"
+    },
+    "duration": {
+      "markdown": "**duration**\n\nDuration of time, e.g. `P1Y2M3DT10H30M`.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#duration)",
+      "plaintext": "duration\n\nDuration of time, e.g. P1Y2M3DT10H30M.\n\nSee https://www.w3.org/TR/xmlschema11-2/#duration"
+    },
+    "dateTime": {
+      "markdown": "**dateTime**\n\nDate and time, e.g. `2024-01-15T10:30:00`.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#dateTime)",
+      "plaintext": "dateTime\n\nDate and time, e.g. 2024-01-15T10:30:00.\n\nSee https://www.w3.org/TR/xmlschema11-2/#dateTime"
+    },
+    "time": {
+      "markdown": "**time**\n\nTime of day, e.g. `10:30:00`.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#time)",
+      "plaintext": "time\n\nTime of day, e.g. 10:30:00.\n\nSee https://www.w3.org/TR/xmlschema11-2/#time"
+    },
+    "date": {
+      "markdown": "**date**\n\nCalendar date, e.g. `2024-01-15`.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#date)",
+      "plaintext": "date\n\nCalendar date, e.g. 2024-01-15.\n\nSee https://www.w3.org/TR/xmlschema11-2/#date"
+    },
+    "gYearMonth": {
+      "markdown": "**gYearMonth**\n\nYear and month, e.g. `2024-01`.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#gYearMonth)",
+      "plaintext": "gYearMonth\n\nYear and month, e.g. 2024-01.\n\nSee https://www.w3.org/TR/xmlschema11-2/#gYearMonth"
+    },
+    "gYear": {
+      "markdown": "**gYear**\n\nYear, e.g. `2024`.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#gYear)",
+      "plaintext": "gYear\n\nYear, e.g. 2024.\n\nSee https://www.w3.org/TR/xmlschema11-2/#gYear"
+    },
+    "gMonthDay": {
+      "markdown": "**gMonthDay**\n\nMonth and day, e.g. `--01-15`.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#gMonthDay)",
+      "plaintext": "gMonthDay\n\nMonth and day, e.g. --01-15.\n\nSee https://www.w3.org/TR/xmlschema11-2/#gMonthDay"
+    },
+    "gDay": {
+      "markdown": "**gDay**\n\nDay of month, e.g. `---15`.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#gDay)",
+      "plaintext": "gDay\n\nDay of month, e.g. ---15.\n\nSee https://www.w3.org/TR/xmlschema11-2/#gDay"
+    },
+    "gMonth": {
+      "markdown": "**gMonth**\n\nMonth, e.g. `--01`.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#gMonth)",
+      "plaintext": "gMonth\n\nMonth, e.g. --01.\n\nSee https://www.w3.org/TR/xmlschema11-2/#gMonth"
+    },
+    "hexBinary": {
+      "markdown": "**hexBinary**\n\nHex-encoded binary data.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#hexBinary)",
+      "plaintext": "hexBinary\n\nHex-encoded binary data.\n\nSee https://www.w3.org/TR/xmlschema11-2/#hexBinary"
+    },
+    "base64Binary": {
+      "markdown": "**base64Binary**\n\nBase64-encoded binary data.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#base64Binary)",
+      "plaintext": "base64Binary\n\nBase64-encoded binary data.\n\nSee https://www.w3.org/TR/xmlschema11-2/#base64Binary"
+    },
+    "anyURI": {
+      "markdown": "**anyURI**\n\nURI reference (absolute or relative).\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#anyURI)",
+      "plaintext": "anyURI\n\nURI reference (absolute or relative).\n\nSee https://www.w3.org/TR/xmlschema11-2/#anyURI"
+    },
+    "QName": {
+      "markdown": "**QName**\n\nNamespace-qualified name, e.g. `ns:local`.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#QName)",
+      "plaintext": "QName\n\nNamespace-qualified name, e.g. ns:local.\n\nSee https://www.w3.org/TR/xmlschema11-2/#QName"
+    },
+    "NOTATION": {
+      "markdown": "**NOTATION**\n\nXML notation name.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#NOTATION)",
+      "plaintext": "NOTATION\n\nXML notation name.\n\nSee https://www.w3.org/TR/xmlschema11-2/#NOTATION"
+    },
+    "normalizedString": {
+      "markdown": "**normalizedString**\n\nString with no carriage return, line feed, or tab characters.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#normalizedString)",
+      "plaintext": "normalizedString\n\nString with no carriage return, line feed, or tab characters.\n\nSee https://www.w3.org/TR/xmlschema11-2/#normalizedString"
+    },
+    "token": {
+      "markdown": "**token**\n\nNormalized string with no leading/trailing spaces and no internal sequences of two or more spaces.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#token)",
+      "plaintext": "token\n\nNormalized string with no leading/trailing spaces and no internal sequences of two or more spaces.\n\nSee https://www.w3.org/TR/xmlschema11-2/#token"
+    },
+    "language": {
+      "markdown": "**language**\n\nLanguage tag as defined by RFC 3066, e.g. `en`, `fr-FR`.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#language)",
+      "plaintext": "language\n\nLanguage tag as defined by RFC 3066, e.g. en, fr-FR.\n\nSee https://www.w3.org/TR/xmlschema11-2/#language"
+    },
+    "NMTOKEN": {
+      "markdown": "**NMTOKEN**\n\nXML name token (letters, digits, hyphens, underscores, periods, colons).\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#NMTOKEN)",
+      "plaintext": "NMTOKEN\n\nXML name token.\n\nSee https://www.w3.org/TR/xmlschema11-2/#NMTOKEN"
+    },
+    "NMTOKENS": {
+      "markdown": "**NMTOKENS**\n\nSpace-separated list of NMTOKEN values.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#NMTOKENS)",
+      "plaintext": "NMTOKENS\n\nSpace-separated list of NMTOKEN values.\n\nSee https://www.w3.org/TR/xmlschema11-2/#NMTOKENS"
+    },
+    "Name": {
+      "markdown": "**Name**\n\nXML name (starts with letter or underscore, may contain letters, digits, hyphens, underscores, periods, colons).\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#Name)",
+      "plaintext": "Name\n\nXML name.\n\nSee https://www.w3.org/TR/xmlschema11-2/#Name"
+    },
+    "NCName": {
+      "markdown": "**NCName**\n\nNon-colonized XML name (no colon allowed).\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#NCName)",
+      "plaintext": "NCName\n\nNon-colonized XML name (no colon allowed).\n\nSee https://www.w3.org/TR/xmlschema11-2/#NCName"
+    },
+    "ID": {
+      "markdown": "**ID**\n\nUnique identifier for an element within a document.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#ID)",
+      "plaintext": "ID\n\nUnique identifier for an element within a document.\n\nSee https://www.w3.org/TR/xmlschema11-2/#ID"
+    },
+    "IDREF": {
+      "markdown": "**IDREF**\n\nReference to an ID value within the same document.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#IDREF)",
+      "plaintext": "IDREF\n\nReference to an ID value within the same document.\n\nSee https://www.w3.org/TR/xmlschema11-2/#IDREF"
+    },
+    "IDREFS": {
+      "markdown": "**IDREFS**\n\nSpace-separated list of IDREF values.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#IDREFS)",
+      "plaintext": "IDREFS\n\nSpace-separated list of IDREF values.\n\nSee https://www.w3.org/TR/xmlschema11-2/#IDREFS"
+    },
+    "ENTITY": {
+      "markdown": "**ENTITY**\n\nName of an unparsed entity declared in the DTD.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#ENTITY)",
+      "plaintext": "ENTITY\n\nName of an unparsed entity declared in the DTD.\n\nSee https://www.w3.org/TR/xmlschema11-2/#ENTITY"
+    },
+    "ENTITIES": {
+      "markdown": "**ENTITIES**\n\nSpace-separated list of ENTITY values.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#ENTITIES)",
+      "plaintext": "ENTITIES\n\nSpace-separated list of ENTITY values.\n\nSee https://www.w3.org/TR/xmlschema11-2/#ENTITIES"
+    },
+    "integer": {
+      "markdown": "**integer**\n\nArbitrary-precision integer (no fractional part).\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#integer)",
+      "plaintext": "integer\n\nArbitrary-precision integer.\n\nSee https://www.w3.org/TR/xmlschema11-2/#integer"
+    },
+    "nonPositiveInteger": {
+      "markdown": "**nonPositiveInteger**\n\nInteger less than or equal to 0.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#nonPositiveInteger)",
+      "plaintext": "nonPositiveInteger\n\nInteger less than or equal to 0.\n\nSee https://www.w3.org/TR/xmlschema11-2/#nonPositiveInteger"
+    },
+    "negativeInteger": {
+      "markdown": "**negativeInteger**\n\nInteger less than 0.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#negativeInteger)",
+      "plaintext": "negativeInteger\n\nInteger less than 0.\n\nSee https://www.w3.org/TR/xmlschema11-2/#negativeInteger"
+    },
+    "long": {
+      "markdown": "**long**\n\nInteger in range [-9223372036854775808, 9223372036854775807].\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#long)",
+      "plaintext": "long\n\nInteger in range [-9223372036854775808, 9223372036854775807].\n\nSee https://www.w3.org/TR/xmlschema11-2/#long"
+    },
+    "int": {
+      "markdown": "**int**\n\nInteger in range [-2147483648, 2147483647].\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#int)",
+      "plaintext": "int\n\nInteger in range [-2147483648, 2147483647].\n\nSee https://www.w3.org/TR/xmlschema11-2/#int"
+    },
+    "short": {
+      "markdown": "**short**\n\nInteger in range [-32768, 32767].\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#short)",
+      "plaintext": "short\n\nInteger in range [-32768, 32767].\n\nSee https://www.w3.org/TR/xmlschema11-2/#short"
+    },
+    "byte": {
+      "markdown": "**byte**\n\nInteger in range [-128, 127].\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#byte)",
+      "plaintext": "byte\n\nInteger in range [-128, 127].\n\nSee https://www.w3.org/TR/xmlschema11-2/#byte"
+    },
+    "nonNegativeInteger": {
+      "markdown": "**nonNegativeInteger**\n\nInteger greater than or equal to 0.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#nonNegativeInteger)",
+      "plaintext": "nonNegativeInteger\n\nInteger greater than or equal to 0.\n\nSee https://www.w3.org/TR/xmlschema11-2/#nonNegativeInteger"
+    },
+    "unsignedLong": {
+      "markdown": "**unsignedLong**\n\nInteger in range [0, 18446744073709551615].\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#unsignedLong)",
+      "plaintext": "unsignedLong\n\nInteger in range [0, 18446744073709551615].\n\nSee https://www.w3.org/TR/xmlschema11-2/#unsignedLong"
+    },
+    "unsignedInt": {
+      "markdown": "**unsignedInt**\n\nInteger in range [0, 4294967295].\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#unsignedInt)",
+      "plaintext": "unsignedInt\n\nInteger in range [0, 4294967295].\n\nSee https://www.w3.org/TR/xmlschema11-2/#unsignedInt"
+    },
+    "unsignedShort": {
+      "markdown": "**unsignedShort**\n\nInteger in range [0, 65535].\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#unsignedShort)",
+      "plaintext": "unsignedShort\n\nInteger in range [0, 65535].\n\nSee https://www.w3.org/TR/xmlschema11-2/#unsignedShort"
+    },
+    "unsignedByte": {
+      "markdown": "**unsignedByte**\n\nInteger in range [0, 255].\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#unsignedByte)",
+      "plaintext": "unsignedByte\n\nInteger in range [0, 255].\n\nSee https://www.w3.org/TR/xmlschema11-2/#unsignedByte"
+    },
+    "positiveInteger": {
+      "markdown": "**positiveInteger**\n\nInteger greater than 0.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#positiveInteger)",
+      "plaintext": "positiveInteger\n\nInteger greater than 0.\n\nSee https://www.w3.org/TR/xmlschema11-2/#positiveInteger"
+    },
+    "yearMonthDuration": {
+      "markdown": "**yearMonthDuration**\n\nDuration restricted to years and months, e.g. `P1Y2M`.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#yearMonthDuration)",
+      "plaintext": "yearMonthDuration\n\nDuration restricted to years and months.\n\nSee https://www.w3.org/TR/xmlschema11-2/#yearMonthDuration"
+    },
+    "dayTimeDuration": {
+      "markdown": "**dayTimeDuration**\n\nDuration restricted to days, hours, minutes, seconds, e.g. `P3DT10H30M`.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#dayTimeDuration)",
+      "plaintext": "dayTimeDuration\n\nDuration restricted to days, hours, minutes, seconds.\n\nSee https://www.w3.org/TR/xmlschema11-2/#dayTimeDuration"
+    },
+    "dateTimeStamp": {
+      "markdown": "**dateTimeStamp**\n\nDate and time with required timezone, e.g. `2024-01-15T10:30:00Z`.\n\nSee [XSD Spec](https://www.w3.org/TR/xmlschema11-2/#dateTimeStamp)",
+      "plaintext": "dateTimeStamp\n\nDate and time with required timezone.\n\nSee https://www.w3.org/TR/xmlschema11-2/#dateTimeStamp"
+    }
+  }
+}

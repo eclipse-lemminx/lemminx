@@ -35,6 +35,7 @@ public class SharedSettings {
 	private boolean actionableNotificationSupport;
 	private boolean openSettingsCommandSupport;
 	private boolean bindingWizardSupport;
+	private boolean triggerSuggestCommandSupport;
 
 	public SharedSettings() {
 		this.completion = new XMLCompletionSettings();
@@ -72,6 +73,7 @@ public class SharedSettings {
 		this.actionableNotificationSupport = newSettings.isActionableNotificationSupport();
 		this.openSettingsCommandSupport = newSettings.isOpenSettingsCommandSupport();
 		this.bindingWizardSupport = newSettings.isBindingWizardSupport();
+		this.triggerSuggestCommandSupport = newSettings.isTriggerSuggestCommandSupport();
 		this.linkedEditingEnabled = newSettings.isLinkedEditingEnabled();
 	}
 
@@ -185,6 +187,14 @@ public class SharedSettings {
 	 */
 	public void setBindingWizardSupport(boolean bindingWizardSupport) {
 		this.bindingWizardSupport = bindingWizardSupport;
+	}
+
+	public boolean isTriggerSuggestCommandSupport() {
+		return triggerSuggestCommandSupport;
+	}
+
+	public void setTriggerSuggestCommandSupport(boolean triggerSuggestCommandSupport) {
+		this.triggerSuggestCommandSupport = triggerSuggestCommandSupport;
 	}
 
 	public void setLinkedEditingEnabled(boolean linkedEditingEnabled) {

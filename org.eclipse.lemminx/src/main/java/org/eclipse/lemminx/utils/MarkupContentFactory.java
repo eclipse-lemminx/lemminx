@@ -57,7 +57,7 @@ public class MarkupContentFactory {
 
 	/**
 	 * Create the hover from the given markup content list.
-	 * 
+	 *
 	 * @param values the list of documentation values
 	 * @return the hover from the given markup content list.
 	 */

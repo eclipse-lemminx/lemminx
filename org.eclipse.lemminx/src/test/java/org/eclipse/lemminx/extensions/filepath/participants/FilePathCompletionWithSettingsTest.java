@@ -31,8 +31,8 @@ public class FilePathCompletionWithSettingsTest extends AbstractFilePathCompleti
 	public void empty() throws BadLocationException {
 		String xml = "<a path=\"|\">";
 		CompletionItem[] items = getCompletionItemList(0, 9, 9, "folderA", "folderB", "folderC", "NestedA", "main.xml",
-				"main.xsd", "main.xsl", "main.dtd");
-		testCompletionFor(xml, 8, items);
+				"main.xsd", "main.xsl", "main.dtd", "main.rnc");
+		testCompletionFor(xml, 9, items);
 	}
 
 	@Test
@@ -40,8 +40,8 @@ public class FilePathCompletionWithSettingsTest extends AbstractFilePathCompleti
 		String xml = "<a path=\"./|\">";
 		CompletionItem[] items = getCompletionItemList(0, 11, 11, "folderA", "folderB", "folderC", "NestedA",
 				"main.xml",
-				"main.xsd", "main.xsl", "main.dtd");
-		testCompletionFor(xml, 8, items);
+				"main.xsd", "main.xsl", "main.dtd", "main.rnc");
+		testCompletionFor(xml, 9, items);
 	}
 
 	@Test
@@ -52,8 +52,8 @@ public class FilePathCompletionWithSettingsTest extends AbstractFilePathCompleti
 		String xml = "<a path=\".\\|\">";
 		CompletionItem[] items = getCompletionItemList(0, 11, 11, "folderA", "folderB", "folderC", "NestedA",
 				"main.xml",
-				"main.xsd", "main.xsl", "main.dtd");
-		testCompletionFor(xml, 8, items);
+				"main.xsd", "main.xsl", "main.dtd", "main.rnc");
+		testCompletionFor(xml, 9, items);
 	}
 
 	@Test
@@ -76,8 +76,8 @@ public class FilePathCompletionWithSettingsTest extends AbstractFilePathCompleti
 	@Test
 	public void testFilePathCompletionFolderB() throws BadLocationException {
 		String xml = "<a path=\"folderB/|\">";
-		CompletionItem[] items = getCompletionItemList(0, 17, 17, "xsdB1.xsd", "xmlB1.xml", "dtdB1.dtd");
-		testCompletionFor(xml, 3, items);
+		CompletionItem[] items = getCompletionItemList(0, 17, 17, "xsdB1.xsd", "xmlB1.xml", "dtdB1.dtd", "rncB1.rnc");
+		testCompletionFor(xml, 4, items);
 	}
 
 	@Test
@@ -86,8 +86,8 @@ public class FilePathCompletionWithSettingsTest extends AbstractFilePathCompleti
 			return;
 		}
 		String xml = "<a path=\"folderB\\|\">";
-		CompletionItem[] items = getCompletionItemList(0, 17, 17, "xsdB1.xsd", "xmlB1.xml", "dtdB1.dtd");
-		testCompletionFor(xml, 3, items);
+		CompletionItem[] items = getCompletionItemList(0, 17, 17, "xsdB1.xsd", "xmlB1.xml", "dtdB1.dtd", "rncB1.rnc");
+		testCompletionFor(xml, 4, items);
 	}
 
 	@Test
@@ -96,8 +96,8 @@ public class FilePathCompletionWithSettingsTest extends AbstractFilePathCompleti
 		int filePathLength = filePath.length();
 		String xml = "<a path=\"" + filePath + "|\">";
 		CompletionItem[] items = getCompletionItemList(0, 9 + filePathLength, 9 + filePathLength, "xsdB1.xsd",
-				"xmlB1.xml", "dtdB1.dtd");
-		testCompletionFor(xml, 3, items);
+				"xmlB1.xml", "dtdB1.dtd", "rncB1.rnc");
+		testCompletionFor(xml, 4, items);
 	}
 
 	@Test
@@ -109,8 +109,8 @@ public class FilePathCompletionWithSettingsTest extends AbstractFilePathCompleti
 		int filePathLength = filePath.length();
 		String xml = "<a path=\"" + filePath + "|\">";
 		CompletionItem[] items = getCompletionItemList(0, 9 + filePathLength, 9 + filePathLength, "xsdB1.xsd",
-				"xmlB1.xml", "dtdB1.dtd");
-		testCompletionFor(xml, 3, items);
+				"xmlB1.xml", "dtdB1.dtd", "rncB1.rnc");
+		testCompletionFor(xml, 4, items);
 	}
 
 	@Test
@@ -120,8 +120,8 @@ public class FilePathCompletionWithSettingsTest extends AbstractFilePathCompleti
 		int filePathLength = filePath.length();
 		String xml = "<a path=\"" + filePath + "|\">";
 		CompletionItem[] items = getCompletionItemList(0, 9 + filePathLength, 9 + filePathLength, "xsdB1.xsd",
-				"xmlB1.xml", "dtdB1.dtd");
-		testCompletionFor(xml, 3, items);
+				"xmlB1.xml", "dtdB1.dtd", "rncB1.rnc");
+		testCompletionFor(xml, 4, items);
 	}
 
 	@Test
@@ -291,8 +291,8 @@ public class FilePathCompletionWithSettingsTest extends AbstractFilePathCompleti
 	public void beforeFirstPath() throws BadLocationException {
 		String xml = "<a paths=\"| NestedA\">";
 		CompletionItem[] items = getCompletionItemList(0, 10, 10, "folderA", "folderB", "folderC", "NestedA", "main.xml",
-				"main.xsd", "main.xsl", "main.dtd");
-		testCompletionFor(xml, 8, items);
+				"main.xsd", "main.xsl", "main.dtd", "main.rnc");
+		testCompletionFor(xml, 9, items);
 	}
 
 	
@@ -300,8 +300,8 @@ public class FilePathCompletionWithSettingsTest extends AbstractFilePathCompleti
 	public void afterFirstPath() throws BadLocationException {
 		String xml = "<a paths=\"NestedA |\">";
 		CompletionItem[] items = getCompletionItemList(0, 18, 18, "folderA", "folderB", "folderC", "NestedA", "main.xml",
-				"main.xsd", "main.xsl", "main.dtd");
-		testCompletionFor(xml, 8, items);
+				"main.xsd", "main.xsl", "main.dtd", "main.rnc");
+		testCompletionFor(xml, 9, items);
 	}
 
 }

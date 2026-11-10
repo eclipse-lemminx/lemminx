@@ -1,0 +1,3 @@
+start = element doc { paragraph+ }
+
+paragraph = element p { text }
