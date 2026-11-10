@@ -32,24 +32,24 @@ public class FilePathCompletionWithXMLModelTest extends AbstractFilePathCompleti
 	public void empty() throws BadLocationException {
 		String xml = "<?xml-model href=\"|\"?>";
 		CompletionItem[] items = getCompletionItemList(0, 18, 18, "folderA", "folderB", "folderC", "NestedA",
-				"main.dtd", "main.xsd");
-		testCompletionFor(xml, 6, items);
+				"main.dtd", "main.xsd", "main.rnc");
+		testCompletionFor(xml, 7, items);
 	}
 
 	@Test
 	public void dotSlash() throws BadLocationException {
 		String xml = "<?xml-model href=\"./|\"?>";
 		CompletionItem[] items = getCompletionItemList(0, 20, 20, "folderA", "folderB", "folderC", "NestedA",
-				"main.dtd", "main.xsd");
-		testCompletionFor(xml, 6, items);
+				"main.dtd", "main.xsd", "main.rnc");
+		testCompletionFor(xml, 7, items);
 	}
 
 	@Test
 	public void dotSlashFollowingBySlash() throws BadLocationException {
 		String xml = "<?xml-model href=\"./|/\"?>";
 		CompletionItem[] items = getCompletionItemList(0, 20, 21, "folderA", "folderB", "folderC", "NestedA",
-				"main.dtd", "main.xsd");
-		testCompletionFor(xml, 6, items);
+				"main.dtd", "main.xsd",  "main.rnc");
+		testCompletionFor(xml, 7, items);
 	}
 
 	@Test
@@ -59,8 +59,8 @@ public class FilePathCompletionWithXMLModelTest extends AbstractFilePathCompleti
 		}
 		String xml = "<?xml-model href=\".\\|\"?>";
 		CompletionItem[] items = getCompletionItemList(0, 20, 20, "folderA", "folderB", "folderC", "NestedA",
-				"main.dtd", "main.xsd");
-		testCompletionFor(xml, 6, items);
+				"main.dtd", "main.xsd", "main.rnc");
+		testCompletionFor(xml, 7, items);
 	}
 
 	@Test
@@ -89,8 +89,8 @@ public class FilePathCompletionWithXMLModelTest extends AbstractFilePathCompleti
 		// folderB contains dtdB1.dtd, xmlB1.xml, xsdB1.xsd
 		// xmlB1.xml must be filtered out (only schema files are proposed)
 		String xml = "<?xml-model href=\"./folderB/|\"?>";
-		CompletionItem[] items = getCompletionItemList(0, 28, 28, "dtdB1.dtd", "xsdB1.xsd");
-		testCompletionFor(xml, 2, items);
+		CompletionItem[] items = getCompletionItemList(0, 28, 28, "dtdB1.dtd", "xsdB1.xsd", "rncB1.rnc");
+		testCompletionFor(xml, 3, items);
 	}
 
 	@Test
@@ -99,16 +99,16 @@ public class FilePathCompletionWithXMLModelTest extends AbstractFilePathCompleti
 			return;
 		}
 		String xml = "<?xml-model href=\".\\folderB\\|\"?>";
-		CompletionItem[] items = getCompletionItemList(0, 28, 28, "dtdB1.dtd", "xsdB1.xsd");
-		testCompletionFor(xml, 2, items);
+		CompletionItem[] items = getCompletionItemList(0, 28, 28, "dtdB1.dtd", "xsdB1.xsd", "rncB1.rnc");
+		testCompletionFor(xml, 3, items);
 	}
 
 	@Test
 	public void withOtherAttributes() throws BadLocationException {
 		String xml = "<?xml-model href=\"./|\" type=\"application/xml\" schematypens=\"http://www.w3.org/2001/XMLSchema\"?>";
 		CompletionItem[] items = getCompletionItemList(0, 20, 20, "folderA", "folderB", "folderC", "NestedA",
-				"main.dtd", "main.xsd");
-		testCompletionFor(xml, 6, items);
+				"main.dtd", "main.xsd", "main.rnc");
+		testCompletionFor(xml, 7, items);
 	}
 
 	@Test

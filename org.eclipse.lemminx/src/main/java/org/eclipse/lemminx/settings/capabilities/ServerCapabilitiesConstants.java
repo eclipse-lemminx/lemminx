@@ -108,15 +108,21 @@ public class ServerCapabilitiesConstants {
 		options.setResolveProvider(Boolean.TRUE);
 		options.setCodeActionKinds(Arrays.asList(
 			CodeActionKind.QuickFix,
-			CodeActionKind.Source
+			CodeActionKind.Source,
+			CodeActionKind.RefactorExtract
 		));
 		return options;
 	}
 
 	public static final List<String> SEMANTIC_TOKEN_TYPES = Arrays.asList(
-			SemanticTokenTypes.Property, // 0: for attribute names
-			SemanticTokenTypes.Variable, // 1: for entity names
-			SemanticTokenTypes.Type      // 2: for element/notation names
+			SemanticTokenTypes.Property,  // 0: for attribute names
+			SemanticTokenTypes.Variable,  // 1: for entity names / define names
+			SemanticTokenTypes.Type,      // 2: for element/notation names
+			SemanticTokenTypes.Keyword,   // 3: for keywords
+			SemanticTokenTypes.Comment,   // 4: for comments
+			SemanticTokenTypes.String,    // 5: for string literals
+			SemanticTokenTypes.Operator,  // 6: for operators
+			SemanticTokenTypes.Namespace  // 7: for namespace prefixes
 	);
 
 	public static final List<String> SEMANTIC_TOKEN_MODIFIERS = Arrays.asList(
@@ -127,6 +133,11 @@ public class ServerCapabilitiesConstants {
 	public static final int TOKEN_TYPE_PROPERTY = 0;
 	public static final int TOKEN_TYPE_VARIABLE = 1;
 	public static final int TOKEN_TYPE_TYPE = 2;
+	public static final int TOKEN_TYPE_KEYWORD = 3;
+	public static final int TOKEN_TYPE_COMMENT = 4;
+	public static final int TOKEN_TYPE_STRING = 5;
+	public static final int TOKEN_TYPE_OPERATOR = 6;
+	public static final int TOKEN_TYPE_NAMESPACE = 7;
 	public static final int TOKEN_MODIFIER_READONLY = 1 << 0;
 	public static final int TOKEN_MODIFIER_DECLARATION = 1 << 1;
 

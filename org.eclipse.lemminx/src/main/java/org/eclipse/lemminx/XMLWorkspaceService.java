@@ -48,6 +48,7 @@ public class XMLWorkspaceService implements WorkspaceService, IXMLCommandService
 
 	@Override
 	public CompletableFuture<Object> executeCommand(ExecuteCommandParams params) {
+		xmlLanguageServer.getXMLLanguageService().initializeIfNeeded();
 		synchronized (commands) {
 			IDelegateCommandHandler handler = commands.get(params.getCommand());
 			if (handler == null) {
@@ -81,7 +82,7 @@ public class XMLWorkspaceService implements WorkspaceService, IXMLCommandService
 	public void didChangeConfiguration(DidChangeConfigurationParams params) {
 		xmlLanguageServer.updateSettings(params.getSettings());
 		xmlLanguageServer.getCapabilityManager().syncDynamicCapabilitiesWithPreferences();
-		((XMLTextDocumentService) xmlLanguageServer.getTextDocumentService()).clearAllScopedSettings();
+		((CompositeTextDocumentService) xmlLanguageServer.getTextDocumentService()).clearAllScopedSettings();
 	}
 
 	@Override
@@ -92,8 +93,8 @@ public class XMLWorkspaceService implements WorkspaceService, IXMLCommandService
 
 	@Override
 	public void didChangeWatchedFiles(DidChangeWatchedFilesParams params) {
-		XMLTextDocumentService xmlTextDocumentService = (XMLTextDocumentService) xmlLanguageServer
-				.getTextDocumentService();
+		XMLTextDocumentService xmlTextDocumentService = ((CompositeTextDocumentService) xmlLanguageServer
+				.getTextDocumentService()).getXMLTextDocumentService();
 		List<FileEvent> changes = params.getChanges();
 		for (FileEvent change : changes) {
 			if (!xmlTextDocumentService.documentIsOpen(change.getUri())) {

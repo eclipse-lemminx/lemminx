@@ -29,13 +29,13 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
 
+import org.eclipse.lemminx.client.CodeLensKind;
 import org.eclipse.lemminx.client.ExtendedClientCapabilities;
 import org.eclipse.lemminx.client.LimitExceededWarner;
 import org.eclipse.lemminx.client.LimitFeature;
 import org.eclipse.lemminx.commons.config.ConfigurationField;
 import org.eclipse.lemminx.settings.XMLGeneralClientSettings;
 import org.eclipse.lemminx.commons.ModelTextDocument;
-import org.eclipse.lemminx.commons.ModelTextDocuments;
 import org.eclipse.lemminx.commons.ModelValidatorDelayer;
 import org.eclipse.lemminx.commons.TextDocument;
 import org.eclipse.lemminx.dom.DOMDocument;
@@ -69,7 +69,7 @@ import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.CompletionItem;
 import org.eclipse.lsp4j.CompletionList;
 import org.eclipse.lsp4j.CompletionParams;
-import org.eclipse.lsp4j.ConfigurationParams;
+import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DefinitionParams;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
@@ -119,18 +119,15 @@ import org.eclipse.lsp4j.WorkspaceEdit;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.eclipse.lsp4j.jsonrpc.messages.Either;
 import org.eclipse.lsp4j.jsonrpc.messages.Either3;
-import org.eclipse.lsp4j.services.TextDocumentService;
 
 /**
  * XML text document service.
  *
  */
-public class XMLTextDocumentService implements TextDocumentService {
+public class XMLTextDocumentService extends AbstractTextDocumentService<DOMDocument> {
 
 	private static final Logger LOGGER = Logger.getLogger(XMLTextDocumentService.class.getName());
 
-	private final XMLLanguageServer xmlLanguageServer;
-	private final ModelTextDocuments<DOMDocument, SharedSettings> documents;
 	private final ModelValidatorDelayer<DOMDocument> xmlValidatorDelayer;
 
 	private SharedSettings sharedSettings;
@@ -200,62 +197,17 @@ public class XMLTextDocumentService implements TextDocumentService {
 	private boolean definitionLinkSupport;
 	private boolean typeDefinitionLinkSupport;
 
-	private Boolean clientConfigurationSupport;
-
-	private volatile int settingsGeneration;
-
 	private boolean initialized;
 
-	private CompletableFuture<SharedSettings> getOrPullScopedSettings(String uri) {
-		if (clientConfigurationSupport == null || !clientConfigurationSupport.booleanValue()) {
-			return CompletableFuture.completedFuture(sharedSettings);
-		}
-		ModelTextDocument<DOMDocument, SharedSettings> doc = documents.get(uri);
-		if (doc != null) {
-			SharedSettings cached = doc.getSettings();
-			if (cached != null) {
-				return CompletableFuture.completedFuture(cached);
-			}
-		}
-		final int generationAtRequest = settingsGeneration;
-		ConfigurationParams params = ConfigurationField.createConfigurationParams(
-				uri, XMLGeneralClientSettings.SCOPED_FIELDS);
-		CompletableFuture<List<Object>> configFuture = xmlLanguageServer.getLanguageClient()
-				.configuration(params);
-		return configFuture
-				.thenApply(results -> {
-					if (results == null) {
-						return sharedSettings;
-					}
-					SharedSettings scoped = new SharedSettings(sharedSettings);
-					ConfigurationField.applyConfigurationResults(
-							scoped,
-							XMLGeneralClientSettings.SCOPED_FIELDS,
-							results);
-					if (ConfigurationField.haveSameValues(scoped, sharedSettings,
-							XMLGeneralClientSettings.SCOPED_FIELDS)) {
-						if (doc != null && settingsGeneration == generationAtRequest) {
-							doc.setSettings(sharedSettings);
-						}
-						return sharedSettings;
-					}
-					if (doc != null && settingsGeneration == generationAtRequest) {
-						doc.setSettings(scoped);
-					}
-					return scoped;
-				});
-	}
-
-	public void clearAllScopedSettings() {
-		settingsGeneration++;
-		documents.clearAllSettings();
+	@Override
+	protected List<ConfigurationField> getScopedFields() {
+		return XMLGeneralClientSettings.SCOPED_FIELDS;
 	}
 
 	public XMLTextDocumentService(XMLLanguageServer xmlLanguageServer) {
-		this.xmlLanguageServer = xmlLanguageServer;
-		DOMParser parser = DOMParser.getInstance();
-		this.documents = new ModelTextDocuments<DOMDocument, SharedSettings>((document, cancelChecker) -> {
-			return parser.parse(document, getXMLLanguageService().getResolverExtensionManager(), true, cancelChecker);
+		super(xmlLanguageServer, (document, cancelChecker) -> {
+			return DOMParser.getInstance().parse(document,
+					xmlLanguageServer.getXMLLanguageService().getResolverExtensionManager(), true, cancelChecker);
 		});
 		this.sharedSettings = new SharedSettings();
 		this.limitExceededWarner = null;
@@ -273,6 +225,11 @@ public class XMLTextDocumentService implements TextDocumentService {
 						});
 					});
 		});
+	}
+
+	@Override
+	public boolean canHandle(String uri) {
+		return true;
 	}
 
 	public void updateClientCapabilities(ClientCapabilities capabilities,
@@ -302,7 +259,7 @@ public class XMLTextDocumentService implements TextDocumentService {
 			// Workspace settings
 			if (capabilities.getWorkspace() != null) {
 				sharedSettings.getWorkspaceSettings().setCapabilities(capabilities.getWorkspace());
-				clientConfigurationSupport = capabilities.getWorkspace().getConfiguration();
+				setClientConfigurationSupport(capabilities.getWorkspace().getConfiguration());
 				sharedSettings.getCodeLensSettings()
 						.setRefreshSupport(capabilities.getWorkspace().getCodeLens() != null
 								&& capabilities.getWorkspace().getCodeLens().getRefreshSupport() != null
@@ -324,6 +281,8 @@ public class XMLTextDocumentService implements TextDocumentService {
 					.setActionableNotificationSupport(extendedClientCapabilities.isActionableNotificationSupport());
 			sharedSettings.setOpenSettingsCommandSupport(extendedClientCapabilities.isOpenSettingsCommandSupport());
 			sharedSettings.setBindingWizardSupport(extendedClientCapabilities.isBindingWizardSupport());
+			sharedSettings.setTriggerSuggestCommandSupport(
+					extendedClientCapabilities.isTriggerSuggestCommandSupport());
 		}
 
 	}
@@ -602,8 +561,8 @@ public class XMLTextDocumentService implements TextDocumentService {
 
 	@Override
 	public CompletableFuture<List<Either<Command, CodeAction>>> codeAction(CodeActionParams params) {
-		String uri = params.getTextDocument().getUri();
 		return computeDOMAsyncCompose(params.getTextDocument(), (xmlDocument, cancelChecker) -> {
+			String uri = params.getTextDocument().getUri();
 			return getOrPullScopedSettings(uri)
 					.thenApply(scopedSettings -> {
 						return (List<Either<Command, CodeAction>>) getXMLLanguageService()
@@ -902,6 +861,7 @@ public class XMLTextDocumentService implements TextDocumentService {
 		return sharedSettings.getPreferences();
 	}
 
+	@Override
 	public SharedSettings getSharedSettings() {
 		return this.sharedSettings;
 	}

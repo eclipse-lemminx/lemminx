@@ -1,1 +1,2 @@
 org.eclipse.lemminx.services.snippets.XMLSnippetRegistryLoader
+org.eclipse.lemminx.extensions.relaxng.grammar.rnc.completion.RNCSnippetRegistryLoader
