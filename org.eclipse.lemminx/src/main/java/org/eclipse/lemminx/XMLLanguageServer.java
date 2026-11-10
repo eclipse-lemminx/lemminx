@@ -92,6 +92,7 @@ public class XMLLanguageServer implements ProcessLanguageServer, XMLLanguageServ
 
 	private final XMLLanguageService xmlLanguageService;
 	private final XMLTextDocumentService xmlTextDocumentService;
+	private final CompositeTextDocumentService compositeTextDocumentService;
 	private final XMLWorkspaceService xmlWorkspaceService;
 	private XMLLanguageClientAPI languageClient;
 	private final ScheduledExecutorService delayer;
@@ -101,6 +102,7 @@ public class XMLLanguageServer implements ProcessLanguageServer, XMLLanguageServ
 
 	public XMLLanguageServer() {
 		xmlTextDocumentService = new XMLTextDocumentService(this);
+		compositeTextDocumentService = new CompositeTextDocumentService(xmlTextDocumentService, this);
 		xmlWorkspaceService = new XMLWorkspaceService(this);
 
 		xmlLanguageService = new XMLLanguageService();
@@ -135,6 +137,12 @@ public class XMLLanguageServer implements ProcessLanguageServer, XMLLanguageServ
 
 		xmlTextDocumentService.updateClientCapabilities(capabilityManager.getClientCapabilities().capabilities,
 				capabilityManager.getClientCapabilities().getExtendedCapabilities());
+		compositeTextDocumentService
+				.setClientConfigurationSupport(capabilityManager.getClientCapabilities().capabilities != null
+						&& capabilityManager.getClientCapabilities().capabilities.getWorkspace() != null
+								? capabilityManager.getClientCapabilities().capabilities.getWorkspace()
+										.getConfiguration()
+								: null);
 
 		updateSettings(initOptions, false /* already configured logging */ );
 
@@ -249,6 +257,8 @@ public class XMLLanguageServer implements ProcessLanguageServer, XMLLanguageServ
 		}
 		// Update XML language service extensions
 		xmlTextDocumentService.updateSettings(initSettings);
+		// Update contributed text document services (RNC, etc.)
+		compositeTextDocumentService.updateContributedSettings(initSettings);
 	}
 
 	@Override
@@ -273,7 +283,7 @@ public class XMLLanguageServer implements ProcessLanguageServer, XMLLanguageServ
 
 	@Override
 	public TextDocumentService getTextDocumentService() {
-		return xmlTextDocumentService;
+		return compositeTextDocumentService;
 	}
 
 	@Override

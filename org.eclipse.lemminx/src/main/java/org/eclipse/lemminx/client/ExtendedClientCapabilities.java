@@ -30,6 +30,8 @@ public class ExtendedClientCapabilities {
 
 	private boolean shouldLanguageServerExitOnShutdown;
 
+	private boolean triggerSuggestCommandSupport;
+
 	public ExtendedCodeLensCapabilities getCodeLens() {
 		return codeLens;
 	}
@@ -115,6 +117,14 @@ public class ExtendedClientCapabilities {
 	 */
 	public boolean shouldLanguageServerExitOnShutdown() {
 		return shouldLanguageServerExitOnShutdown;
+	}
+
+	public boolean isTriggerSuggestCommandSupport() {
+		return triggerSuggestCommandSupport;
+	}
+
+	public void setTriggerSuggestCommandSupport(boolean triggerSuggestCommandSupport) {
+		this.triggerSuggestCommandSupport = triggerSuggestCommandSupport;
 	}
 
 }

@@ -1,0 +1,3 @@
+start = element name { text }
+paragraph = element p { text }
+foo = element foo { text }

@@ -1,0 +1,52 @@
+{
+  "New RelaxNG Compact": {
+    "prefix": "start",
+    "body": [
+      "start = element ${1:root} {",
+      "  ${0}",
+      "}"
+    ],
+    "label": "$description",
+    "description": "New RelaxNG Compact"
+  },
+  "New RelaxNG Compact with define": {
+    "prefix": "start",
+    "body": [
+      "start = ${1:root}",
+      "",
+      "${1:root} = element ${1:root} {",
+      "  ${0}",
+      "}"
+    ],
+    "label": "$description",
+    "description": "New RelaxNG Compact with define"
+  },
+  "New RelaxNG Compact with namespace": {
+    "prefix": "default",
+    "body": [
+      "default namespace = \"${1:http://example.com}\"",
+      "datatypes xsd = \"http://www.w3.org/2001/XMLSchema-datatypes\"",
+      "",
+      "start = element ${2:root} {",
+      "  ${0}",
+      "}"
+    ],
+    "label": "$description",
+    "description": "New RelaxNG Compact with namespace"
+  },
+  "New RelaxNG Compact with namespace and define": {
+    "prefix": "default",
+    "body": [
+      "default namespace = \"${1:http://example.com}\"",
+      "datatypes xsd = \"http://www.w3.org/2001/XMLSchema-datatypes\"",
+      "",
+      "start = ${2:root}",
+      "",
+      "${2:root} = element ${2:root} {",
+      "  ${0}",
+      "}"
+    ],
+    "label": "$description",
+    "description": "New RelaxNG Compact with namespace and define"
+  }
+}

@@ -14,6 +14,7 @@ package org.eclipse.lemminx.commons;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -21,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.regex.Pattern;
 
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
@@ -353,6 +355,129 @@ public class TextDocumentTest {
 		char[] buf = new char[5];
 		assertEquals(-1, reader.read(buf, 0, 5));
 		reader.close();
+	}
+
+	// getWordRangeAt with Predicate
+
+	@Test
+	public void testGetWordRangeAtMiddleOfWord() {
+		TextDocument doc = new TextDocument("hello world", "test.txt");
+		// Cursor inside "hello" at offset 2 ('l')
+		Range range = doc.getWordRangeAt(2, Character::isLetterOrDigit);
+		assertNotNull(range);
+		assertEquals(0, range.getStart().getCharacter());
+		assertEquals(5, range.getEnd().getCharacter());
+	}
+
+	@Test
+	public void testGetWordRangeAtStartOfWord() {
+		TextDocument doc = new TextDocument("hello world", "test.txt");
+		// Cursor at start of "hello" at offset 0
+		Range range = doc.getWordRangeAt(0, Character::isLetterOrDigit);
+		assertNotNull(range);
+		assertEquals(0, range.getStart().getCharacter());
+		assertEquals(5, range.getEnd().getCharacter());
+	}
+
+	@Test
+	public void testGetWordRangeAtEndOfWord() {
+		TextDocument doc = new TextDocument("hello world", "test.txt");
+		// Cursor at last char of "hello" (offset 4 = 'o')
+		Range range = doc.getWordRangeAt(4, Character::isLetterOrDigit);
+		assertNotNull(range);
+		assertEquals(0, range.getStart().getCharacter());
+		assertEquals(5, range.getEnd().getCharacter());
+	}
+
+	@Test
+	public void testGetWordRangeAtSecondWord() {
+		TextDocument doc = new TextDocument("hello world", "test.txt");
+		// Cursor inside "world" at offset 8 ('r')
+		Range range = doc.getWordRangeAt(8, Character::isLetterOrDigit);
+		assertNotNull(range);
+		assertEquals(6, range.getStart().getCharacter());
+		assertEquals(11, range.getEnd().getCharacter());
+	}
+
+	@Test
+	public void testGetWordRangeAtOnSpace() {
+		TextDocument doc = new TextDocument("hello world", "test.txt");
+		// Cursor on the space (offset 5): findStartWord scans left into "hello",
+		// findEndWord returns -1 (char at offset is not valid), so end = offset.
+		Range range = doc.getWordRangeAt(5, Character::isLetterOrDigit);
+		assertNotNull(range);
+		assertEquals(0, range.getStart().getCharacter());
+		assertEquals(5, range.getEnd().getCharacter());
+	}
+
+	@Test
+	public void testGetWordRangeAtWithHyphens() {
+		TextDocument doc = new TextDocument("my-element other", "test.txt");
+		// Cursor inside "my-element" (offset 5 = 'e'), hyphens allowed
+		Range range = doc.getWordRangeAt(5, ch -> Character.isLetterOrDigit(ch) || ch == '-');
+		assertNotNull(range);
+		assertEquals(0, range.getStart().getCharacter());
+		assertEquals(10, range.getEnd().getCharacter());
+	}
+
+	@Test
+	public void testGetWordRangeAtMultiline() {
+		TextDocument doc = new TextDocument("first\nsecond", "test.txt");
+		// Cursor on "second" (offset 7 = 'e')
+		Range range = doc.getWordRangeAt(7, Character::isLetterOrDigit);
+		assertNotNull(range);
+		assertEquals(1, range.getStart().getLine());
+		assertEquals(0, range.getStart().getCharacter());
+		assertEquals(1, range.getEnd().getLine());
+		assertEquals(6, range.getEnd().getCharacter());
+	}
+
+	@Test
+	public void testGetWordRangeAtInvalidOffset() {
+		TextDocument doc = new TextDocument("hello", "test.txt");
+		Range range = doc.getWordRangeAt(-1, Character::isLetterOrDigit);
+		assertNull(range);
+	}
+
+	@Test
+	public void testGetWordRangeAtBeyondEnd() {
+		TextDocument doc = new TextDocument("hello", "test.txt");
+		Range range = doc.getWordRangeAt(10, Character::isLetterOrDigit);
+		assertNull(range);
+	}
+
+	// getWordRangeAt with Pattern
+
+	@Test
+	public void testGetWordRangeAtPatternSimple() {
+		TextDocument doc = new TextDocument("foo bar", "test.txt");
+		Pattern wordPattern = Pattern.compile("[a-z]+");
+		// Cursor at end of "foo" (offset 3)
+		Range range = doc.getWordRangeAt(3, wordPattern);
+		assertNotNull(range);
+		assertEquals(0, range.getStart().getCharacter());
+		assertEquals(3, range.getEnd().getCharacter());
+	}
+
+	@Test
+	public void testGetWordRangeAtPatternQualifiedName() {
+		TextDocument doc = new TextDocument("<ns:element />", "test.txt");
+		Pattern namePattern = Pattern.compile("[a-zA-Z_][a-zA-Z0-9_:.-]*");
+		// Cursor at end of "ns:element" (offset 11)
+		Range range = doc.getWordRangeAt(11, namePattern);
+		assertNotNull(range);
+		assertEquals(1, range.getStart().getCharacter());
+		assertEquals(11, range.getEnd().getCharacter());
+	}
+
+	@Test
+	public void testGetWordRangeAtPatternNoMatch() {
+		TextDocument doc = new TextDocument("   ", "test.txt");
+		Pattern wordPattern = Pattern.compile("[a-z]+");
+		// Cursor on space (offset 1) → empty range
+		Range range = doc.getWordRangeAt(1, wordPattern);
+		assertNotNull(range);
+		assertEquals(range.getStart(), range.getEnd());
 	}
 
 }

@@ -277,6 +277,30 @@
             "parameterTypes": []
         }]
     },
+	{
+		"name": "org.eclipse.lemminx.extensions.relaxng.grammar.rnc.settings.RNCSettings",
+		"allDeclaredFields": true,
+		"methods": [{
+			"name": "<init>",
+			"parameterTypes": []
+		}]
+	},
+	{
+		"name": "org.eclipse.lemminx.extensions.relaxng.grammar.rnc.settings.RNCSettings$Wrapper",
+		"allDeclaredFields": true,
+		"methods": [{
+			"name": "<init>",
+			"parameterTypes": []
+		}]
+	},
+	{
+		"name": "org.eclipse.lemminx.extensions.relaxng.grammar.rnc.settings.RNCFormattingSettings",
+		"allDeclaredFields": true,
+		"methods": [{
+			"name": "<init>",
+			"parameterTypes": []
+		}]
+	},
     {
         "name": "org.eclipse.lemminx.extensions.xerces.xmlmodel.XMLModelValidatorFactory",
         "allDeclaredMethods": true

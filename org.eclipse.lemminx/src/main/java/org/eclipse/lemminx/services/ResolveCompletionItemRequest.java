@@ -16,7 +16,6 @@ import org.eclipse.lemminx.services.data.DataEntryField;
 import org.eclipse.lemminx.services.extensions.IComponentProvider;
 import org.eclipse.lemminx.services.extensions.completion.ICompletionItemResolverRequest;
 import org.eclipse.lemminx.settings.SharedSettings;
-import org.eclipse.lemminx.settings.XMLCompletionSettings;
 import org.eclipse.lemminx.settings.capabilities.CompletionResolveSupportProperty;
 import org.eclipse.lsp4j.CompletionItem;
 
@@ -57,12 +56,7 @@ public class ResolveCompletionItemRequest implements ICompletionItemResolverRequ
 
 	@Override
 	public boolean canSupportMarkupKind(String kind) {
-		XMLCompletionSettings completionSettings = getSharedSettings().getCompletionSettings();
-		return completionSettings.getCompletionCapabilities() != null
-				&& completionSettings.getCompletionCapabilities().getCompletionItem() != null
-				&& completionSettings.getCompletionCapabilities().getCompletionItem().getDocumentationFormat() != null
-				&& completionSettings.getCompletionCapabilities().getCompletionItem().getDocumentationFormat()
-						.contains(kind);
+		return getSharedSettings().getCompletionSettings().canSupportMarkupKind(kind);
 	}
 
 	@Override

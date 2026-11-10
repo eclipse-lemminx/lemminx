@@ -47,4 +47,9 @@ public class ClientCommands {
 	 * Update configuration
 	 */
 	public static final String UPDATE_CONFIGURATION = "xml.update.configuration";
+
+	/**
+	 * Trigger suggest (auto-completion) in the editor.
+	 */
+	public static final String TRIGGER_SUGGEST = "editor.action.triggerSuggest";
 }
