@@ -20,6 +20,7 @@ import org.apache.xerces.xni.grammars.XMLGrammarPool;
 import org.apache.xerces.xni.parser.XMLComponentManager;
 import org.apache.xerces.xni.parser.XMLConfigurationException;
 import org.apache.xerces.xni.parser.XMLDocumentSource;
+import org.eclipse.lemminx.extensions.contentmodel.settings.SchemaEnabled;
 import org.eclipse.lemminx.extensions.contentmodel.settings.XMLValidationSettings;
 import org.eclipse.lemminx.extensions.relaxng.xml.validator.ExternalRelaxNGValidator;
 import org.eclipse.lemminx.extensions.xerces.AbstractLSPErrorReporter;
@@ -71,6 +72,9 @@ class LSPXMLParserConfiguration extends XMLModelAwareParserConfiguration {
 		SecurityManager securityManager = LSPSecurityManager.getSecurityManager();
 		super.setProperty(SECURITY_MANAGER, securityManager);
 		fErrorReporter = reporterForXML;
+		if (validationSettings != null && validationSettings.getSchema().getEnabled() == SchemaEnabled.never) {
+			this.xmlModelEnabled = false;
+		}
 
 		fEntityManager = entityManager;
 		fProperties.put(ENTITY_MANAGER, fEntityManager);
