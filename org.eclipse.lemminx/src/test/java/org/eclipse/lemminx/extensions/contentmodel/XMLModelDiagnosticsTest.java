@@ -16,11 +16,19 @@ import static org.eclipse.lemminx.XMLAssert.d;
 import static org.eclipse.lemminx.XMLAssert.te;
 import static org.eclipse.lemminx.XMLAssert.testCodeActionsFor;
 
+import java.util.List;
+import java.util.function.Consumer;
+
 import org.eclipse.lemminx.AbstractCacheBasedTest;
 import org.eclipse.lemminx.XMLAssert;
+import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
 import org.eclipse.lemminx.extensions.contentmodel.participants.DTDErrorCode;
 import org.eclipse.lemminx.extensions.contentmodel.participants.XMLSchemaErrorCode;
 import org.eclipse.lemminx.extensions.contentmodel.participants.XMLSyntaxErrorCode;
+import org.eclipse.lemminx.extensions.contentmodel.settings.ContentModelSettings;
+import org.eclipse.lemminx.extensions.contentmodel.settings.SchemaEnabled;
+import org.eclipse.lemminx.extensions.contentmodel.settings.XMLValidationRootSettings;
+import org.eclipse.lemminx.services.XMLLanguageService;
 import org.eclipse.lsp4j.Diagnostic;
 import org.junit.jupiter.api.Test;
 
@@ -123,9 +131,30 @@ public class XMLModelDiagnosticsTest extends AbstractCacheBasedTest {
 				"    <author>smith</author>\r\n" + //
 				"    </authors>\r\n";
 		Diagnostic d1 = d(0, 1, 0, 5, XMLSchemaErrorCode.cvc_elt_1_a);
-		Diagnostic d2 = d(0, 1, 0, 5,XMLSyntaxErrorCode.MarkupEntityMismatch);
+		Diagnostic d2 = d(0, 1, 0, 5, XMLSyntaxErrorCode.MarkupEntityMismatch);
 		testDiagnosticsFor(xml, d1, d2);
 		testCodeActionsFor(xml, d1, ca(d1, te(0, 1, 0, 5, "root")));
+	}
+	
+	@Test
+	public void noDiagnosticsWhenSchemaBasedValidationDisabled() throws Exception {
+		// Use the same settings as in XMLAssert, but completely disable schema validation
+		ContentModelSettings settings = new ContentModelSettings();
+		settings.setUseCache(false);
+		XMLValidationRootSettings problems = new XMLValidationRootSettings();
+		problems.getSchema().setEnabled(SchemaEnabled.never);
+		problems.setNoGrammar("ignore");
+		settings.setValidation(problems);
+
+		String xml = "<?xml version=\"1.0\" encoding=\"UTF-8\" ?>\r\n" + //
+				"<?xml-model href=\"src/test/resources/xsd/tag.xsd\"?>\r\n" + //
+				"<root>\r\n" + //
+				"  <tag></tag>\r\n" + //
+				"  <optional></optional>\r\n" + //
+				"  <optional></optional>\r\n" + //
+				"  <optional></optional>\r\n" + //
+				"</root>";
+		XMLAssert.testDiagnosticsFor(xml, "src/test/resources/catalogs/catalog.xml", null, null, true, settings);
 	}
 
 	private static void testDiagnosticsFor(String xml, Diagnostic... expected) {
