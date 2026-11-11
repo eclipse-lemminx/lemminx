@@ -25,7 +25,6 @@ import org.eclipse.lemminx.extensions.contentmodel.participants.ExternalResource
 import org.eclipse.lemminx.extensions.contentmodel.participants.XMLSchemaErrorCode;
 import org.eclipse.lemminx.extensions.contentmodel.participants.codeactions.DownloadDisabledResourceCodeAction;
 import org.eclipse.lemminx.extensions.contentmodel.settings.XMLValidationRootSettings;
-import org.eclipse.lemminx.extensions.contentmodel.settings.XMLValidationRootSettings;
 import org.eclipse.lemminx.services.XMLLanguageService;
 import org.eclipse.lemminx.uriresolver.CacheResourcesManager;
 import org.eclipse.lsp4j.Diagnostic;
@@ -178,6 +177,33 @@ public class XMLValidationExternalResourcesBasedOnXSDTest extends AbstractCacheB
 				ca(d, DownloadDisabledResourceCodeAction.createDownloadCommand(
 						"Force download of 'file://example.com/schemas/my-schema.xsd'.", "file://example.com/schemas/my-schema.xsd",
 						fileURI)));
+	}
+
+	@Test
+	public void schemaLocationFileDoesntExistUNC() throws Exception {
+
+		assumeTrue(System.getProperty("os.name").toLowerCase().contains("windows"));
+
+		XMLValidationRootSettings validation = new XMLValidationRootSettings();
+		validation.setResolveExternalEntities(true);
+
+		XMLLanguageService ls = new XMLLanguageService();
+		ls.initializeIfNeeded();
+
+		String xml = "<?xml-model href=\"\\\\myserver\\myshare\\schema.xsd\"?>\r\n" + //
+				"<root-element>\r\n" + //
+				"	\r\n" + //
+				"</root-element>\r\n";
+
+		String fileURI = "test.xml";
+
+		Diagnostic d = new Diagnostic(r(0, 18, 0, 47), "The network-accessible file '\\\\myserver\\myshare\\schema.xsd' doesn't exist",
+				DiagnosticSeverity.Error, "xml", XMLSchemaErrorCode.schema_reference_4.getCode());
+
+		// Test diagnostics
+		XMLAssert.testPublishDiagnosticsFor(xml, fileURI, validation, ls, pd(fileURI, d, //
+				new Diagnostic(r(1, 1, 1, 13), "cvc-elt.1.a: Cannot find the declaration of element 'root-element'.",
+						DiagnosticSeverity.Error, "xml", XMLSchemaErrorCode.cvc_elt_1_a.getCode())));
 	}
 
 	@Test
