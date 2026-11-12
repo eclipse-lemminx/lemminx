@@ -9,7 +9,7 @@
 * Contributors:
 *     Red Hat Inc. - initial API and implementation
 *******************************************************************************/
-package com.thaiopensource.relaxng.pattern;
+package org.eclipse.lemminx.extensions.relaxng.contentmodel;
 
 import static org.eclipse.lemminx.utils.DOMUtils.findFirstChildElementByTagName;
 import static org.eclipse.lemminx.utils.DOMUtils.isDOMElement;
@@ -38,6 +38,8 @@ import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.xml.sax.Locator;
 
+import com.thaiopensource.relaxng.pattern.ElementPattern;
+import com.thaiopensource.relaxng.pattern.Pattern;
 import com.thaiopensource.xml.util.Name;
 
 /**
