@@ -19,7 +19,6 @@ import java.net.Authenticator;
 import java.net.PasswordAuthentication;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.function.Function;
 
 import org.eclipse.lemminx.commons.ParentProcessWatcher;
@@ -27,6 +26,7 @@ import org.eclipse.lemminx.customservice.XMLLanguageClientAPI;
 import org.eclipse.lsp4j.jsonrpc.Launcher;
 import org.eclipse.lsp4j.jsonrpc.MessageConsumer;
 import org.eclipse.lsp4j.launch.LSPLauncher.Builder;
+import org.eclipse.lsp4j.launcher.multiclient.MultiClientLauncher;
 import org.eclipse.lsp4j.services.LanguageClient;
 import org.eclipse.lsp4j.services.LanguageServer;
 
@@ -37,6 +37,31 @@ public class XMLServerLauncher {
 	 * and output streams.
 	 */
 	public static void main(String[] args) {
+
+		// Parse arguments for MCP mode
+		boolean mcpEnabled = false;
+		String workspacePath = null;
+		int socketPort = 0; // 0 = free port (OS chooses)
+		String clientName = null;
+		String clientVersion = null;
+
+		for (int i = 0; i < args.length; i++) {
+			if ("--mcp-enabled".equals(args[i])) {
+				mcpEnabled = true;
+			} else if ("--workspace".equals(args[i]) && i + 1 < args.length) {
+				workspacePath = args[i + 1];
+				i++;
+			} else if ("--port".equals(args[i]) && i + 1 < args.length) {
+				socketPort = Integer.parseInt(args[i + 1]);
+				i++;
+			} else if ("--client-name".equals(args[i]) && i + 1 < args.length) {
+				clientName = args[i + 1];
+				i++;
+			} else if ("--client-version".equals(args[i]) && i + 1 < args.length) {
+				clientVersion = args[i + 1];
+				i++;
+			}
+		}
 
 		final String HTTP_PROXY_HOST = System.getenv("HTTP_PROXY_HOST");
 		final String HTTP_PROXY_PORT = System.getenv("HTTP_PROXY_PORT");
@@ -76,7 +101,14 @@ public class XMLServerLauncher {
 		if (!LEMMINX_DEBUG) {
 			System.setErr(new NoOpPrintStream());
 		}
-		launch(in, out);
+
+		// If MCP enabled, launch with shared server mode
+		if (mcpEnabled && workspacePath != null) {
+			launchWithMCP(in, out, workspacePath, socketPort, clientName, clientVersion);
+		} else {
+			// Normal stdio-only mode
+			launch(in, out);
+		}
 	}
 
 	/**
@@ -88,7 +120,7 @@ public class XMLServerLauncher {
 	 *                       (I'm not 100% sure how it meant to be used though, as
 	 *                       it's undocumented...)
 	 */
-	public static Future<?> launch(InputStream in, OutputStream out) {
+	public static void launch(InputStream in, OutputStream out) {
 		XMLLanguageServer server = new XMLLanguageServer();
 		Function<MessageConsumer, MessageConsumer> wrapper;
 		if ("false".equals(System.getProperty("watchParentProcess"))) {
@@ -96,9 +128,41 @@ public class XMLServerLauncher {
 		} else {
 			wrapper = new ParentProcessWatcher(server);
 		}
-		Launcher<LanguageClient> launcher = createServerLauncher(server, in, out, Executors.newCachedThreadPool(), wrapper);
+		Launcher<LanguageClient> launcher = createServerLauncher(server, in, out, Executors.newCachedThreadPool(),
+				wrapper);
 		server.setClient(launcher.getRemoteProxy());
-		return launcher.startListening();
+		launcher.startListening();
+	}
+
+	/**
+	 * Launch with MCP mode enabled - stdio + socket for shared server.
+	 */
+	private static void launchWithMCP(InputStream in, OutputStream out, String workspacePath, int socketPort,
+			String clientName, String clientVersion) {
+		XMLLanguageServer server = new XMLLanguageServer();
+		Function<MessageConsumer, MessageConsumer> wrapper;
+		if ("false".equals(System.getProperty("watchParentProcess"))) {
+			wrapper = it -> it;
+		} else {
+			wrapper = new ParentProcessWatcher(server);
+		}
+		MultiClientLauncher.Builder<LanguageClient> builder = new MultiClientLauncher.Builder<LanguageClient>()
+				.setLocalService(server) //
+				.setRemoteInterface(XMLLanguageClientAPI.class) //
+				.setInput(in) //
+				.setOutput(out) //
+				.setExecutorService(Executors.newCachedThreadPool()) //
+				.wrapMessages(wrapper) //
+				.enableSocket(socketPort, workspacePath, "lemminx");
+
+		// Add client info if provided
+		if (clientName != null || clientVersion != null) {
+			builder.setClientInfo(clientName, clientVersion);
+		}
+
+		Launcher<LanguageClient> launcher = builder.create();
+		server.setClient(launcher.getRemoteProxy());
+		launcher.startListening();
 	}
 
 	/**
@@ -115,15 +179,14 @@ public class XMLServerLauncher {
 	 * @param wrapper         - a function for plugging in additional message
 	 *                        consumers
 	 */
-	private static Launcher<LanguageClient> createServerLauncher(LanguageServer server, InputStream in, OutputStream out,
-			ExecutorService executorService, Function<MessageConsumer, MessageConsumer> wrapper) {
-		return new Builder<LanguageClient>().
-				setLocalService(server)
+	private static Launcher<LanguageClient> createServerLauncher(LanguageServer server, InputStream in,
+			OutputStream out, ExecutorService executorService, Function<MessageConsumer, MessageConsumer> wrapper) {
+		return new Builder<LanguageClient>().setLocalService(server) //
 				.setRemoteInterface(XMLLanguageClientAPI.class) // Set client as XML language client
-				.setInput(in)
-				.setOutput(out)
-				.setExecutorService(executorService)
-				.wrapMessages(wrapper)
+				.setInput(in) //
+				.setOutput(out) //
+				.setExecutorService(executorService) //
+				.wrapMessages(wrapper) //
 				.create();
 	}
 }
