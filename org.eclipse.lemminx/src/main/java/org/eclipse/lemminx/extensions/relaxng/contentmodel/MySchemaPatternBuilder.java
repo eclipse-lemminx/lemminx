@@ -9,9 +9,15 @@
 * Contributors:
 *     Red Hat Inc. - initial API and implementation
 *******************************************************************************/
-package com.thaiopensource.relaxng.pattern;
+package org.eclipse.lemminx.extensions.relaxng.contentmodel;
 
 import org.xml.sax.Locator;
+
+import com.thaiopensource.relaxng.pattern.AttributePattern;
+import com.thaiopensource.relaxng.pattern.ElementPattern;
+import com.thaiopensource.relaxng.pattern.NameClass;
+import com.thaiopensource.relaxng.pattern.Pattern;
+import com.thaiopensource.relaxng.pattern.SchemaPatternBuilder;
 
 /**
  * This class extends {@link SchemaPatternBuilder} to copy the {@link Locator}
@@ -60,7 +66,7 @@ public class MySchemaPatternBuilder extends SchemaPatternBuilder {
 	}
 
 	@Override
-	Pattern makeElement(NameClass nameClass, Pattern content, Locator loc) {
+	public Pattern makeElement(NameClass nameClass, Pattern content, Locator loc) {
 		// Don't call super.makeElement() which interns the pattern.
 		// Interning collapses ElementPatterns with the same name and content,
 		// losing the locator of subsequent definitions.
@@ -69,12 +75,12 @@ public class MySchemaPatternBuilder extends SchemaPatternBuilder {
 	}
 
 	@Override
-	Pattern makeAttribute(NameClass nameClass, Pattern value, Locator loc) {
+	public Pattern makeAttribute(NameClass nameClass, Pattern value, Locator loc) {
 		return super.makeAttribute(nameClass, value, copy(loc));
 	}
 
 	@Override
-	Pattern makeAttribute(NameClass nameClass, Pattern value, Locator loc, String defaultValue) {
+	public Pattern makeAttribute(NameClass nameClass, Pattern value, Locator loc, String defaultValue) {
 		return super.makeAttribute(nameClass, value, copy(loc), defaultValue);
 	}
 

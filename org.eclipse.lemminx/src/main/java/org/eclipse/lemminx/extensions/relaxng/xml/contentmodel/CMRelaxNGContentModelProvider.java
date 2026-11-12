@@ -17,14 +17,14 @@ import java.util.Collection;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.extensions.contentmodel.model.CMDocument;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelProvider;
+import org.eclipse.lemminx.extensions.relaxng.contentmodel.CMRelaxNGDocument;
+import org.eclipse.lemminx.extensions.relaxng.contentmodel.MySchemaPatternBuilder;
 import org.eclipse.lemminx.extensions.relaxng.jing.RelaxNGDescription;
 import org.eclipse.lemminx.extensions.relaxng.jing.SchemaProvider;
 import org.eclipse.lemminx.extensions.relaxng.jing.toremove.MyPatternSchema;
 import org.eclipse.lemminx.uriresolver.URIResolverExtensionManager;
 import org.eclipse.lemminx.utils.DOMUtils;
 
-import com.thaiopensource.relaxng.pattern.CMRelaxNGDocument;
-import com.thaiopensource.relaxng.pattern.MySchemaPatternBuilder;
 import com.thaiopensource.relaxng.pattern.Pattern;
 import com.thaiopensource.validate.Schema;
 
@@ -67,6 +67,7 @@ public class CMRelaxNGContentModelProvider implements ContentModelProvider {
 			}
 			return null;
 		} catch (Exception e) {
+			e.printStackTrace();
 			// ignore the error.
 		}
 		return null;
