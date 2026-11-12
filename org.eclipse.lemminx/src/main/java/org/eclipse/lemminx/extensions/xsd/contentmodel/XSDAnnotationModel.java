@@ -14,7 +14,6 @@ package org.eclipse.lemminx.extensions.xsd.contentmodel;
 
 import static org.eclipse.lemminx.dom.parser.Constants.DOCUMENTATION_CONTENT;
 import static org.eclipse.lemminx.utils.StringUtils.isEmpty;
-import static org.eclipse.lemminx.utils.StringUtils.normalizeSpace;
 
 import java.io.StringReader;
 import java.util.ArrayList;
@@ -31,6 +30,7 @@ import org.apache.xerces.xs.XSMultiValueFacet;
 import org.apache.xerces.xs.XSObject;
 import org.apache.xerces.xs.XSObjectList;
 import org.apache.xerces.xs.datatypes.ObjectList;
+import org.eclipse.lemminx.converter.HtmlTag;
 import org.eclipse.lemminx.utils.DOMUtils;
 import org.eclipse.lemminx.utils.StringUtils;
 import org.xml.sax.Attributes;
@@ -257,6 +257,15 @@ class XSDAnnotationModel {
 			super.startElement(uri, localName, qName, attributes);
 			if (qName.endsWith(DOCUMENTATION_ELEMENT) || qName.endsWith(APPINFO_ELEMENT)) {
 				current = new StringBuilder();
+			} else if (current != null) {
+				current.append('<').append(qName);
+				for (int i = 0; i < attributes.getLength(); i++) {
+					current.append(' ').append(attributes.getQName(i))
+							.append("=\"")
+							.append(attributes.getValue(i).replace("\"", "&quot;"))
+							.append('"');
+				}
+				current.append('>');
 			}
 		}
 
@@ -265,11 +274,17 @@ class XSDAnnotationModel {
 			super.endElement(uri, localName, qName);
 			if (current != null) {
 				if (qName.endsWith(APPINFO_ELEMENT)) {
-					addIfNonEmptyString(model.appInfo, normalizeSpace(current.toString()));
+					addIfNonEmptyString(model.appInfo, stripIndent(current.toString()));
+					current = null;
 				} else if (qName.endsWith(DOCUMENTATION_ELEMENT)) {
-					addIfNonEmptyString(model.documentation, normalizeSpace(current.toString()));
+					addIfNonEmptyString(model.documentation, stripIndent(current.toString()));
+					current = null;
+				} else {
+					HtmlTag tag = HtmlTag.of(qName.toLowerCase());
+					if (tag == null || tag.getCategory() != HtmlTag.Category.VOID) {
+						current.append("</").append(qName).append('>');
+					}
 				}
-				current = null;
 			}
 		}
 
@@ -285,6 +300,300 @@ class XSDAnnotationModel {
 			if (!StringUtils.isEmpty(str)) {
 				list.add(str);
 			}
+		}
+
+		/**
+		 * Normalizes XSD documentation text: removes common indentation, then
+		 * either preserves line structure (if HTML block tags are present) or
+		 * joins consecutive prose lines with spaces.
+		 *
+		 * <p>Use cases:</p>
+		 * <ul>
+		 *   <li>Indented plain prose → indentation stripped, lines joined:
+		 *       {@code "    line1\n    line2"} → {@code "line1 line2"}</li>
+		 *   <li>HTML content ({@code <p>}, {@code <table>}) → indentation stripped,
+		 *       line structure preserved for the HTML converter</li>
+		 * </ul>
+		 */
+		private static String stripIndent(String text) {
+			String stripped = stripCommonIndent(text);
+			if (containsHtmlBlockTag(stripped)) {
+				return stripped;
+			}
+			return joinProseLines(stripped);
+		}
+
+		/**
+		 * Returns true if the text contains any HTML block-level tag (e.g.
+		 * {@code <p>}, {@code <table>}, {@code <ul>}). When block tags are
+		 * present, line structure must be preserved for the HTML converter
+		 * rather than joining lines as prose.
+		 *
+		 * <p>Use cases:</p>
+		 * <ul>
+		 *   <li>{@code "<p>text</p>"} → true (p is a block element)</li>
+		 *   <li>{@code "<b>bold</b>"} → false (b is inline, not block)</li>
+		 *   <li>{@code "plain text"} → false (no tags at all)</li>
+		 * </ul>
+		 */
+		private static boolean containsHtmlBlockTag(String text) {
+			int len = text.length();
+			for (int i = 0; i < len; i++) {
+				if (text.charAt(i) == '<') {
+					int nameStart = i + 1;
+					if (nameStart < len && text.charAt(nameStart) == '/') {
+						nameStart++;
+					}
+					int nameEnd = nameStart;
+					while (nameEnd < len && Character.isLetterOrDigit(text.charAt(nameEnd))) {
+						nameEnd++;
+					}
+					if (nameEnd > nameStart && nameEnd < len) {
+						char after = text.charAt(nameEnd);
+						if (after == '>' || after == ' ' || after == '/' || after == '\t'
+								|| after == '\n' || after == '\r') {
+							if (HtmlTag.isBlockElement(text, nameStart, nameEnd)) {
+								return true;
+							}
+						}
+					}
+				}
+			}
+			return false;
+		}
+
+		/**
+		 * Joins consecutive plain prose lines with spaces while preserving
+		 * structural lines (code blocks, list items, headings, indented lines).
+		 *
+		 * <p>XSD documentation often wraps prose at arbitrary line widths.
+		 * This method re-joins those lines so they render as a single paragraph
+		 * in hover tooltips, while keeping Markdown structures intact.</p>
+		 *
+		 * <p>Use cases:</p>
+		 * <ul>
+		 *   <li>Prose wrapping: {@code "This is a\nlong sentence."} \u2192 {@code "This is a long sentence."}</li>
+		 *   <li>Fenced code preserved: {@code "```\ncode\n```"} \u2192 unchanged</li>
+		 *   <li>List items preserved: {@code "* item1\n* item2"} \u2192 unchanged</li>
+		 *   <li>Indented lines converted to NBSP: {@code "  indented"} \u2192 {@code "\u00A0\u00A0indented"}</li>
+		 * </ul>
+		 */
+		private static String joinProseLines(String text) {
+			int len = text.length();
+			StringBuilder result = new StringBuilder(len);
+			int lineStart = 0;
+			boolean prevWasProse = false;
+			boolean inCodeBlock = false;
+
+			for (int i = 0; i <= len; i++) {
+				if (i == len || text.charAt(i) == '\n') {
+					// Strip trailing \r for CRLF line endings
+					int lineEnd = (i > lineStart && i > 0 && text.charAt(i - 1) == '\r') ? i - 1 : i;
+
+					// Trim trailing whitespace from the line
+					int trimmedEnd = lineEnd;
+					while (trimmedEnd > lineStart
+							&& (text.charAt(trimmedEnd - 1) == ' ' || text.charAt(trimmedEnd - 1) == '\t')) {
+						trimmedEnd--;
+					}
+
+					// Toggle code block state on fence lines (``` or ~~~)
+					boolean isFence = isFencedCodeDelimiter(text, lineStart, trimmedEnd);
+					if (isFence) {
+						inCodeBlock = !inCodeBlock;
+					}
+
+					if (inCodeBlock || isFence) {
+						// Inside a fenced code block: preserve lines verbatim
+						if (result.length() > 0) {
+							result.append('\n');
+						}
+						result.append(text, lineStart, trimmedEnd);
+						prevWasProse = false;
+					} else if (lineStart >= trimmedEnd) {
+						// Empty line: preserve as paragraph separator
+						if (result.length() > 0) {
+							result.append('\n');
+						}
+						prevWasProse = false;
+					} else {
+						char first = text.charAt(lineStart);
+						boolean isIndented = first == ' ' || first == '\t';
+						boolean isProse = !isIndented && !isMarkdownMarker(text, lineStart, trimmedEnd);
+
+						if (isProse && prevWasProse) {
+							// Two consecutive prose lines: join with space instead of newline
+							result.append(' ');
+						} else if (result.length() > 0) {
+							result.append('\n');
+						}
+						if (isIndented) {
+							// Indented line: check if it's an indented Markdown marker (e.g. nested list)
+							int contentStart = lineStart;
+							while (contentStart < trimmedEnd
+									&& (text.charAt(contentStart) == ' ' || text.charAt(contentStart) == '\t')) {
+								contentStart++;
+							}
+							if (contentStart < trimmedEnd
+									&& isMarkdownMarker(text, contentStart, trimmedEnd)) {
+								// Indented Markdown marker: keep original indentation
+								result.append(text, lineStart, trimmedEnd);
+							} else {
+								// Indented content: replace spaces with NBSP so hover preserves indentation
+								for (int j = lineStart; j < contentStart; j++) {
+									result.append('\u00A0');
+								}
+								result.append(text, contentStart, trimmedEnd);
+							}
+						} else {
+							result.append(text, lineStart, trimmedEnd);
+						}
+						prevWasProse = isProse;
+					}
+					lineStart = i + 1;
+				}
+			}
+			return result.toString();
+		}
+
+		/**
+		 * Returns true if the line is a Markdown fenced code delimiter ({@code ```} or {@code ~~~}).
+		 *
+		 * <p>Use case: {@code "```xml"} → true; {@code "``not enough"} → false.</p>
+		 */
+		private static boolean isFencedCodeDelimiter(String text, int start, int end) {
+			if (end - start < 3) {
+				return false;
+			}
+			char c = text.charAt(start);
+			return (c == '`' || c == '~')
+					&& text.charAt(start + 1) == c && text.charAt(start + 2) == c;
+		}
+
+		/**
+		 * Returns true if the line starts with a Markdown structural marker
+		 * (list bullet, heading, pipe table, blockquote, ordered list number,
+		 * or fenced code delimiter).
+		 *
+		 * <p>Use cases:</p>
+		 * <ul>
+		 *   <li>{@code "* item"} → true (unordered list)</li>
+		 *   <li>{@code "# heading"} → true</li>
+		 *   <li>{@code "| cell |"} → true (table row)</li>
+		 *   <li>{@code "1. first"} → true (ordered list)</li>
+		 *   <li>{@code "plain text"} → false</li>
+		 * </ul>
+		 */
+		private static boolean isMarkdownMarker(String text, int start, int end) {
+			char c = text.charAt(start);
+			if ((c == '*' || c == '-' || c == '+') && start + 1 < end && text.charAt(start + 1) == ' ') {
+				return true;
+			}
+			if (c == '|' || c == '#' || c == '>') {
+				return true;
+			}
+			if ((c == '`' || c == '~') && start + 2 < end
+					&& text.charAt(start + 1) == c && text.charAt(start + 2) == c) {
+				return true;
+			}
+			if (c >= '0' && c <= '9') {
+				int j = start + 1;
+				while (j < end && text.charAt(j) >= '0' && text.charAt(j) <= '9') {
+					j++;
+				}
+				if (j < end && text.charAt(j) == '.' && j + 1 < end && text.charAt(j + 1) == ' ') {
+					return true;
+				}
+			}
+			return false;
+		}
+
+		/**
+		 * Removes the common leading whitespace from all non-blank lines.
+		 * XSD documentation is typically indented to match the XML structure;
+		 * this removes that structural indentation while preserving relative
+		 * indentation between lines.
+		 *
+		 * <p>Use case: {@code "    line1\n      line2\n    line3"} with
+		 * minIndent=4 → {@code "line1\n  line2\nline3"}</p>
+		 */
+		private static String stripCommonIndent(String text) {
+			int len = text.length();
+			int minIndent = Integer.MAX_VALUE;
+			int lineStart = 0;
+			for (int i = 0; i <= len; i++) {
+				if (i == len || text.charAt(i) == '\n') {
+					int lineEnd = (i > lineStart && text.charAt(i - 1) == '\r') ? i - 1 : i;
+					int indent = 0;
+					for (int j = lineStart; j < lineEnd; j++) {
+						char c = text.charAt(j);
+						if (c == ' ' || c == '\t') {
+							indent++;
+						} else {
+							break;
+						}
+					}
+					if (lineStart + indent < lineEnd && indent < minIndent) {
+						minIndent = indent;
+					}
+					lineStart = i + 1;
+				}
+			}
+			if (minIndent == Integer.MAX_VALUE || minIndent == 0) {
+				return stripSurroundingBlankLines(text);
+			}
+			StringBuilder result = new StringBuilder();
+			lineStart = 0;
+			for (int i = 0; i <= len; i++) {
+				if (i == len || text.charAt(i) == '\n') {
+					int lineEnd = (i > lineStart && text.charAt(i - 1) == '\r') ? i - 1 : i;
+					if (result.length() > 0) {
+						result.append('\n');
+					}
+					if (lineStart + minIndent <= lineEnd) {
+						result.append(text, lineStart + minIndent, lineEnd);
+					}
+					lineStart = i + 1;
+				}
+			}
+			return stripSurroundingBlankLines(result.toString());
+		}
+
+		/**
+		 * Removes leading and trailing blank lines (lines containing only
+		 * whitespace). Interior blank lines are preserved. Does not trim
+		 * indentation from content lines.
+		 *
+		 * <p>Use case: {@code "\n\n  content\n\n"} → {@code "  content"}</p>
+		 */
+		private static String stripSurroundingBlankLines(String text) {
+			int len = text.length();
+			// Skip leading blank lines (lines containing only spaces/tabs)
+			int start = 0;
+			for (int i = 0; i < len; i++) {
+				char c = text.charAt(i);
+				if (c == '\n') {
+					start = i + 1;
+				} else if (c == '\r') {
+					start = i + 1;
+				} else if (c != ' ' && c != '\t') {
+					break;
+				}
+			}
+			// Skip trailing blank lines
+			int end = len;
+			for (int i = len - 1; i >= start; i--) {
+				char c = text.charAt(i);
+				if (c == '\n' || c == '\r') {
+					end = i;
+				} else if (c != ' ' && c != '\t') {
+					break;
+				}
+			}
+			if (start >= end) {
+				return "";
+			}
+			return text.substring(start, end);
 		}
 
 	}

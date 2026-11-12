@@ -15,9 +15,9 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.xerces.xs.XSObjectList;
+import org.eclipse.lemminx.converter.plaintext.PlainTextConverter;
 import org.eclipse.lemminx.settings.SchemaDocumentationType;
 import org.eclipse.lemminx.utils.StringUtils;
-import org.jsoup.Jsoup;
 
 /**
  * XSD documentation
@@ -34,10 +34,29 @@ public class XSDDocumentation {
 	private final List<String> documentation;
 	private final List<String> appinfo;
 
+	/**
+	 * Creates documentation from XSD annotations using the given strategy.
+	 *
+	 * @param annotations      the XSD annotation list
+	 * @param docStrategy      which annotation elements to include (all, documentation, appinfo, none)
+	 * @param convertToPlainText if true, HTML tags are stripped from the content
+	 */
 	public XSDDocumentation(XSObjectList annotations, SchemaDocumentationType docStrategy, boolean convertToPlainText) {
 		this(annotations, null, docStrategy, convertToPlainText);
 	}
 
+	/**
+	 * Creates documentation from XSD annotations, optionally filtering by
+	 * enumeration value.
+	 *
+	 * <p>Use case: for {@code xs:enumeration value="strict"}, pass value="strict"
+	 * to extract only the annotation for that specific enumeration value.</p>
+	 *
+	 * @param annotations      the XSD annotation list
+	 * @param value            the enumeration value to filter for, or null for element/attribute docs
+	 * @param docStrategy      which annotation elements to include
+	 * @param convertToPlainText if true, HTML tags are stripped via {@link PlainTextConverter}
+	 */
 	public XSDDocumentation(XSObjectList annotations, String value, SchemaDocumentationType docStrategy, boolean convertToPlainText) {
 		List<String> documentation = Collections.emptyList();
 		List<String> appinfo = Collections.emptyList();
@@ -108,14 +127,25 @@ public class XSDDocumentation {
 				&& strategy == SchemaDocumentationType.all;
 	}
 
+	/**
+	 * Converts each string in the list from HTML to plain text in-place.
+	 *
+	 * <p>Use case: for completion items (not hover), HTML tags like
+	 * {@code <b>bold</b>} are stripped to just {@code "bold"}.</p>
+	 */
 	private static void convertToPlainText(List<String> list) {
-		HtmlToPlainText formatter = new HtmlToPlainText();
 		for (int i = 0; i < list.size(); i++) {
-			String curr = list.get(i);
-			list.set(i, formatter.getPlainText(Jsoup.parse(curr)));
+			list.set(i, PlainTextConverter.convert(list.get(i)));
 		}
 	}
 
+	/**
+	 * Formats a list of documentation or appinfo strings, optionally prepending
+	 * a section title (e.g. {@code "xs:documentation:"}).
+	 *
+	 * <p>Use case: when both documentation and appinfo exist, each section
+	 * is prefixed with its title to distinguish them in the hover tooltip.</p>
+	 */
 	private static String getFormatted(String prefix, String elementName, List<String> content,
 			boolean prependTitles, boolean html) {
 		StringBuilder result = new StringBuilder();
@@ -124,40 +154,35 @@ public class XSDDocumentation {
 		}
 		for (String doc: content) {
 			if (!StringUtils.isBlank(doc)) {
-				if (html) {
-					result.append("<p>");
-				}
 				result.append(doc);
-				if (html) {
-					result.append("</p>");
-				} else {
-					result.append(System.lineSeparator());
-					result.append(System.lineSeparator());
-				}
+				result.append(System.lineSeparator());
+				result.append(System.lineSeparator());
 			}
 		}
 		return result.toString();
 	}
 
+	/**
+	 * Builds the section title line. In HTML mode, the title is bolded.
+	 *
+	 * <p>Use case: {@code applyPrefix("xs", "documentation", true)}
+	 * → {@code "**xs:documentation**:\n\n"}</p>
+	 */
 	private static String applyPrefix(String prefix, String documentation, boolean html) {
 		StringBuilder result = new StringBuilder();
 		if (html) {
-			result.append("<p><b>");
+			result.append("**");
 		}
 		if (!StringUtils.isEmpty(prefix)) {
 			result.append(prefix).append(':');
 		}
 		result.append(documentation);
 		if (html) {
-			result.append("</b>");
+			result.append("**");
 		}
 		result.append(":");
-		if (html) {
-			result.append("</p>");
-		} else {
-			result.append(System.lineSeparator());
-			result.append(System.lineSeparator());
-		}
+		result.append(System.lineSeparator());
+		result.append(System.lineSeparator());
 		return result.toString();
 	}
 }
