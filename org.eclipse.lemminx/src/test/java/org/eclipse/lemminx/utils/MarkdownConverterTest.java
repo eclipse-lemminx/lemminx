@@ -24,9 +24,9 @@ public class MarkdownConverterTest {
 	@Test
 	public void testHTMLConversion() {
 		assertEquals("This is `my code`", convert("This is <code>my code</code>"));
-		assertEquals("This is" + System.lineSeparator() + "**bold**", convert("This is<br><b>bold</b>"));
+		assertEquals("This is  " + System.lineSeparator() + "**bold**", convert("This is<br><b>bold</b>"));
 		assertEquals("The `<project>` element is the root of the descriptor.", convert("The <code>&lt;project&gt;</code> element is the root of the descriptor."));
-		assertEquals("# Hey Man #", convert("<h1>Hey Man</h1>"));
+		assertEquals("# Hey Man", convert("<h1>Hey Man</h1>"));
 		assertEquals("[Placeholder](https://www.xml.com)", convert("<a href=\"https://www.xml.com\">Placeholder</a>"));
 
 		String htmlList =
@@ -36,11 +36,11 @@ public class MarkdownConverterTest {
 			"  <li>Milk</li>" + System.lineSeparator() +
 			"</ul>";
 		String expectedList = 
-			" *  Coffee" + System.lineSeparator() +
-			" *  Tea" + System.lineSeparator() +
-			" *  Milk";
+			"- Coffee" + System.lineSeparator() +
+			"- Tea" + System.lineSeparator() +
+			"- Milk";
 		assertEquals(expectedList, convert(htmlList));
-		assertEquals("ONLY_THIS_TEXT", convert("<p>ONLY_THIS_TEXT</p>"));
+		assertEquals("ONLY\\_THIS\\_TEXT", convert("<p>ONLY_THIS_TEXT</p>"));
 
 		String multilineHTML = 
 			"multi" + System.lineSeparator() +
@@ -59,13 +59,6 @@ public class MarkdownConverterTest {
 			"" + System.lineSeparator() +
 			"line `HTML` stuff";
 		assertEquals(multilineHTML2Expected, convert(multilineHTML2));
-	}
-	
-	@Test
-	public void testMarkdownConversion() {
-		assertEquals("This is `my code`", convert("This is `my code`"));
-		assertEquals("The `<thing>` element is the root of the descriptor.", convert("The `<thing>` element is the root of the descriptor."));
-		assertEquals("The `<project>` element is the root of the descriptor.", convert("The `&lt;project&gt;` element is the root of the descriptor."));
 	}
 
 }

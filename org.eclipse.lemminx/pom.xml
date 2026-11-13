@@ -260,14 +260,14 @@
 			<version>1.4.01</version>
 		</dependency>
 		<dependency>
-			<groupId>com.kotcrab.remark</groupId>
-			<artifactId>remark</artifactId>
-			<version>1.0.0</version>
-		</dependency>
-		<dependency>
 			<groupId>org.jsoup</groupId>
 			<artifactId>jsoup</artifactId>
 			<version>1.14.2</version>
+		</dependency>
+		<dependency>
+			<groupId>io.github.fbricon</groupId>
+			<artifactId>mdream4j</artifactId>
+			<version>0.1.0-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>xml-resolver</groupId>
