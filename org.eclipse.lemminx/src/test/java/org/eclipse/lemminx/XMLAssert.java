@@ -83,6 +83,7 @@ import org.eclipse.lsp4j.CreateFileOptions;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DiagnosticRelatedInformation;
 import org.eclipse.lsp4j.DiagnosticSeverity;
+import org.eclipse.lsp4j.DiagnosticTag;
 import org.eclipse.lsp4j.DocumentHighlight;
 import org.eclipse.lsp4j.DocumentHighlightKind;
 import org.eclipse.lsp4j.DocumentLink;
@@ -159,6 +160,19 @@ public class XMLAssert {
 
 	private static final CancelChecker NULL_CHECKER = () -> {
 	};
+
+	public static SharedSettings createSharedSettings(boolean snippetsSupported, boolean triggerSuggestSupported) {
+		SharedSettings settings = new SharedSettings();
+		if (snippetsSupported) {
+			CompletionItemCapabilities itemCapabilities = new CompletionItemCapabilities();
+			itemCapabilities.setSnippetSupport(true);
+			CompletionCapabilities completionCapabilities = new CompletionCapabilities();
+			completionCapabilities.setCompletionItem(itemCapabilities);
+			settings.getCompletionSettings().setCapabilities(completionCapabilities);
+		}
+		settings.setTriggerSuggestCommandSupport(triggerSuggestSupported);
+		return settings;
+	}
 
 	public static class SettingsSaveContext extends AbstractSaveContext {
 
@@ -321,8 +335,19 @@ public class XMLAssert {
 			});
 		}
 
+		if (expected.getTextEdit() == null) {
+			CompletionItem match = matches.get(0);
+			if (expected.getKind() != null) {
+				assertEquals(expected.getKind(), match.getKind());
+			}
+			if (expected.getDetail() != null) {
+				assertEquals(expected.getDetail(), match.getDetail());
+			}
+			return;
+		}
+
 		CompletionItem match = getCompletionMatch(matches, enableItemDefaults, expected);
-		if (!enableItemDefaults && expected.getTextEdit() != null && match.getTextEdit() != null) {
+		if (!enableItemDefaults && match.getTextEdit() != null) {
 			if (expected.getTextEdit().getLeft().getNewText() != null) {
 				assertEquals(expected.getTextEdit().getLeft().getNewText(), match.getTextEdit().getLeft().getNewText());
 			}
@@ -819,6 +844,9 @@ public class XMLAssert {
 				if (filterMessage) {
 					simpler.setMessage(d.getMessage());
 				}
+				if (d.getTags() != null && !d.getTags().isEmpty()) {
+					simpler.setTags(d.getTags());
+				}
 				return simpler;
 			}).collect(Collectors.toList());
 		}
@@ -853,6 +881,18 @@ public class XMLAssert {
 		// Diagnostic on 1 line
 		return new Diagnostic(r(startLine, startCharacter, endLine, endCharacter), message, severity, source,
 				code != null ? code.getCode() : null);
+	}
+
+	public static Diagnostic d(int startLine, int startCharacter, int endLine, int endCharacter, IXMLErrorCode code,
+			DiagnosticTag... tags) {
+		Diagnostic d = new Diagnostic(r(startLine, startCharacter, endLine, endCharacter), "");
+		if (code != null) {
+			d.setCode(code.getCode());
+		}
+		if (tags.length > 0) {
+			d.setTags(Arrays.asList(tags));
+		}
+		return d;
 	}
 
 	public static Range r(int line, int startCharacter, int endCharacter) {
@@ -1401,7 +1441,7 @@ public class XMLAssert {
 	// ------------------- Hover assert
 
 	public static void assertHover(String value) throws BadLocationException {
-		assertHover(value, null, null);
+		assertHover(value, (String) null, null);
 	}
 
 	public static void assertHover(String value, String expectedHoverLabel, Range expectedHoverRange)
@@ -1460,13 +1500,17 @@ public class XMLAssert {
 		xmlLanguageService.initializeIfNeeded();
 
 		Hover hover = xmlLanguageService.doHover(htmlDoc, position, sharedSettings);
+		assertHover(expectedHoverLabel, expectedHoverRange, hover);
+	}
+
+	public static void assertHover(String expectedHoverLabel, Range expectedHoverRange, Hover actualHover) {
 		if (expectedHoverLabel == null) {
-			assertNull(hover);
+			assertNull(actualHover);
 		} else {
-			String actualHoverLabel = getHoverLabel(hover);
+			String actualHoverLabel = getHoverLabel(actualHover);
 			assertEquals(expectedHoverLabel, actualHoverLabel);
 			if (expectedHoverRange != null) {
-				assertEquals(expectedHoverRange, hover.getRange());
+				assertEquals(expectedHoverRange, actualHover.getRange());
 			}
 		}
 	}

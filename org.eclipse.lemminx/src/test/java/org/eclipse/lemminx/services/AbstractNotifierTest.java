@@ -41,7 +41,7 @@ public abstract class AbstractNotifierTest {
 	}
 
 	protected XMLTextDocumentService getTextDocumentService() {
-		return (XMLTextDocumentService) languageServer.getTextDocumentService();
+		return languageServer.getXMLTextDocumentService();
 	}
 
 	/**

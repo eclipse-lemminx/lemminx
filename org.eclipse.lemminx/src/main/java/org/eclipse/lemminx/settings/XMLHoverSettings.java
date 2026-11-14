@@ -29,4 +29,16 @@ public class XMLHoverSettings {
 		return capabilities;
 	}
 
+	/**
+	 * Returns whether the client supports the given markup kind in
+	 * hoverdocumentation.
+	 *
+	 * @param kind the markup kind (e.g. {@code MarkupKind.MARKDOWN}).
+	 * @return {@code true} if the kind is supported, {@code false} otherwise.
+	 */
+	public boolean canSupportMarkupKind(String kind) {
+		return capabilities != null && capabilities.getContentFormat() != null
+				&& capabilities.getContentFormat().contains(kind);
+	}
+
 }

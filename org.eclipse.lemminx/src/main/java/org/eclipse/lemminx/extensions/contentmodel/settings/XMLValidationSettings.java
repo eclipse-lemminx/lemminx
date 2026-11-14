@@ -14,7 +14,10 @@ package org.eclipse.lemminx.extensions.contentmodel.settings;
 
 import org.eclipse.lemminx.commons.config.ConfigurationScope;
 import org.eclipse.lemminx.commons.config.Scope;
+import java.util.List;
+
 import org.eclipse.lsp4j.DiagnosticSeverity;
+import org.eclipse.lsp4j.DiagnosticTag;
 import org.eclipse.lsp4j.PublishDiagnosticsCapabilities;
 
 /**
@@ -225,6 +228,34 @@ public class XMLValidationSettings {
 	public boolean isRelatedInformation() {
 		return publishDiagnostics != null && publishDiagnostics.getRelatedInformation() != null
 				&& publishDiagnostics.getRelatedInformation();
+	}
+
+	/**
+	 * Returns {@code true} if the client advertises support for the given
+	 * {@link DiagnosticTag} in its {@code publishDiagnostics} capabilities.
+	 *
+	 * <p>Use cases:</p>
+	 * <ul>
+	 *   <li>RNC validation: checking whether the client supports
+	 *       {@link DiagnosticTag#Unnecessary} so that unused defines can be
+	 *       rendered with a fade-out effect instead of a plain warning</li>
+	 *   <li>XML validation: checking {@link DiagnosticTag#Deprecated} support
+	 *       before tagging diagnostics for deprecated elements or attributes</li>
+	 * </ul>
+	 *
+	 * @param tag the diagnostic tag to check for client support.
+	 * @return {@code true} if the client supports the given tag, {@code false}
+	 *         otherwise.
+	 */
+	public boolean isTagSupported(DiagnosticTag tag) {
+		if (publishDiagnostics == null || publishDiagnostics.getTagSupport() == null) {
+			return false;
+		}
+		if (!publishDiagnostics.getTagSupport().isRight()) {
+			return false;
+		}
+		List<DiagnosticTag> valueSet = publishDiagnostics.getTagSupport().getRight().getValueSet();
+		return valueSet != null && valueSet.contains(tag);
 	}
 
 	@Override

@@ -34,7 +34,7 @@ public class FilePathCompletionWithCatalogTest extends AbstractFilePathCompletio
 				+ "	<public publicId=\"\" uri=\"|\" />\n"
 				+ "</catalog>";
 		CompletionItem[] items = getCompletionItemList(1, 26, 26, "folderA", "folderB", "folderC", "NestedA",
-				"main.xsd", "main.dtd", "main.xml", "main.xsl");
-		testCompletionFor(xml, 8, items);
+				"main.xsd", "main.dtd", "main.xml", "main.xsl", "main.rnc");
+		testCompletionFor(xml, 9, items);
 	}
 }

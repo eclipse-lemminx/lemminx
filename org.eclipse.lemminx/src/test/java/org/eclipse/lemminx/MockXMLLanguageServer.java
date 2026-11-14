@@ -81,7 +81,7 @@ public class MockXMLLanguageServer extends XMLLanguageServer {
 		TextDocumentIdentifier xmlIdentifier = new TextDocumentIdentifier(fileURI);
 		DidOpenTextDocumentParams params = new DidOpenTextDocumentParams(
 				new TextDocumentItem(xmlIdentifier.getUri(), "xml", 1, xml));
-		XMLTextDocumentService textDocumentService = (XMLTextDocumentService) super.getTextDocumentService();
+		XMLTextDocumentService textDocumentService = getXMLTextDocumentService();
 		textDocumentService.didOpen(params);
 		try {
 			// Force the parse of DOM document
@@ -96,7 +96,7 @@ public class MockXMLLanguageServer extends XMLLanguageServer {
 		TextDocumentIdentifier xmlIdentifier = new TextDocumentIdentifier(fileURI);
 		DidChangeTextDocumentParams params = new DidChangeTextDocumentParams(
 				new VersionedTextDocumentIdentifier(xmlIdentifier.getUri(), 1), contentChanges);
-		XMLTextDocumentService textDocumentService = (XMLTextDocumentService) super.getTextDocumentService();
+		XMLTextDocumentService textDocumentService = getXMLTextDocumentService();
 		textDocumentService.didChange(params);
 		try {
 			// Force the parse of DOM document
@@ -110,7 +110,7 @@ public class MockXMLLanguageServer extends XMLLanguageServer {
 	public TextDocumentIdentifier didClose(String fileURI) {
 		TextDocumentIdentifier xmlIdentifier = new TextDocumentIdentifier(fileURI);
 		DidCloseTextDocumentParams params = new DidCloseTextDocumentParams(xmlIdentifier);
-		XMLTextDocumentService textDocumentService = (XMLTextDocumentService) super.getTextDocumentService();
+		XMLTextDocumentService textDocumentService = getXMLTextDocumentService();
 		textDocumentService.didClose(params);
 		return xmlIdentifier;
 	}
@@ -118,7 +118,7 @@ public class MockXMLLanguageServer extends XMLLanguageServer {
 	public TextDocumentIdentifier didSave(String fileURI) {
 		TextDocumentIdentifier xmlIdentifier = new TextDocumentIdentifier(fileURI);
 		DidSaveTextDocumentParams params = new DidSaveTextDocumentParams(xmlIdentifier);
-		XMLTextDocumentService textDocumentService = (XMLTextDocumentService) super.getTextDocumentService();
+		XMLTextDocumentService textDocumentService = getXMLTextDocumentService();
 		textDocumentService.didSave(params);
 		try {
 			// Force the parse of DOM document
@@ -127,5 +127,10 @@ public class MockXMLLanguageServer extends XMLLanguageServer {
 			e.printStackTrace();
 		}
 		return xmlIdentifier;
+	}
+	
+	public XMLTextDocumentService getXMLTextDocumentService() {
+		CompositeTextDocumentService service = (CompositeTextDocumentService)super.getTextDocumentService();
+		return service.getXMLTextDocumentService();
 	}
 }

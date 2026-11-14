@@ -1,0 +1,9 @@
+include "include-base.rnc" {
+  paragraph = element p {
+    mixed { inline* }
+  }
+}
+
+inline =
+  element bold { text }
+  | element italic { text }

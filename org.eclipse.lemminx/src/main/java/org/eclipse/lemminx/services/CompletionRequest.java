@@ -117,12 +117,7 @@ class CompletionRequest extends AbstractPositionRequest implements ICompletionRe
 
 	@Override
 	public boolean canSupportMarkupKind(String kind) {
-		XMLCompletionSettings completionSettings = sharedSettings.getCompletionSettings();
-		return completionSettings.getCompletionCapabilities() != null
-				&& completionSettings.getCompletionCapabilities().getCompletionItem() != null
-				&& completionSettings.getCompletionCapabilities().getCompletionItem().getDocumentationFormat() != null
-				&& completionSettings.getCompletionCapabilities().getCompletionItem().getDocumentationFormat()
-						.contains(kind);
+		return sharedSettings.getCompletionSettings().canSupportMarkupKind(kind);
 	}
 
 	@Override

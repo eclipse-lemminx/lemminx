@@ -1,0 +1,107 @@
+{
+  "element": {
+    "syntax": "element nameClass { pattern }",
+    "markdown": "**element** *nameClass* `{` *pattern* `}` — [Spec](https://relaxng.org/compact-tutorial-20030326.html#id2814100)\n\nDefines an element pattern that matches an XML element. The *nameClass* specifies which element names match, and the *pattern* describes the allowed content.\n\nA *nameClass* can be a simple name (`element root { ... }`), a choice (`element (a | b) { ... }`), a wildcard (`element * { ... }`), or a wildcard with exclusions (`element * - local:* { ... }`).\n\n**Examples:**\n```rnc\nelement root { text }\nelement name { xsd:string }\nelement (bold | italic) { text }\n```",
+    "plaintext": "element nameClass { pattern }\n\nDefines an element pattern that matches an XML element. The nameClass specifies which element names match, and the pattern describes the allowed content.\n\nSee https://relaxng.org/compact-tutorial-20030326.html#id2814100"
+  },
+  "attribute": {
+    "syntax": "attribute nameClass { pattern }",
+    "markdown": "**attribute** *nameClass* `{` *pattern* `}` — [Spec](https://relaxng.org/compact-tutorial-20030326.html#id2814218)\n\nDefines an attribute pattern that matches an XML attribute. The *nameClass* specifies which attribute names match, and the *pattern* describes the allowed value.\n\nBy default, attributes are required. Use `?` to make them optional: `attribute id { text }?`.\n\n**Examples:**\n```rnc\nattribute href { xsd:anyURI }\nattribute type { \"simple\" | \"complex\" }\nattribute id { text }?\n```",
+    "plaintext": "attribute nameClass { pattern }\n\nDefines an attribute pattern that matches an XML attribute. The nameClass specifies which attribute names match, and the pattern describes the allowed value.\n\nSee https://relaxng.org/compact-tutorial-20030326.html#id2814218"
+  },
+  "text": {
+    "syntax": "text",
+    "markdown": "**text** — [Spec](https://relaxng.org/compact-tutorial-20030326.html#id2814100)\n\nMatches any text content, including the empty string. When used inside an element pattern, it allows the element to contain arbitrary character data.\n\nThe `text` pattern is idempotent: `text, text` is equivalent to `text`.\n\n**Examples:**\n```rnc\nelement name { text }\nelement description { text }\n```",
+    "plaintext": "text\n\nMatches any text content, including the empty string.\n\nSee https://relaxng.org/compact-tutorial-20030326.html#id2814100"
+  },
+  "empty": {
+    "syntax": "empty",
+    "markdown": "**empty** — [Spec](https://relaxng.org/compact-tutorial-20030326.html#id2819693)\n\nMatches empty content: no text, no child elements. An element with the `empty` pattern may only contain attributes (if specified separately).\n\n**Examples:**\n```rnc\nelement br { empty }\nelement img { attribute src { xsd:anyURI }, empty }\n```",
+    "plaintext": "empty\n\nMatches empty content: no text, no child elements.\n\nSee https://relaxng.org/compact-tutorial-20030326.html#id2819693"
+  },
+  "notAllowed": {
+    "syntax": "notAllowed",
+    "markdown": "**notAllowed** — [Spec](https://relaxng.org/compact-tutorial-20030326.html#id2819693)\n\nA pattern that never matches. Used as the identity element for choice (`|`) — combining anything with `notAllowed` via choice yields the other pattern unchanged.\n\nCommonly used for extensibility: a define starts as `notAllowed` and is extended via `|=` in including grammars.\n\n**Examples:**\n```rnc\nextra.content = notAllowed\nextra.content |= element note { text }\n```",
+    "plaintext": "notAllowed\n\nA pattern that never matches. Used for extensibility via combine operators.\n\nSee https://relaxng.org/compact-tutorial-20030326.html#id2819693"
+  },
+  "list": {
+    "syntax": "list { pattern }",
+    "markdown": "**list** `{` *pattern* `}` — [Spec](https://relaxng.org/compact-tutorial-20030326.html#id2816748)\n\nMatches a whitespace-separated list of tokens. The text content is split on whitespace, and each token must match the inner *pattern*.\n\n**Examples:**\n```rnc\nattribute points { list { xsd:double+ } }\nelement classes { list { xsd:token+ } }\n```",
+    "plaintext": "list { pattern }\n\nMatches a whitespace-separated list of tokens.\n\nSee https://relaxng.org/compact-tutorial-20030326.html#id2816748"
+  },
+  "mixed": {
+    "syntax": "mixed { pattern }",
+    "markdown": "**mixed** `{` *pattern* `}` — [Spec](https://relaxng.org/compact-tutorial-20030326.html#id2816748)\n\nAllows mixed content: text interspersed with child elements matching the inner *pattern*. Equivalent to `(text | pattern)*`.\n\n**Examples:**\n```rnc\nelement p {\n  mixed {\n    element b { text }*\n    & element i { text }*\n  }\n}\n```",
+    "plaintext": "mixed { pattern }\n\nAllows mixed content: text interspersed with child elements. Equivalent to (text | pattern)*.\n\nSee https://relaxng.org/compact-tutorial-20030326.html#id2816748"
+  },
+  "start": {
+    "syntax": "start = pattern",
+    "markdown": "**start** `=` *pattern* — [Spec](https://relaxng.org/compact-tutorial-20030326.html#id2814100)\n\nDefines the start pattern of the grammar — the pattern that the root element must match.\n\nEvery grammar must have exactly one `start` declaration. Multiple `start` declarations can be combined using `|=` (choice) or `&=` (interleave).\n\n**Examples:**\n```rnc\nstart = element root { text }\nstart = myDefine\nstart |= element alternate { text }\n```",
+    "plaintext": "start = pattern\n\nDefines the start pattern of the grammar. The root element must match this pattern.\n\nSee https://relaxng.org/compact-tutorial-20030326.html#id2814100"
+  },
+  "include": {
+    "syntax": "include anyURILiteral [ { grammarContent } ]",
+    "markdown": "**include** *anyURILiteral* [ `{` *grammarContent* `}` ] — [Spec](https://relaxng.org/compact-tutorial-20030326.html#id2820475)\n\n### `include` (reference)\n\nMerges definitions from another RNC grammar file into the current grammar. The included defines become available as references.\n\n```rnc\ninclude \"inline.rnc\"\n\nstart = element doc {\n  paragraph+\n}\n```\n\n### `include { }` (override)\n\nIncludes a grammar file and overrides specific definitions. Definitions inside the body replace the corresponding definitions from the included file.\n\n```rnc\ninclude \"inline.rnc\" {\n  paragraph = element p { text }\n}\n```\n\nOnly names that exist in the included file can be overridden — other names produce an error.",
+    "plaintext": "include anyURILiteral [ { grammarContent } ]\n\ninclude (reference):\nMerges definitions from another RNC grammar file into the current grammar.\n  include \"inline.rnc\"\n\ninclude { } (override):\nIncludes a grammar and overrides specific definitions. Definitions inside the body replace the corresponding definitions from the included file.\n  include \"inline.rnc\" {\n    paragraph = element p { text }\n  }\n\nSee https://relaxng.org/compact-tutorial-20030326.html#id2820475"
+  },
+  "include-reference": {
+    "syntax": "include anyURILiteral",
+    "markdown": "**include** *anyURILiteral* (reference) — [Spec](https://relaxng.org/compact-tutorial-20030326.html#id2820475)\n\nMerges definitions from another RNC grammar file into the current grammar. The included defines become available as references.\n\n**Example:**\n```rnc\ninclude \"inline.rnc\"\n\nstart = element doc {\n  paragraph+\n}\n```",
+    "plaintext": "include anyURILiteral (reference)\n\nMerges definitions from another RNC grammar file into the current grammar. The included defines become available as references.\n\nSee https://relaxng.org/compact-tutorial-20030326.html#id2820475"
+  },
+  "include-override": {
+    "syntax": "include anyURILiteral { grammarContent }",
+    "markdown": "**include** *anyURILiteral* `{` *grammarContent* `}` (override) — [Spec](https://relaxng.org/compact-tutorial-20030326.html#id2820475)\n\nIncludes a grammar file and overrides specific definitions. Definitions inside the body replace the corresponding definitions from the included file.\n\nOnly names that exist in the included file can be overridden — other names produce an error.\n\n**Example:**\n```rnc\ninclude \"inline.rnc\" {\n  paragraph = element p { text }\n}\n```",
+    "plaintext": "include anyURILiteral { grammarContent } (override)\n\nIncludes a grammar and overrides specific definitions. Definitions inside the body replace the corresponding definitions from the included file.\n\nSee https://relaxng.org/compact-tutorial-20030326.html#id2820475"
+  },
+  "div": {
+    "syntax": "div { grammarContent }",
+    "markdown": "**div** `{` *grammarContent* `}` — [Spec](https://relaxng.org/compact-tutorial-20030326.html#id2820694)\n\nGroups grammar definitions for organizational purposes. Has no semantic effect — `div` blocks are transparent and their contents are treated as if written directly at the enclosing level.\n\n**Examples:**\n```rnc\ndiv {\n  heading = element h1 { text }\n  paragraph = element p { text }\n}\n```",
+    "plaintext": "div { grammarContent }\n\nGroups grammar definitions for organizational purposes. Has no semantic effect.\n\nSee https://relaxng.org/compact-tutorial-20030326.html#id2820694"
+  },
+  "external": {
+    "syntax": "external anyURILiteral [ inherit ]",
+    "markdown": "**external** *anyURILiteral* [ *inherit* ] — [Spec](https://relaxng.org/compact-tutorial-20030326.html#id2820475)\n\nReferences an external RELAX NG grammar and uses its start pattern as a sub-pattern. Unlike `include`, which merges definitions, `external` simply uses the other grammar's content.\n\n**Examples:**\n```rnc\nstart = external \"other.rnc\"\nfoo = element foo { external \"bar-content.rnc\" }\n```",
+    "plaintext": "external anyURILiteral [ inherit ]\n\nReferences an external grammar and uses its start pattern as a sub-pattern.\n\nSee https://relaxng.org/compact-tutorial-20030326.html#id2820475"
+  },
+  "grammar": {
+    "syntax": "grammar { grammarContent }",
+    "markdown": "**grammar** `{` *grammarContent* `}` — [Spec](https://relaxng.org/compact-tutorial-20030326.html#id2820694)\n\nDefines an explicit grammar block containing `start` and named definitions. Every RNC file is implicitly a grammar, so `grammar { ... }` is mainly used for nested grammars.\n\nA nested grammar creates a new scope for definitions and has its own `start` pattern. Use `parent` to reference the enclosing grammar's definitions.\n\n**Examples:**\n```rnc\nelement root {\n  grammar {\n    start = element child { parent content }\n  }\n}\n```",
+    "plaintext": "grammar { grammarContent }\n\nDefines an explicit grammar block with its own start pattern and definitions.\n\nSee https://relaxng.org/compact-tutorial-20030326.html#id2820694"
+  },
+  "namespace": {
+    "syntax": "namespace prefix = anyURILiteral",
+    "markdown": "**namespace** *prefix* `=` *anyURILiteral* — [Spec](https://relaxng.org/compact-tutorial-20030326.html#id2819036)\n\nDeclares a namespace prefix for use in element and attribute names. The prefix can then be used with a colon to qualify names: `prefix:localName`.\n\n**Examples:**\n```rnc\nnamespace a = \"http://relaxng.org/ns/compatibility/annotations/1.0\"\nnamespace html = \"http://www.w3.org/1999/xhtml\"\nstart = element html:html { text }\n```",
+    "plaintext": "namespace prefix = anyURILiteral\n\nDeclares a namespace prefix for use in qualified element and attribute names.\n\nSee https://relaxng.org/compact-tutorial-20030326.html#id2819036"
+  },
+  "default": {
+    "syntax": "default namespace [ prefix ] = anyURILiteral",
+    "markdown": "**default namespace** [ *prefix* ] `=` *anyURILiteral* — [Spec](https://relaxng.org/compact-tutorial-20030326.html#id2819036)\n\nDeclares the default namespace for unqualified element names. Optionally assigns a prefix that can also be used to explicitly qualify names.\n\n**Examples:**\n```rnc\ndefault namespace = \"http://www.w3.org/1999/xhtml\"\ndefault namespace html = \"http://www.w3.org/1999/xhtml\"\n```",
+    "plaintext": "default namespace [ prefix ] = anyURILiteral\n\nDeclares the default namespace for unqualified element names.\n\nSee https://relaxng.org/compact-tutorial-20030326.html#id2819036"
+  },
+  "datatypes": {
+    "syntax": "datatypes prefix = anyURILiteral",
+    "markdown": "**datatypes** *prefix* `=` *anyURILiteral* — [Spec](https://relaxng.org/compact-tutorial-20030326.html#id2817679)\n\nDeclares a datatypes library prefix. The most common datatype library is XML Schema datatypes (`xsd`), which provides types like `xsd:string`, `xsd:integer`, `xsd:anyURI`, etc.\n\n**Examples:**\n```rnc\ndatatypes xsd = \"http://www.w3.org/2001/XMLSchema-datatypes\"\nattribute age { xsd:positiveInteger }\n```",
+    "plaintext": "datatypes prefix = anyURILiteral\n\nDeclares a datatypes library prefix (e.g., xsd for XML Schema datatypes).\n\nSee https://relaxng.org/compact-tutorial-20030326.html#id2817679"
+  },
+  "parent": {
+    "syntax": "parent name",
+    "markdown": "**parent** *name* — [Spec](https://relaxng.org/compact-tutorial-20030326.html#id2820694)\n\nReferences a named definition in the parent grammar when used inside a nested `grammar { ... }` block.\n\n**Examples:**\n```rnc\ncommon = text\nstart = element root {\n  grammar {\n    start = element child { parent common }\n  }\n}\n```",
+    "plaintext": "parent name\n\nReferences a definition in the parent grammar from inside a nested grammar block.\n\nSee https://relaxng.org/compact-tutorial-20030326.html#id2820694"
+  },
+  "inherit": {
+    "syntax": "inherit",
+    "markdown": "**inherit** — [Spec](https://relaxng.org/compact-tutorial-20030326.html#id2819036)\n\nUsed in namespace declarations to inherit the default namespace from the including grammar.\n\n**Examples:**\n```rnc\nnamespace local = inherit\ninclude \"other.rnc\" inherit\n```",
+    "plaintext": "inherit\n\nInherits the default namespace from the including grammar.\n\nSee https://relaxng.org/compact-tutorial-20030326.html#id2819036"
+  },
+  "string": {
+    "syntax": "string [ params ]",
+    "markdown": "**string** [ *params* ] — [Spec](https://relaxng.org/compact-tutorial-20030326.html#id2817679)\n\nBuilt-in datatype that matches a string value with whitespace preserved. This is the default datatype when no library is specified.\n\n**Examples:**\n```rnc\nattribute type { string \"fixed\" }\nelement value { string }\n```",
+    "plaintext": "string [ params ]\n\nBuilt-in datatype that matches a string value with whitespace preserved.\n\nSee https://relaxng.org/compact-tutorial-20030326.html#id2817679"
+  },
+  "token": {
+    "syntax": "token [ params ]",
+    "markdown": "**token** [ *params* ] — [Spec](https://relaxng.org/compact-tutorial-20030326.html#id2817679)\n\nBuilt-in datatype that matches a tokenized string: leading and trailing whitespace is stripped, and internal whitespace is collapsed to single spaces before comparison.\n\n**Examples:**\n```rnc\nattribute class { token \"main\" }\nelement name { token }\n```",
+    "plaintext": "token [ params ]\n\nBuilt-in datatype that matches a tokenized string (whitespace collapsed).\n\nSee https://relaxng.org/compact-tutorial-20030326.html#id2817679"
+  }
+}
