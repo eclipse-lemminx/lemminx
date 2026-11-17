@@ -29,3 +29,18 @@ jobs:
         cache: 'maven'
     - name: Run Tests
       run: ./mvnw -B '-Dlemminx.cacheInRepoDir' clean verify
+  native-image:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v7
+    - uses: graalvm/setup-graalvm@8c5543b71f44568342e106336639979e94a8f6de #v1.6.1
+      with:
+        distribution: graalvm-community
+        java-version: 17
+    - name: Build Binary
+      run: ./mvnw -B '-Dlemminx.cacheInRepoDir' clean package -Dnative -DskipTests
