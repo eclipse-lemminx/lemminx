@@ -12,4 +12,12 @@
 	"editor.tabSize": 4,
 	"editor.insertSpaces": false,
 	"java.compile.nullAnalysis.mode": "automatic",
+	"json.schemas": [
+		{
+			"fileMatch": [
+				"**/reachability-metadata.json"
+			],
+			"url": "https://www.graalvm.org/docs/reference-manual/native-image/assets/reachability-metadata-schema-v1.2.0.json"
+		}
+	]
 }
