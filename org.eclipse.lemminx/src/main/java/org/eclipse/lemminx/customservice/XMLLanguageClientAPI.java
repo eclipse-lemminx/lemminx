@@ -40,7 +40,7 @@ public interface XMLLanguageClientAPI extends LanguageClient {
 	/**
 	 * Executes the command on the client which gives an opportunity to execute a
 	 * command registered by a different Language Server
-	 * 
+	 *
 	 * @param params command execution parameters
 	 * @return the result of the command execution
 	 */
@@ -48,5 +48,5 @@ public interface XMLLanguageClientAPI extends LanguageClient {
 	default CompletableFuture<Object> executeClientCommand(ExecuteCommandParams params) {
 		throw new UnsupportedOperationException();
 	}
-	
+
 }
