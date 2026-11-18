@@ -271,6 +271,27 @@ public class AssociateGrammarCodeLensExtensionsTest extends AbstractCacheBasedTe
 				cl(r(0, 0, 0, 0), "resources.xsd (file association)", OPEN_URI));
 	}
 
+	@Test
+	public void referencedGrammarWithCatalogShowsFilename() throws BadLocationException {
+		// When an XML is bound via catalog (DOCTYPE + system entry), the code lens
+		// should show the catalog filename instead of the generic "catalog" label.
+		Consumer<XMLLanguageService> configuration = ls -> {
+			ContentModelSettings cmSettings = new ContentModelSettings();
+			cmSettings.setUseCache(false);
+			cmSettings.setCatalogs(new String[] { "src/test/resources/catalogs/catalog.xml" });
+			ls.doSave(new SettingsSaveContext(cmSettings));
+		};
+
+		// catalog.xml has: <system systemId="http://invoice.xsd" uri="../xsd/invoice.xsd" />
+		String xml = "<!DOCTYPE invoice SYSTEM \"http://invoice.xsd\">\r\n"
+				+ "<invoice/>";
+
+		testCodeLensFor(xml, "test.xml", new XMLLanguageService(), //
+				Collections.singletonList(CodeLensKind.OpenUri), //
+				configuration, //
+				cl(r(0, 0, 0, 0), "http://invoice.xsd (doctype with catalog.xml)", OPEN_URI));
+	}
+
 	public void unregisterCatalog() throws BadLocationException, IOException {
 		Consumer<XMLLanguageService> configuration = ls -> {
 			ContentModelManager contentModelManager = ls.getComponent(ContentModelManager.class);

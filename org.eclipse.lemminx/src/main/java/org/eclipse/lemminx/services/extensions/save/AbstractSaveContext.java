@@ -20,6 +20,7 @@ public abstract class AbstractSaveContext implements ISaveContext {
 
 	private final String uri;
 	private final Object settings;
+	private boolean codeLensRefreshRequested;
 
 	public AbstractSaveContext(Object settings) {
 		this(null, settings);
@@ -47,6 +48,16 @@ public abstract class AbstractSaveContext implements ISaveContext {
 	@Override
 	public Object getSettings() {
 		return settings;
+	}
+
+	@Override
+	public void requestCodeLensRefresh() {
+		this.codeLensRefreshRequested = true;
+	}
+
+	@Override
+	public boolean isCodeLensRefreshRequested() {
+		return codeLensRefreshRequested;
 	}
 
 }

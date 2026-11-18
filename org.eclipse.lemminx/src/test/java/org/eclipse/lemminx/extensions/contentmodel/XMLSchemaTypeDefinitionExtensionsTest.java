@@ -15,11 +15,22 @@ import static org.eclipse.lemminx.XMLAssert.ll;
 import static org.eclipse.lemminx.XMLAssert.r;
 import static org.eclipse.lemminx.XMLAssert.testTypeDefinitionFor;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+
 import org.apache.xerces.impl.XMLEntityManager;
 import org.apache.xerces.util.URI.MalformedURIException;
 import org.eclipse.lemminx.AbstractCacheBasedTest;
 import org.eclipse.lemminx.commons.BadLocationException;
+import org.eclipse.lemminx.dom.DOMAttr;
+import org.eclipse.lemminx.dom.DOMDocument;
+import org.eclipse.lemminx.dom.DOMParser;
+import org.eclipse.lemminx.extensions.catalog.CatalogEntry;
+import org.eclipse.lemminx.extensions.catalog.CatalogUtils;
 import org.eclipse.lemminx.services.XMLLanguageService;
+import org.eclipse.lemminx.utils.XMLPositionUtility;
+import org.eclipse.lsp4j.Range;
 import org.junit.jupiter.api.Test;
 
 /**
@@ -103,18 +114,25 @@ public class XMLSchemaTypeDefinitionExtensionsTest extends AbstractCacheBasedTes
 	}
 
 	@Test
-	public void globalXSElementWithCatalog() throws BadLocationException, MalformedURIException {
+	public void globalXSElementWithCatalog() throws BadLocationException, MalformedURIException, IOException {
 		String xmlFile = "src/test/resources/resources.xml";
+		String catalogPath = "src/test/resources/catalogs/catalog.xml";
+		String catalogUri = Paths.get(catalogPath).toAbsolutePath().toUri().toString();
 		String firstXSDURI = XMLEntityManager.expandSystemId("xsd/edmx.xsd", xmlFile, true);
 		String secondXSDURI = XMLEntityManager.expandSystemId("xsd/edm.xsd", xmlFile, true);
+		String edmxNs = "http://docs.oasis-open.org/odata/ns/edmx";
+		String edmNs = "http://docs.oasis-open.org/odata/ns/edm";
 
 		XMLLanguageService xmlLanguageService = new XMLLanguageService();
 
 		String xml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n" + //
 				"<edmx:Ed|mx xmlns:edmx=\"http://docs.oasis-open.org/odata/ns/edmx\" xmlns=\"http://docs.oasis-open.org/odata/ns/edm\" Version=\"4.0\">\r\n";
 
-		testTypeDefinitionFor(xmlLanguageService, "src/test/resources/catalogs/catalog.xml", xml, xmlFile,
-				ll(firstXSDURI, r(1, 1, 1, 10), r(68, 19, 68, 25)));
+		testTypeDefinitionFor(xmlLanguageService, catalogPath, xml, xmlFile,
+				ll(firstXSDURI, r(1, 1, 1, 10), r(68, 19, 68, 25)),
+				ll(catalogUri, r(1, 1, 1, 10),
+						catalogEntryTargetRange(catalogPath, edmxNs),
+						catalogEntrySelectionRange(catalogPath, edmxNs)));
 
 		xml = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\r\n" + //
 				"<edmx:Edmx xmlns:edmx=\"http://docs.oasis-open.org/odata/ns/edmx\" xmlns=\"http://docs.oasis-open.org/odata/ns/edm\" Version=\"4.0\">\r\n"
@@ -124,15 +142,21 @@ public class XMLSchemaTypeDefinitionExtensionsTest extends AbstractCacheBasedTes
 				"    <edmx:Include Namespace=\"Org.OData.Core.V1\" Alias=\"Core\">\r\n" + //
 				"      <Ann|otation Term=\"Core.DefaultNamespace\" />";
 
-		testTypeDefinitionFor(xmlLanguageService, "src/test/resources/catalogs/catalog.xml", xml, xmlFile,
-				ll(secondXSDURI, r(4, 7, 4, 17), r(229, 19, 229, 31)));
+		testTypeDefinitionFor(xmlLanguageService, catalogPath, xml, xmlFile,
+				ll(secondXSDURI, r(4, 7, 4, 17), r(229, 19, 229, 31)),
+				ll(catalogUri, r(4, 7, 4, 17),
+						catalogEntryTargetRange(catalogPath, edmNs),
+						catalogEntrySelectionRange(catalogPath, edmNs)));
 
 	}
 
 	@Test
-	public void localXSAttributeWithCatalog() throws BadLocationException, MalformedURIException {
+	public void localXSAttributeWithCatalog() throws BadLocationException, MalformedURIException, IOException {
 		String xmlFile = "src/test/resources/resources.xml";
+		String catalogPath = "src/test/resources/catalogs/catalog.xml";
+		String catalogUri = Paths.get(catalogPath).toAbsolutePath().toUri().toString();
 		String targetSchemaURI = XMLEntityManager.expandSystemId("xsd/edmx.xsd", xmlFile, true);
+		String edmxNs = "http://docs.oasis-open.org/odata/ns/edmx";
 
 		XMLLanguageService xmlLanguageService = new XMLLanguageService();
 
@@ -141,8 +165,11 @@ public class XMLSchemaTypeDefinitionExtensionsTest extends AbstractCacheBasedTes
 				+ //
 				"  <edmx:Reference Ur|i=\"https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Core.V1.xml\">\r\n";
 
-		testTypeDefinitionFor(xmlLanguageService, "src/test/resources/catalogs/catalog.xml", xml, xmlFile,
-				ll(targetSchemaURI, r(2, 18, 2, 21), r(82, 23, 82, 28)));
+		testTypeDefinitionFor(xmlLanguageService, catalogPath, xml, xmlFile,
+				ll(targetSchemaURI, r(2, 18, 2, 21), r(82, 23, 82, 28)),
+				ll(catalogUri, r(2, 18, 2, 21),
+						catalogEntryTargetRange(catalogPath, edmxNs),
+						catalogEntrySelectionRange(catalogPath, edmxNs)));
 
 	}
 
@@ -260,6 +287,43 @@ public class XMLSchemaTypeDefinitionExtensionsTest extends AbstractCacheBasedTes
 				"</m:Root>";
 		testTypeDefinitionFor(xmlLanguageService, xmlB, xmlFile,
 				ll(bSchemaURI, r(10, 5, 10, 12), r(12, 37, 12, 44)));
+	}
+
+	// --- catalog entry range helpers ---
+
+	private static Range catalogEntryTargetRange(String catalogPath, String namespaceUri) {
+		try {
+			java.nio.file.Path path = Paths.get(catalogPath);
+			String content = Files.readString(path);
+			String uri = path.toAbsolutePath().toUri().toString();
+			DOMDocument doc = DOMParser.getInstance().parse(content, uri, null);
+			for (CatalogEntry entry : CatalogUtils.getCatalogEntries(doc)) {
+				if (namespaceUri.equals(CatalogUtils.getCatalogIdentifier(entry))) {
+					return XMLPositionUtility.createRange(entry.getEntryElement());
+				}
+			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		return null;
+	}
+
+	private static Range catalogEntrySelectionRange(String catalogPath, String namespaceUri) {
+		try {
+			java.nio.file.Path path = Paths.get(catalogPath);
+			String content = Files.readString(path);
+			String uri = path.toAbsolutePath().toUri().toString();
+			DOMDocument doc = DOMParser.getInstance().parse(content, uri, null);
+			for (CatalogEntry entry : CatalogUtils.getCatalogEntries(doc)) {
+				if (namespaceUri.equals(CatalogUtils.getCatalogIdentifier(entry))) {
+					DOMAttr attr = CatalogUtils.getCatalogIdentifierAttr(entry.getEntryElement());
+					return XMLPositionUtility.selectAttributeValue(attr, true);
+				}
+			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		return null;
 	}
 
 }

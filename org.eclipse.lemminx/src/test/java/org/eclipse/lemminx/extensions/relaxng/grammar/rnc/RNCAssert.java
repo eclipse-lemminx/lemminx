@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import org.eclipse.lemminx.XMLAssert;
 import org.eclipse.lemminx.commons.BadLocationException;
 import org.eclipse.lemminx.commons.TextDocument;
+import org.eclipse.lemminx.extensions.index.WorkspaceIndex;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.parser.RNCParser;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.settings.RNCFormattingSettings;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.utils.RNCIncludeUtils;
@@ -52,6 +53,8 @@ import org.eclipse.lsp4j.DocumentSymbol;
 import org.eclipse.lsp4j.FoldingRange;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.HoverCapabilities;
+import org.eclipse.lsp4j.InlayHint;
+import org.eclipse.lsp4j.InlayHintKind;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.MarkupContent;
@@ -97,12 +100,48 @@ public class RNCAssert {
 		return parse(value, FILE_URI);
 	}
 
+	/**
+	 * Holds the URI, content, and optional {@link Path} of a file used in tests.
+	 * Use {@link #fi(String)} for test resource files or {@link #fi(Path, String)}
+	 * to write an in-memory string to a temporary file on disk.
+	 */
+	public static class FileInfo {
+		public final String uri;
+		public final String content;
+		/** Absolute path on disk, or {@code null} when not backed by a real file. */
+		public final Path path;
+
+		private FileInfo(String uri, String content, Path path) {
+			this.uri = uri;
+			this.content = content;
+			this.path = path;
+		}
+	}
+
+	/** Returns the URI of a test resource file (use when only the URI is needed). */
 	public static String testFileUri(String filename) {
 		return new File(TEST_RESOURCES_DIR + filename).toURI().toString();
 	}
 
+	/** Returns the content of a test resource file (use when only the content is needed). */
 	public static String testFileContent(String filename) throws IOException {
 		return Files.readString(Path.of(TEST_RESOURCES_DIR + filename));
+	}
+
+	/** Returns a {@link FileInfo} for a test resource file (reads URI + content from disk). */
+	public static FileInfo fi(String filename) throws IOException {
+		Path p = Path.of(TEST_RESOURCES_DIR + filename);
+		return new FileInfo(p.toUri().toString(), Files.readString(p), p);
+	}
+
+	/**
+	 * Writes {@code content} to {@code path} and returns a {@link FileInfo} backed
+	 * by that file. Intended for use with {@code @TempDir} in tests that need real
+	 * files on disk (e.g. workspace-index tests).
+	 */
+	public static FileInfo fi(Path path, String content) throws IOException {
+		Files.writeString(path, content);
+		return new FileInfo(path.toUri().toString(), content, path);
 	}
 
 	// ------------------- Completion assert
@@ -286,9 +325,18 @@ public class RNCAssert {
 	// ------------------- Diagnostics assert
 
 	public static void testDiagnosticsFor(String value, String fileUri, Diagnostic... expected) {
+		testDiagnosticsFor(value, fileUri, null, expected);
+	}
+
+	public static void testDiagnosticsFor(String value, String fileUri, WorkspaceIndex workspaceIndex,
+			Diagnostic... expected) {
 		TextDocument document = new TextDocument(value, fileUri);
-		List<Diagnostic> actual = RNCValidator.validate(document, NULL_CHECKER);
+		List<Diagnostic> actual = RNCValidator.validate(document, workspaceIndex, true, NULL_CHECKER);
 		XMLAssert.assertDiagnostics(actual, expected);
+	}
+
+	public static void testDiagnosticsFor(FileInfo fileInfo, Diagnostic... expected) {
+		testDiagnosticsFor(fileInfo.content, fileInfo.uri, expected);
 	}
 
 	public static void testDiagnosticsFor(String value, Diagnostic... expected) {
@@ -319,6 +367,27 @@ public class RNCAssert {
 	public static Diagnostic d(int startLine, int startCharacter, int endLine, int endCharacter,
 			IXMLErrorCode code, DiagnosticTag... tags) {
 		return XMLAssert.d(startLine, startCharacter, endLine, endCharacter, code, tags);
+	}
+
+	// ------------------- InlayHint assert
+
+	public static void testInlayHintFor(String value, InlayHint... expected) throws BadLocationException {
+		testInlayHintFor(value, FILE_URI, expected);
+	}
+
+	public static void testInlayHintFor(String value, String fileUri, InlayHint... expected)
+			throws BadLocationException {
+		RNCDocument rncDocument = parse(value, fileUri);
+		Range range = new Range(new Position(0, 0), new Position(Integer.MAX_VALUE, Integer.MAX_VALUE));
+		List<InlayHint> actual = LANGUAGE_SERVICE.getInlayHints(rncDocument, range);
+		XMLAssert.assertInlayHint(actual, expected);
+	}
+
+	public static InlayHint ih(Position position, String label) {
+		InlayHint hint = new InlayHint(position, Either.forLeft(label));
+		hint.setKind(InlayHintKind.Type);
+		hint.setPaddingLeft(true);
+		return hint;
 	}
 
 	// ------------------- Code Action assert
@@ -433,8 +502,17 @@ public class RNCAssert {
 	// ------------------- CodeLens assert
 
 	public static void testCodeLensFor(String value, CodeLens... expected) {
-		RNCDocument rncDocument = parse(value);
-		List<CodeLens> actual = LANGUAGE_SERVICE.getCodeLens(rncDocument, false, NULL_CHECKER);
+		testCodeLensFor(value, FILE_URI, null, expected);
+	}
+
+	public static void testCodeLensFor(String value, WorkspaceIndex workspaceIndex, CodeLens... expected) {
+		testCodeLensFor(value, FILE_URI, workspaceIndex, expected);
+	}
+
+	public static void testCodeLensFor(String value, String fileUri, WorkspaceIndex workspaceIndex,
+			CodeLens... expected) {
+		RNCDocument rncDocument = parse(value, fileUri);
+		List<CodeLens> actual = LANGUAGE_SERVICE.getCodeLens(rncDocument, false, workspaceIndex, NULL_CHECKER);
 		XMLAssert.assertCodeLens(actual, expected);
 	}
 
@@ -516,14 +594,23 @@ public class RNCAssert {
 
 	public static void testReferencesFor(String value, Location... expected) throws BadLocationException {
 		int offset = value.indexOf('|');
-		value = value.substring(0, offset) + value.substring(offset + 1);
-
-		RNCDocument rncDocument = parse(value);
+		String stripped = value.substring(0, offset) + value.substring(offset + 1);
+		RNCDocument rncDocument = parse(stripped, FILE_URI);
 		Position position = rncDocument.getTextDocument().positionAt(offset);
+		testReferencesFor(stripped, FILE_URI, position, null, expected);
+	}
 
+	public static void testReferencesFor(FileInfo fileInfo, Position position,
+			WorkspaceIndex workspaceIndex, Location... expected) {
+		testReferencesFor(fileInfo.content, fileInfo.uri, position, workspaceIndex, expected);
+	}
+
+	public static void testReferencesFor(String value, String fileUri, Position position,
+			WorkspaceIndex workspaceIndex, Location... expected) {
+		RNCDocument rncDocument = parse(value, fileUri);
 		ReferenceContext context = new ReferenceContext(false);
 		List<? extends Location> actual = LANGUAGE_SERVICE.findReferences(rncDocument, position, context,
-				NULL_CHECKER);
+				workspaceIndex, null, NULL_CHECKER);
 		XMLAssert.assertLocation(actual, expected);
 	}
 

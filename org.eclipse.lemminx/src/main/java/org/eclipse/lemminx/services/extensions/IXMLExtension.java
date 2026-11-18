@@ -17,6 +17,7 @@ import org.eclipse.lemminx.services.extensions.diagnostics.IDiagnosticsParticipa
 import org.eclipse.lemminx.services.extensions.hover.IHoverParticipant;
 import org.eclipse.lemminx.services.extensions.save.ISaveContext;
 import org.eclipse.lsp4j.InitializeParams;
+import org.eclipse.lsp4j.InitializedParams;
 
 /**
  * XML extension.
@@ -43,6 +44,18 @@ public interface IXMLExtension {
 	 * @param registry
 	 */
 	void stop(XMLExtensionsRegistry registry);
+
+	/**
+	 * Called once the LSP client has sent the {@code initialized} notification,
+	 * meaning the client is fully ready. Extensions that need to trigger background
+	 * work (e.g. a workspace scan) after the LSP handshake should override this.
+	 *
+	 * @param params   the initialized notification params (usually empty)
+	 * @param registry the extensions registry
+	 */
+	default void initialized(InitializedParams params, XMLExtensionsRegistry registry) {
+
+	}
 
 	/**
 	 * Called when the Settings or a Document have been saved.

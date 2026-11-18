@@ -22,8 +22,13 @@ import java.util.stream.Collectors;
 import org.eclipse.lemminx.AbstractTextDocumentService;
 import org.eclipse.lemminx.XMLLanguageServer;
 import org.eclipse.lemminx.client.CodeLensKind;
+import org.eclipse.lemminx.extensions.index.WorkspaceIndex;
+import java.util.function.Function;
+
 import org.eclipse.lemminx.commons.ModelTextDocument;
 import org.eclipse.lemminx.commons.ModelValidatorDelayer;
+import org.eclipse.lemminx.extensions.index.WorkspaceIndexPlugin;
+import org.eclipse.lemminx.services.IXMLDocumentProvider;
 import org.eclipse.lemminx.commons.config.ConfigurationField;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.parser.RNCParser;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.utils.RNCIncludeUtils;
@@ -55,6 +60,8 @@ import org.eclipse.lsp4j.FoldingRange;
 import org.eclipse.lsp4j.FoldingRangeRequestParams;
 import org.eclipse.lsp4j.Hover;
 import org.eclipse.lsp4j.HoverParams;
+import org.eclipse.lsp4j.InlayHint;
+import org.eclipse.lsp4j.InlayHintParams;
 import org.eclipse.lsp4j.Location;
 import org.eclipse.lsp4j.LocationLink;
 import org.eclipse.lsp4j.DocumentFormattingParams;
@@ -136,6 +143,10 @@ public class RNCTextDocumentService extends AbstractTextDocumentService<RNCDocum
 		this.validatorDelayer = new ModelValidatorDelayer<>((document) -> {
 			validate(document, document.getVersion());
 		});
+		// Wire this service into the index scanner contributor so that
+		// getOpenDocumentContent() can return live in-memory content for open RNC
+		// files, keeping reference positions accurate for files with unsaved edits.
+		RNCIndexFileScannerContributor.setDocumentService(this);
 	}
 
 	@Override
@@ -194,6 +205,18 @@ public class RNCTextDocumentService extends AbstractTextDocumentService<RNCDocum
 	}
 
 	/**
+	 * Re-validates all open RNC files when the workspace index scan completes.
+	 * Needed because some diagnostics (e.g. "missing start" suppression) depend on
+	 * cross-file workspace information that is only available after the full scan.
+	 */
+	@Override
+	protected void onIndexScanCompleted() {
+		for (ModelTextDocument<RNCDocument, SharedSettings> doc : allDocuments()) {
+			triggerValidation(doc, false);
+		}
+	}
+
+	/**
 	 * Triggers validation either immediately or with a delay.
 	 *
 	 * @param document  the document to validate.
@@ -227,7 +250,9 @@ public class RNCTextDocumentService extends AbstractTextDocumentService<RNCDocum
 				}
 			};
 			cancelChecker.checkCanceled();
-			List<Diagnostic> diagnostics = RNCValidator.validate(document,
+			WorkspaceIndex workspaceIndex = xmlLanguageServer.getXMLLanguageService()
+					.getComponent(WorkspaceIndex.class);
+			List<Diagnostic> diagnostics = RNCValidator.validate(document, workspaceIndex,
 					isUnnecessaryTagSupported(), cancelChecker);
 			cancelChecker.checkCanceled();
 			publishDiagnostics(document.getUri(), diagnostics);
@@ -366,8 +391,12 @@ public class RNCTextDocumentService extends AbstractTextDocumentService<RNCDocum
 	@Override
 	public CompletableFuture<List<? extends Location>> references(ReferenceParams params) {
 		return computeModelAsync(params.getTextDocument(), (rncDocument, cancelChecker) -> {
+			WorkspaceIndex workspaceIndex = xmlLanguageServer.getXMLLanguageService()
+					.getComponent(WorkspaceIndex.class);
+			IXMLDocumentProvider docProvider = xmlLanguageServer;
+			Function<String, String> openDocContent = uri -> WorkspaceIndexPlugin.openDocumentContent(docProvider, uri);
 			return rncLanguageService.findReferences(
-					rncDocument, params.getPosition(), params.getContext(), cancelChecker);
+					rncDocument, params.getPosition(), params.getContext(), workspaceIndex, openDocContent, cancelChecker);
 		});
 	}
 
@@ -437,7 +466,13 @@ public class RNCTextDocumentService extends AbstractTextDocumentService<RNCDocum
 		return computeModelAsync(params.getTextDocument(), (rncDocument, cancelChecker) -> {
 			boolean supportedByClient = getSharedSettings().getCodeLensSettings()
 					.isSupportedByClient(CodeLensKind.References);
-			return rncLanguageService.getCodeLens(rncDocument, supportedByClient, cancelChecker);
+			// WorkspaceIndex is registered as a component in the XML extension registry.
+			// RNC uses a separate text document service, so it cannot go through the
+			// WorkspaceIndexCodeLensParticipant. Instead it retrieves the index here and
+			// passes it to RNCCodeLenses, which calls WorkspaceIndexCodeLensSupport directly.
+			WorkspaceIndex workspaceIndex = xmlLanguageServer.getXMLLanguageService()
+					.getComponent(WorkspaceIndex.class);
+			return rncLanguageService.getCodeLens(rncDocument, supportedByClient, workspaceIndex, cancelChecker);
 		});
 	}
 
@@ -477,6 +512,15 @@ public class RNCTextDocumentService extends AbstractTextDocumentService<RNCDocum
 			SharedSettings settings = getSharedSettings();
 			boolean snippetSupported = settings.getWorkspaceSettings().isSnippetEditSupported();
 			return rncLanguageService.resolveCodeAction(rncDocument, unresolved, snippetSupported);
+		});
+	}
+
+	// -------------------- Inlay Hints --------------------
+
+	@Override
+	public CompletableFuture<List<InlayHint>> inlayHint(InlayHintParams params) {
+		return computeModelAsync(params.getTextDocument(), (rncDocument, cancelChecker) -> {
+			return rncLanguageService.getInlayHints(rncDocument, params.getRange());
 		});
 	}
 

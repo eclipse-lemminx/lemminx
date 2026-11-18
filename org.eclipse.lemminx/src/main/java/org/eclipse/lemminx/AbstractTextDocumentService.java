@@ -171,6 +171,15 @@ public abstract class AbstractTextDocumentService<T> implements TextDocumentServ
 	protected void onDidClose(String uri) {
 	}
 
+	/**
+	 * Called when the workspace index initial scan has completed.
+	 * Override to re-validate open documents whose diagnostics depend on
+	 * workspace-wide information (e.g. cross-file reference counts, unused-entry
+	 * checks, or "missing start" suppression in RNC files).
+	 */
+	protected void onIndexScanCompleted() {
+	}
+
 	// -------------------- Document access --------------------
 
 	public ModelTextDocument<T, SharedSettings> getDocument(String uri) {

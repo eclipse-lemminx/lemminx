@@ -14,6 +14,7 @@ package org.eclipse.lemminx.extensions.relaxng;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelProvider;
+import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.RNCIndexFileScannerContributor;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rng.RNGCodeLensParticipant;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rng.RNGCompletionParticipant;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rng.RNGDefinitionParticipant;
@@ -75,7 +76,7 @@ public class RelaxNGPlugin implements IXMLExtension {
 		String documentURI = context.getUri();
 		DOMDocument document = context.getDocument(documentURI);
 		if (DOMUtils.isRelaxNG(document)) {
-			context.collectDocumentToValidate(d -> {
+			context.refreshDiagnostics(d -> {
 				DOMDocument xml = context.getDocument(d.getDocumentURI());
 				return contentModelManager.dependsOnGrammar(xml, context.getUri());
 			});
@@ -99,6 +100,8 @@ public class RelaxNGPlugin implements IXMLExtension {
 		registry.registerRenameParticipant(renameParticipant);
 		registry.registerDocumentLinkParticipant(documentLinkParticipant);
 		registry.registerDiagnosticsParticipant(diagnosticsParticipant);
+		// rnc index contributor
+		registry.registerIndexFileScannerContributor(new RNCIndexFileScannerContributor());
 	}
 
 	@Override

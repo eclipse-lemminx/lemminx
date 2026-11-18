@@ -17,17 +17,23 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import org.eclipse.lemminx.extensions.index.WorkspaceIndex;
+import org.eclipse.lemminx.utils.DOMUtils;
+
 import org.eclipse.lemminx.client.InvalidPathWarner;
 import org.eclipse.lemminx.client.PathFeature;
 import org.eclipse.lemminx.extensions.catalog.participants.XMLCatalogCodeLensParticipant;
 import org.eclipse.lemminx.extensions.catalog.participants.XMLCatalogDiagnosticsParticipant;
 import org.eclipse.lemminx.extensions.catalog.participants.XMLCatalogDocumentLinkParticipant;
+import org.eclipse.lemminx.extensions.catalog.participants.XMLCatalogTypeDefinitionParticipant;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
 import org.eclipse.lemminx.extensions.contentmodel.settings.ContentModelSettings;
 import org.eclipse.lemminx.services.IXMLNotificationService;
 import org.eclipse.lemminx.services.extensions.IDocumentLinkParticipant;
+import org.eclipse.lemminx.services.extensions.ITypeDefinitionParticipant;
 import org.eclipse.lemminx.services.extensions.IXMLExtension;
 import org.eclipse.lemminx.services.extensions.XMLExtensionsRegistry;
+import org.eclipse.lsp4j.InitializedParams;
 import org.eclipse.lemminx.services.extensions.codelens.ICodeLensParticipant;
 import org.eclipse.lemminx.services.extensions.diagnostics.IDiagnosticsParticipant;
 import org.eclipse.lemminx.services.extensions.save.ISaveContext;
@@ -41,14 +47,14 @@ public class XMLCatalogPlugin implements IXMLExtension {
 
 	private XMLCatalogURIResolverExtension uiResolver;
 	private final IDocumentLinkParticipant documentLinkParticipant;
-	private final IDiagnosticsParticipant diagnosticsParticipant;
+	private IDiagnosticsParticipant diagnosticsParticipant;
 	private ICodeLensParticipant codeLensParticipant;
+	private ITypeDefinitionParticipant typeDefinitionParticipant;
 
 	private InvalidPathWarner pathWarner;
 
 	public XMLCatalogPlugin() {
 		documentLinkParticipant = new XMLCatalogDocumentLinkParticipant();
-		diagnosticsParticipant = new XMLCatalogDiagnosticsParticipant();
 	}
 
 	@Override
@@ -65,7 +71,9 @@ public class XMLCatalogPlugin implements IXMLExtension {
 	@Override
 	public void start(InitializeParams params, XMLExtensionsRegistry registry) {
 		ContentModelManager contentModelManager = registry.getComponent(ContentModelManager.class);
-		codeLensParticipant = new XMLCatalogCodeLensParticipant(contentModelManager);
+		diagnosticsParticipant = new XMLCatalogDiagnosticsParticipant(contentModelManager, registry);
+		codeLensParticipant = new XMLCatalogCodeLensParticipant(contentModelManager, registry);
+		typeDefinitionParticipant = new XMLCatalogTypeDefinitionParticipant(contentModelManager);
 		uiResolver = new XMLCatalogURIResolverExtension(registry);
 		registry.getResolverExtensionManager().registerResolver(uiResolver);
 		IXMLNotificationService notificationService = registry.getNotificationService();
@@ -75,6 +83,16 @@ public class XMLCatalogPlugin implements IXMLExtension {
 		registry.registerDocumentLinkParticipant(documentLinkParticipant);
 		registry.registerDiagnosticsParticipant(diagnosticsParticipant);
 		registry.registerCodeLensParticipant(codeLensParticipant);
+		registry.registerTypeDefinitionParticipant(typeDefinitionParticipant);
+	}
+
+	@Override
+	public void initialized(InitializedParams params, XMLExtensionsRegistry registry) {
+		WorkspaceIndex workspaceIndex = registry.getComponent(WorkspaceIndex.class);
+		if (workspaceIndex != null) {
+			workspaceIndex.getScanCompletedFuture()
+					.thenRun(() -> registry.refreshDiagnostics(DOMUtils::isCatalog));
+		}
 	}
 
 	@Override
@@ -82,6 +100,7 @@ public class XMLCatalogPlugin implements IXMLExtension {
 		registry.getResolverExtensionManager().unregisterResolver(uiResolver);
 		registry.unregisterDiagnosticsParticipant(diagnosticsParticipant);
 		registry.unregisterCodeLensParticipant(codeLensParticipant);
+		registry.unregisterTypeDefinitionParticipant(typeDefinitionParticipant);
 	}
 
 	private void validateCatalogPaths(ContentModelSettings cmSettings) {
@@ -89,6 +108,9 @@ public class XMLCatalogPlugin implements IXMLExtension {
 			return; // happen when notification service is not available
 		}
 		String[] catalogs = cmSettings.getCatalogs();
+		if (catalogs == null) {
+			return;
+		}
 		Set<String> invalidCatalogs = Arrays.stream(catalogs).filter(c -> {
 			return Files.notExists(FilesUtils.getPath(c));
 		}).collect(Collectors.toSet());

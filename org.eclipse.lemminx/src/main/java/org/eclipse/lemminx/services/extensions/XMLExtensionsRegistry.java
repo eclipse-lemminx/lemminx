@@ -20,10 +20,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.ServiceConfigurationError;
 import java.util.ServiceLoader;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.lemminx.commons.progress.ProgressSupport;
+import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.services.IXMLDocumentProvider;
 import org.eclipse.lemminx.services.IXMLNotificationService;
 import org.eclipse.lemminx.services.IXMLValidationService;
@@ -43,12 +46,13 @@ import org.eclipse.lemminx.services.extensions.save.ISaveContext.SaveContextType
 import org.eclipse.lemminx.telemetry.TelemetryManager;
 import org.eclipse.lemminx.uriresolver.URIResolverExtensionManager;
 import org.eclipse.lsp4j.InitializeParams;
+import org.eclipse.lsp4j.InitializedParams;
 
 /**
  * XML extensions registry.
  *
  */
-public class XMLExtensionsRegistry implements IComponentProvider {
+public class XMLExtensionsRegistry implements IComponentProvider, IDiagnosticsRefresher {
 
 	private static final Logger LOGGER = Logger.getLogger(XMLExtensionsRegistry.class.getName());
 
@@ -74,6 +78,8 @@ public class XMLExtensionsRegistry implements IComponentProvider {
 	private final List<IInlayHintParticipant> inlayHintParticipants;
 	private final List<IInlineCompletionParticipant> inlineCompletionParticipants;
 	private final List<ISemanticTokensParticipant> semanticTokensParticipants;
+	private final List<IGrammarReferenceContributor> grammarReferenceContributors;
+	private final List<IIndexFileScannerContributor> indexFileScannerContributors;
 	private IXMLDocumentProvider documentProvider;
 	private IXMLValidationService validationService;
 	private IXMLCommandService commandService;
@@ -86,6 +92,10 @@ public class XMLExtensionsRegistry implements IComponentProvider {
 	private boolean initialized;
 
 	private IXMLNotificationService notificationService;
+
+	private Consumer<Predicate<String>> codeLensRefresher;
+
+	private Consumer<Predicate<DOMDocument>> diagnosticsRefresher;
 
 	private final Map<Class<?>, Object> components;
 
@@ -113,6 +123,8 @@ public class XMLExtensionsRegistry implements IComponentProvider {
 		inlayHintParticipants = new ArrayList<>();
 		inlineCompletionParticipants = new ArrayList<>();
 		semanticTokensParticipants = new ArrayList<>();
+		grammarReferenceContributors = new ArrayList<>();
+		indexFileScannerContributors = new ArrayList<>();
 		resolverExtensionManager = new URIResolverExtensionManager();
 		components = new HashMap<>();
 		telemetryManager = new TelemetryManager(null);
@@ -126,6 +138,22 @@ public class XMLExtensionsRegistry implements IComponentProvider {
 	@Override
 	public <T> T getComponent(Class clazz) {
 		return (T) components.get(clazz);
+	}
+
+	public void registerGrammarReferenceContributor(IGrammarReferenceContributor contributor) {
+		grammarReferenceContributors.add(contributor);
+	}
+
+	public List<IGrammarReferenceContributor> getGrammarReferenceContributors() {
+		return grammarReferenceContributors;
+	}
+
+	public void registerIndexFileScannerContributor(IIndexFileScannerContributor contributor) {
+		indexFileScannerContributors.add(contributor);
+	}
+
+	public List<IIndexFileScannerContributor> getIndexFileScannerContributors() {
+		return indexFileScannerContributors;
 	}
 
 	public void initializeParams(InitializeParams params) {
@@ -146,6 +174,12 @@ public class XMLExtensionsRegistry implements IComponentProvider {
 	public void doSave(ISaveContext saveContext) {
 		if (initialized) {
 			extensions.stream().forEach(extension -> extension.doSave(saveContext));
+			// After all extensions have processed the save, dispatch any pending refresh
+			// that one of them requested via ISaveContext.requestCodeLensRefresh().
+			// All calls are coalesced: N plugins requesting → 1 notification sent.
+			if (saveContext != null && saveContext.isCodeLensRefreshRequested()) {
+				refreshCodeLenses();
+			}
 		} else if (this.initialSaveContext == null
 				|| (saveContext != null && saveContext.getType() == SaveContextType.SETTINGS)) {
 			// capture initial configuration iff:
@@ -153,6 +187,18 @@ public class XMLExtensionsRegistry implements IComponentProvider {
 			// 2. we haven't captured settings before
 			this.initialSaveContext = saveContext;
 		}
+	}
+
+	public void notifyInitialized(InitializedParams params) {
+		initializeIfNeeded();
+		extensions.forEach(extension -> {
+			try {
+				extension.initialized(params, this);
+			} catch (Exception e) {
+				LOGGER.log(Level.SEVERE,
+						"Error while notifying initialized for extension <" + extension.getClass().getName() + ">", e);
+			}
+		});
 	}
 
 	public Collection<IXMLExtension> getExtensions() {
@@ -654,6 +700,51 @@ public class XMLExtensionsRegistry implements IComponentProvider {
 	
 	public ProgressSupport getProgressSupport() {
 		return progressSupport;
+	}
+
+	public void setCodeLensRefresher(Consumer<Predicate<String>> refresher) {
+		this.codeLensRefresher = refresher;
+	}
+
+	public void setDiagnosticsRefresher(Consumer<Predicate<DOMDocument>> refresher) {
+		this.diagnosticsRefresher = refresher;
+	}
+
+	/**
+	 * Triggers a diagnostics re-publish for all open documents accepted by
+	 * {@code documentFilter}. Extensions that need to push updated diagnostics
+	 * after an asynchronous event (e.g. workspace index scan completed) call this
+	 * instead of hard-coding document iteration.
+	 *
+	 * <p>This is the async counterpart of
+	 * {@link org.eclipse.lemminx.services.extensions.save.ISaveContext#refreshDiagnostics}.
+	 *
+	 * @param documentFilter predicate applied to each open {@link DOMDocument}.
+	 */
+	@Override
+	public void refreshDiagnostics(Predicate<DOMDocument> documentFilter) {
+		if (diagnosticsRefresher != null) {
+			diagnosticsRefresher.accept(documentFilter);
+		}
+	}
+
+	/**
+	 * Requests a code-lens refresh for all open documents.
+	 */
+	public void refreshCodeLenses() {
+		refreshCodeLenses(uri -> true);
+	}
+
+	/**
+	 * Requests a code-lens refresh, but only if at least one open document has a
+	 * URI accepted by {@code uriFilter}. Callers that know which document types
+	 * their lenses affect should pass a precise filter to avoid unnecessary
+	 * client notifications when no relevant documents are open.
+	 */
+	public void refreshCodeLenses(Predicate<String> uriFilter) {
+		if (codeLensRefresher != null) {
+			codeLensRefresher.accept(uriFilter);
+		}
 	}
 
 }

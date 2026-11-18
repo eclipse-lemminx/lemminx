@@ -37,7 +37,7 @@ public class CatalogUtils {
 	 * The catalog entries that have a 'uri' attribute
 	 */
 	private static final Collection<String> HAS_URI_ATTRIBUTE = Arrays.asList("public", "system", "uri", "systemSuffix",
-			"uriSuffix");
+			"uriSuffix", "namespace");
 
 	/**
 	 * The catalog entries that have a 'catalog' attribute
@@ -197,6 +197,56 @@ public class CatalogUtils {
 			return new CatalogCatalogEntry(baseURI, element);
 		}
 		return null;
+	}
+
+	/**
+	 * Returns the catalog key attribute value for the given entry:
+	 * {@code systemId} for {@code <system>}, {@code publicId} for {@code <public>},
+	 * and {@code name} for {@code <uri>}. Returns {@code null} when the entry type
+	 * has no such key (e.g. {@code rewriteURI}, {@code namespace}).
+	 *
+	 * <p>This identifier is what XML instance files use to bind to the grammar:
+	 * {@code xmlns="http://foo"}, {@code SYSTEM "http://example.org/schema"},
+	 * {@code PUBLIC "-//Ex//DTD//EN"}.
+	 *
+	 * @param entry the catalog entry.
+	 * @return the catalog identifier, or {@code null} if not applicable.
+	 */
+	public static String getCatalogIdentifier(CatalogEntry entry) {
+		DOMElement el = entry.getEntryElement();
+		if (el == null) {
+			return null;
+		}
+		return getCatalogIdentifier(el);
+	}
+
+	/**
+	 * Returns the catalog identifier value for the given entry element:
+	 * {@code systemId} for {@code <system>}, {@code publicId} for {@code <public>},
+	 * and {@code name} for {@code <uri>}. Returns {@code null} when not applicable.
+	 */
+	public static String getCatalogIdentifier(DOMElement el) {
+		DOMAttr attr = getCatalogIdentifierAttr(el);
+		return attr != null ? attr.getValue() : null;
+	}
+
+	/**
+	 * Returns the identifier attribute node for the given catalog entry element:
+	 * the {@code systemId} attribute for {@code <system>}, {@code publicId} for
+	 * {@code <public>}, and {@code name} for {@code <uri>}.
+	 * Returns {@code null} when the element type has no such key attribute.
+	 */
+	public static DOMAttr getCatalogIdentifierAttr(DOMElement el) {
+		if (el == null) {
+			return null;
+		}
+		switch (el.getNodeName()) {
+			case "system": return el.getAttributeNode("systemId");
+			case "public": return el.getAttributeNode("publicId");
+			case "uri": return el.getAttributeNode("name");
+			case "namespace": return el.getAttributeNode("name");
+			default: return null;
+		}
 	}
 
 	/**

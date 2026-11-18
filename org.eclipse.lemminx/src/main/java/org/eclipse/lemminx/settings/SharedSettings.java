@@ -62,6 +62,7 @@ public class SharedSettings {
 		this.foldings.merge(newSettings.getFoldingSettings());
 		this.format.merge(newSettings.getFormattingSettings());
 		this.validation.merge(newSettings.getValidationSettings());
+		this.validation.setCapabilities(newSettings.getValidationSettings().getCapabilities());
 		this.symbols.merge(newSettings.getSymbolSettings());
 		this.codeActionSettings.setCapabilities(newSettings.getCodeActionSettings().getCapabilities());
 		this.codeLens.merge(newSettings.getCodeLensSettings());

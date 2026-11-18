@@ -17,6 +17,7 @@ import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.lemminx.customservice.ActionableNotification;
 import org.eclipse.lemminx.services.extensions.commands.IXMLCommandService.IDelegateCommandHandler;
+import org.eclipse.lemminx.extensions.index.WorkspaceIndex;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
 import org.eclipse.lsp4j.DidOpenTextDocumentParams;
@@ -132,5 +133,10 @@ public class MockXMLLanguageServer extends XMLLanguageServer {
 	public XMLTextDocumentService getXMLTextDocumentService() {
 		CompositeTextDocumentService service = (CompositeTextDocumentService)super.getTextDocumentService();
 		return service.getXMLTextDocumentService();
+	}
+
+	public WorkspaceIndex getWorkspaceIndex() {
+		getXMLLanguageService().initializeIfNeeded();
+		return getXMLLanguageService().getComponent(WorkspaceIndex.class);
 	}
 }

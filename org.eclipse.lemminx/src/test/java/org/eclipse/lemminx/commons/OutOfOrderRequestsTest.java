@@ -12,6 +12,7 @@ package org.eclipse.lemminx.commons;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import org.eclipse.lemminx.XMLLanguageServer;
 import org.eclipse.lemminx.XMLTextDocumentService;
@@ -146,7 +147,8 @@ public class OutOfOrderRequestsTest {
 		ReferenceParams params = new ReferenceParams(UNOPENED_DOC, new Position(), new ReferenceContext());
 		ls.references(params) //
 		.thenAccept((references) -> {
-			assertNull(references);
+			// null or empty list are both valid "no references" responses
+			assertTrue(references == null || references.isEmpty());
 		}) //
 		.join();
 	}

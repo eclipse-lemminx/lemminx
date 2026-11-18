@@ -17,6 +17,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.lemminx.commons.TextDocument;
+import org.eclipse.lemminx.extensions.index.WorkspaceIndex;
+import org.eclipse.lemminx.extensions.index.WorkspaceIndexCodeLensSupport;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.RNCDefine;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.RNCDocument;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.utils.RNCPositionUtils;
@@ -24,31 +26,36 @@ import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.utils.RNCSearchUtils;
 import org.eclipse.lemminx.services.extensions.codelens.ReferenceCommand;
 import org.eclipse.lsp4j.CodeLens;
 import org.eclipse.lsp4j.Location;
+import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
 /**
  * Provides code lenses for RNC (RELAX NG Compact Syntax) documents.
  *
- * <p>Each define in the document gets a code lens showing its reference count.
- * Clicking the lens triggers "Find All References" for that define.</p>
+ * <p><b>Two kinds of lenses:</b>
+ * <ol>
+ *   <li><b>Workspace "N references" lens (line 0):</b> Shows how many XML files
+ *       in the workspace reference this RNC file via {@code href}, {@code include},
+ *       {@code xsi:noNamespaceSchemaLocation}, etc. Computed via
+ *       {@link WorkspaceIndexCodeLensSupport} (shared with the XSD/DTD/RNG participant).
+ *       Only appears when {@link WorkspaceIndex} is populated and the RNC file is
+ *       referenced by at least one workspace file.</li>
+ *   <li><b>Per-define "N references" lens:</b> Shows how many times each
+ *       {@code define} pattern is used within the same RNC document (or across
+ *       included files). Clicking triggers "Find All References" for that define.</li>
+ * </ol>
  *
- * <p>Use case: the editor displays "{@code 3 references}" above each define
- * declaration, helping users understand which defines are heavily used and
- * which are unused.</p>
- *
- * <p>Example:</p>
+ * <p><b>Use case — workspace lens:</b>
  * <pre>
- * 2 references
- * root = element root { inline*, block* }
+ * 2 references   ← XML files referencing this .rnc via href="schema.rnc"
+ * # schema.rnc
  *
- * 1 reference
- * inline = element span { text }
- *
- * 0 references
- * unused = element old { empty }
+ * 3 references   ← define 'root' used 3 times in this file/includes
+ * root = element root { ... }
  * </pre>
  *
+ * @see WorkspaceIndexCodeLensSupport
  * @see RNCSearchUtils
  */
 public class RNCCodeLenses {
@@ -56,34 +63,49 @@ public class RNCCodeLenses {
 	private static final Logger LOGGER = Logger.getLogger(RNCCodeLenses.class.getName());
 
 	/**
-	 * Computes code lenses for all defines in the given RNC document.
+	 * Computes code lenses for all defines in the given RNC document, plus a
+	 * workspace "N references" lens at the top of the file.
+	 *
+	 * <p><b>Workspace lens use case:</b> {@code workspaceIndex} is non-null when the
+	 * workspace Bloom index is enabled. The lens at position {@code (0,0)} shows how
+	 * many XML files reference this RNC file. If {@code workspaceIndex} is {@code null}
+	 * (index disabled or not yet initialized), only the per-define lenses are returned.
 	 *
 	 * @param rncDocument       the parsed RNC document containing defines.
 	 * @param supportedByClient {@code true} if the client supports the
 	 *                          {@code editor.action.showReferences} command.
+	 * @param workspaceIndex    the populated workspace index, or {@code null} if
+	 *                          the workspace index feature is disabled.
 	 * @param cancelChecker     used to abort computation if the document changes.
-	 * @return a list of {@link CodeLens} objects, one per define with references.
+	 * @return a list of {@link CodeLens} objects: one workspace lens (if references
+	 *         are found) followed by per-define lenses.
 	 */
 	public List<CodeLens> getCodeLens(RNCDocument rncDocument, boolean supportedByClient,
-			CancelChecker cancelChecker) {
+			WorkspaceIndex workspaceIndex, CancelChecker cancelChecker) {
 		List<CodeLens> lenses = new ArrayList<>();
 		try {
-			TextDocument textDocument = rncDocument.getTextDocument();
-			List<RNCDefine> defines = rncDocument.getDefines();
-
-			if (defines.isEmpty()) {
-				return lenses;
+			// Workspace "N references" lens at position (0,0).
+			// RNC has no DOM, so position (0,0) is used instead of the root element range.
+			if (workspaceIndex != null) {
+				String uri = rncDocument.getTextDocument().getUri();
+				Range topRange = new Range(new Position(0, 0), new Position(0, 0));
+				CodeLens workspaceLens = WorkspaceIndexCodeLensSupport.buildWorkspaceReferenceLens(
+						workspaceIndex, uri, topRange, supportedByClient, cancelChecker);
+				if (workspaceLens != null) {
+					lenses.add(workspaceLens);
+				}
 			}
 
+			// Per-define lenses (intra-file / include references)
+			TextDocument textDocument = rncDocument.getTextDocument();
+			List<RNCDefine> defines = rncDocument.getDefines();
 			for (RNCDefine define : defines) {
 				cancelChecker.checkCanceled();
 				String name = define.getName();
 				if (name == null) {
 					continue;
 				}
-
 				List<Location> refs = RNCSearchUtils.findReferences(textDocument, define, false);
-				// Count pattern usages plus other defines with the same name (extends)
 				int refCount = refs.size();
 				for (RNCDefine other : defines) {
 					if (other != define && name.equals(other.getName())) {

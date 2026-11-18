@@ -12,7 +12,9 @@
  */
 package org.eclipse.lemminx.services.extensions;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lsp4j.Location;
@@ -27,5 +29,16 @@ import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 public interface IReferenceParticipant {
 
 	void findReference(DOMDocument document, Position position, ReferenceContext context, List<Location> locations, CancelChecker cancelChecker);
+
+	/**
+	 * Find references for a document that is not currently open/managed, identified
+	 * only by its URI. The returned future may resolve asynchronously (e.g. after
+	 * a workspace index scan completes). Participants that do not depend on the DOM
+	 * should override this method; the default returns an empty list immediately.
+	 */
+	default CompletableFuture<List<Location>> findReferenceByUri(String uri, Position position,
+			ReferenceContext context, CancelChecker cancelChecker) {
+		return CompletableFuture.completedFuture(Collections.emptyList());
+	}
 
 }

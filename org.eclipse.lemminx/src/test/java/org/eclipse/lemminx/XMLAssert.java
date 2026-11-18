@@ -186,7 +186,7 @@ public class XMLAssert {
 		}
 
 		@Override
-		public void collectDocumentToValidate(Predicate<DOMDocument> validateDocumentPredicate) {
+		public void refreshDiagnostics(Predicate<DOMDocument> filter) {
 
 		}
 
@@ -1722,6 +1722,11 @@ public class XMLAssert {
 
 	public static LocationLink ll(final String uri, final Range originRange, Range targetRange) {
 		return new LocationLink(uri, targetRange, targetRange, originRange);
+	}
+
+	public static LocationLink ll(final String uri, final Range originRange, Range targetRange,
+			Range targetSelectionRange) {
+		return new LocationLink(uri, targetRange, targetSelectionRange, originRange);
 	}
 
 	public static void assertLocationLink(List<? extends LocationLink> actual, LocationLink... expected) {

@@ -17,6 +17,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ServiceLoader;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Stream;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -120,6 +121,31 @@ public class CompositeTextDocumentService implements TextDocumentService {
 
 	public XMLTextDocumentService getXMLTextDocumentService() {
 		return defaultService;
+	}
+
+	/**
+	 * Notifies all contributed text-document services that the workspace index scan
+	 * has completed. Each contributed service can override
+	 * {@link AbstractTextDocumentService#onIndexScanCompleted} to re-validate its
+	 * open documents (e.g. RNC re-validates "missing start" suppression).
+	 */
+	public void notifyIndexScanCompleted() {
+		for (AbstractTextDocumentService<?> svc : contributedServices) {
+			svc.onIndexScanCompleted();
+		}
+	}
+
+	/**
+	 * Returns a stream of all open document URIs across the default XML service and
+	 * all contributed services (e.g. RNC). Used by the code-lens refresh filter so
+	 * that a {@code workspace/codeLens/refresh} is sent whenever any grammar file is
+	 * open, regardless of which text-document service tracks it.
+	 */
+	public Stream<String> allDocumentUris() {
+		Stream<String> xmlUris = defaultService.allDocuments().stream().map(d -> d.getUri());
+		Stream<String> contribUris = contributedServices.stream()
+				.flatMap(svc -> svc.allDocuments().stream().map(d -> d.getUri()));
+		return Stream.concat(xmlUris, contribUris);
 	}
 
 	public void setClientConfigurationSupport(Boolean supported) {

@@ -19,6 +19,7 @@ import static org.eclipse.lemminx.extensions.contentmodel.commands.CheckBoundGra
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.eclipse.lemminx.client.CodeLensKind;
 import org.eclipse.lemminx.dom.DOMDocument;
@@ -130,7 +131,7 @@ public class ContentModelCodeLensParticipant implements ICodeLensParticipant {
 			uri = lastSlash >= 0 ? grammarURI.substring(lastSlash + 1) : grammarURI;
 		}
 		StringBuilder title = new StringBuilder(uri != null ? uri : "");
-		String bindingKind = ReferencedGrammarInfo.getBindingKindAndResolvedBy(info);
+		String bindingKind = buildBindingKindLabel(info);
 		if (!StringUtils.isEmpty(bindingKind)) {
 			title.append(" (");
 			title.append(bindingKind);
@@ -140,6 +141,29 @@ public class ContentModelCodeLensParticipant implements ICodeLensParticipant {
 		Command command = new Command(title.toString(), canSupportOpenUri ? OPEN_URI : "",
 				canSupportOpenUri ? Arrays.asList(grammarURI) : null);
 		return new CodeLens(range, command, null);
+	}
+
+	private String buildBindingKindLabel(ReferencedGrammarInfo info) {
+		String kind = info.getBindingKind();
+		String resolvedBy = info.getResolvedBy();
+		if (resolvedBy == null) {
+			return kind != null ? kind : "";
+		}
+		StringBuilder sb = new StringBuilder();
+		if (kind != null) {
+			sb.append(kind).append(" with ");
+		}
+		if ("catalog".equals(resolvedBy)) {
+			String[] catalogs = contentModelManager.getCatalogs();
+			if (catalogs != null && catalogs.length > 0) {
+				sb.append(Arrays.stream(catalogs)
+						.map(c -> { int i = Math.max(c.lastIndexOf('/'), c.lastIndexOf('\\')); return i >= 0 ? c.substring(i + 1) : c; })
+						.collect(Collectors.joining(", ")));
+				return sb.toString();
+			}
+		}
+		sb.append(resolvedBy);
+		return sb.toString();
 	}
 
 	private void createBindToGrammarSchemaLenses(ICodeLensRequest request, List<CodeLens> lenses) {
