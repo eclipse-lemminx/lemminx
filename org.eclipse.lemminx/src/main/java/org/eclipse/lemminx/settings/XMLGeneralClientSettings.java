@@ -66,6 +66,8 @@ public class XMLGeneralClientSettings {
 
 	private XMLTelemetrySettings telemetry;
 
+	private XMLWorkspaceIndexSettings workspaceIndex;
+
 	private boolean linkedEditingEnabled;
 	
 	public void setLogs(LogsSettings logs) {
@@ -252,6 +254,14 @@ public class XMLGeneralClientSettings {
 	 */
 	public void setTelemetry(XMLTelemetrySettings telemetry) {
 		this.telemetry = telemetry;
+	}
+
+	public XMLWorkspaceIndexSettings getWorkspaceIndex() {
+		return workspaceIndex;
+	}
+
+	public void setWorkspaceIndex(XMLWorkspaceIndexSettings workspaceIndex) {
+		this.workspaceIndex = workspaceIndex;
 	}
 
 	/**

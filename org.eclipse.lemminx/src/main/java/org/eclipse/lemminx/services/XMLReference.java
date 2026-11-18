@@ -15,6 +15,7 @@ package org.eclipse.lemminx.services;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -56,6 +57,31 @@ class XMLReference {
 		}
 		cancelChecker.checkCanceled();
 		return locations;
+	}
+
+	public CompletableFuture<List<? extends Location>> findReferencesByUri(String uri, Position position,
+			ReferenceContext context, CancelChecker cancelChecker) {
+		cancelChecker.checkCanceled();
+		List<CompletableFuture<List<Location>>> futures = new ArrayList<>();
+		for (IReferenceParticipant participant : extensionsRegistry.getReferenceParticipants()) {
+			try {
+				futures.add(participant.findReferenceByUri(uri, position, context, cancelChecker));
+			} catch (CancellationException e) {
+				throw e;
+			} catch (Exception e) {
+				LOGGER.log(Level.SEVERE,
+						"Error while processing references for the participant '" + participant.getClass().getName() + "'.", e);
+			}
+		}
+		return CompletableFuture.allOf(futures.toArray(new CompletableFuture[0]))
+				.thenApply(v -> {
+					cancelChecker.checkCanceled();
+					List<Location> all = new ArrayList<>();
+					for (CompletableFuture<List<Location>> f : futures) {
+						all.addAll(f.join());
+					}
+					return all;
+				});
 	}
 
 }

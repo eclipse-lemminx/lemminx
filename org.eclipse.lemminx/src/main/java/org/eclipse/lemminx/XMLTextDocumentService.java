@@ -172,11 +172,11 @@ public class XMLTextDocumentService extends AbstractTextDocumentService<DOMDocum
 		}
 
 		@Override
-		public void collectDocumentToValidate(Predicate<DOMDocument> validateDocumentPredicate) {
+		public void refreshDiagnostics(Predicate<DOMDocument> filter) {
 			documents.all().stream().forEach(document -> {
 				DOMDocument xmlDocument = document.getModel();
 				if (xmlDocument != null && !documentsToValidate.contains(document)
-						&& validateDocumentPredicate.test(xmlDocument)) {
+						&& filter.test(xmlDocument)) {
 					documentsToValidate.add(document);
 				}
 			});
@@ -531,6 +531,13 @@ public class XMLTextDocumentService extends AbstractTextDocumentService<DOMDocum
 
 	@Override
 	public CompletableFuture<List<? extends Location>> references(ReferenceParams params) {
+		String uri = params.getTextDocument().getUri();
+		if (!documentIsOpen(uri)) {
+			// Document not managed (e.g. right-click from Explorer) — use the async
+			// URI-only path so participants can wait for their own readiness (e.g. scan).
+			return getXMLLanguageService().findReferencesByUri(uri, params.getPosition(), params.getContext(),
+					() -> {});
+		}
 		return computeDOMAsync(params.getTextDocument(), (xmlDocument, cancelChecker) -> {
 			return getXMLLanguageService().findReferences(xmlDocument, params.getPosition(), params.getContext(),
 					cancelChecker);
@@ -686,6 +693,26 @@ public class XMLTextDocumentService extends AbstractTextDocumentService<DOMDocum
 		if (context.isRefreshCodeLenses()) {
 			xmlLanguageServer.getLanguageClient().refreshCodeLenses();
 		}
+	}
+
+	/**
+	 * Re-validates all open documents accepted by {@code documentFilter}, pushing
+	 * updated diagnostics via {@code textDocument/publishDiagnostics}.
+	 *
+	 * <p>Called by {@link XMLExtensionsRegistry#refreshDiagnostics} when an async
+	 * event (e.g. workspace index scan completed) invalidates diagnostic results for
+	 * a subset of open documents. Uses the same batched validation path as
+	 * {@link org.eclipse.lemminx.services.extensions.save.ISaveContext#refreshDiagnostics} + {@code triggerValidationIfNeeded}.
+	 */
+	void refreshDiagnostics(Predicate<DOMDocument> documentFilter) {
+		List<ModelTextDocument<DOMDocument, SharedSettings>> toValidate = new ArrayList<>();
+		documents.all().stream().forEach(document -> {
+			DOMDocument xmlDocument = document.getModel();
+			if (xmlDocument != null && documentFilter.test(xmlDocument)) {
+				toValidate.add(document);
+			}
+		});
+		triggerValidationFor(toValidate);
 	}
 
 	private void triggerValidationFor(Collection<ModelTextDocument<DOMDocument, SharedSettings>> documents) {

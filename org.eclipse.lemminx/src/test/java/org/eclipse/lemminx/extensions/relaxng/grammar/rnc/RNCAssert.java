@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import org.eclipse.lemminx.XMLAssert;
 import org.eclipse.lemminx.commons.BadLocationException;
 import org.eclipse.lemminx.commons.TextDocument;
+import org.eclipse.lemminx.extensions.index.WorkspaceIndex;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.parser.RNCParser;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.settings.RNCFormattingSettings;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.utils.RNCIncludeUtils;
@@ -433,8 +434,17 @@ public class RNCAssert {
 	// ------------------- CodeLens assert
 
 	public static void testCodeLensFor(String value, CodeLens... expected) {
-		RNCDocument rncDocument = parse(value);
-		List<CodeLens> actual = LANGUAGE_SERVICE.getCodeLens(rncDocument, false, NULL_CHECKER);
+		testCodeLensFor(value, FILE_URI, null, expected);
+	}
+
+	public static void testCodeLensFor(String value, WorkspaceIndex workspaceIndex, CodeLens... expected) {
+		testCodeLensFor(value, FILE_URI, workspaceIndex, expected);
+	}
+
+	public static void testCodeLensFor(String value, String fileUri, WorkspaceIndex workspaceIndex,
+			CodeLens... expected) {
+		RNCDocument rncDocument = parse(value, fileUri);
+		List<CodeLens> actual = LANGUAGE_SERVICE.getCodeLens(rncDocument, false, workspaceIndex, NULL_CHECKER);
 		XMLAssert.assertCodeLens(actual, expected);
 	}
 
@@ -523,7 +533,7 @@ public class RNCAssert {
 
 		ReferenceContext context = new ReferenceContext(false);
 		List<? extends Location> actual = LANGUAGE_SERVICE.findReferences(rncDocument, position, context,
-				NULL_CHECKER);
+				null /* workspaceIndex */, NULL_CHECKER);
 		XMLAssert.assertLocation(actual, expected);
 	}
 

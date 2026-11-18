@@ -319,6 +319,11 @@ public class XMLLanguageService extends XMLExtensionsRegistry implements IXMLFul
 		return reference.findReferences(xmlDocument, position, context, cancelChecker);
 	}
 
+	public CompletableFuture<List<? extends Location>> findReferencesByUri(String uri, Position position,
+			ReferenceContext context, CancelChecker cancelChecker) {
+		return reference.findReferencesByUri(uri, position, context, cancelChecker);
+	}
+
 	public List<? extends CodeLens> getCodeLens(DOMDocument xmlDocument, XMLCodeLensSettings settings,
 			CancelChecker cancelChecker) {
 		return codelens.getCodelens(xmlDocument, settings, cancelChecker);

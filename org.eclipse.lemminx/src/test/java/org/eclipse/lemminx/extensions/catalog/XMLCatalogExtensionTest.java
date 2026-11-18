@@ -45,6 +45,7 @@ public class XMLCatalogExtensionTest extends AbstractCacheBasedTest {
 				"</catalog> ";
 
 		XMLAssert.testDiagnosticsFor(xml, d(2, 5, 8, XMLSchemaErrorCode.cvc_complex_type_2_4_a), //
-				d(2, 12, 14, XMLSchemaErrorCode.cvc_complex_type_2_3));
+				d(2, 12, 14, XMLSchemaErrorCode.cvc_complex_type_2_3), //
+				d(1, 1, 1, 8, XMLCatalogErrorCode.catalog_not_registered));
 	}
 }

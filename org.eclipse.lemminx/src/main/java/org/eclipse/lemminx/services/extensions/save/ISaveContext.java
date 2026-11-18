@@ -12,20 +12,19 @@
  */
 package org.eclipse.lemminx.services.extensions.save;
 
-import java.util.function.Predicate;
-
-import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.services.IXMLDocumentProvider;
+import org.eclipse.lemminx.services.extensions.ICodeLensRefresher;
+import org.eclipse.lemminx.services.extensions.IDiagnosticsRefresher;
 
 /**
  * Save context API.
  *
  */
-public interface ISaveContext extends IXMLDocumentProvider {
+public interface ISaveContext extends IXMLDocumentProvider, IDiagnosticsRefresher, ICodeLensRefresher {
 
 	/**
 	 * The save context type:
-	 * 
+	 *
 	 * <ul>
 	 * <li>DOCUMENT: a document is saved.</li>
 	 * <li>SETTINGS: a settings is saved.</li>
@@ -36,15 +35,8 @@ public interface ISaveContext extends IXMLDocumentProvider {
 	}
 
 	/**
-	 * This method is called to collect document to validate after the save.
-	 * 
-	 * @param validateDocumentPredicate
-	 */
-	void collectDocumentToValidate(Predicate<DOMDocument> validateDocumentPredicate);
-
-	/**
 	 * Returns the save context type.
-	 * 
+	 *
 	 * @return the save context type.
 	 */
 	SaveContextType getType();
@@ -52,7 +44,7 @@ public interface ISaveContext extends IXMLDocumentProvider {
 	/**
 	 * Returns the document URI which was saved and null if it's a settings which
 	 * was saved.
-	 * 
+	 *
 	 * @return the document URI which was saved and null if it's a settings which
 	 *         was saved.
 	 */
@@ -60,7 +52,7 @@ public interface ISaveContext extends IXMLDocumentProvider {
 
 	/**
 	 * Returns the settings which has changed and null otherwise.
-	 * 
+	 *
 	 * @return the settings which has changed and null otherwise.
 	 */
 	Object getSettings();
