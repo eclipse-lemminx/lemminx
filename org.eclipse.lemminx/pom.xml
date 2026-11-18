@@ -12,7 +12,6 @@
 		<dev.build.timestamp>${maven.build.timestamp}</dev.build.timestamp>
 		<cbi.jarsigner.skip>true</cbi.jarsigner.skip>
 		<native.maven.plugin.version>1.1.18</native.maven.plugin.version>
-		<graalvm.static />
 	</properties>
 	<build>
 		<resources>
@@ -178,12 +177,35 @@
 						<configuration>
 							<skip>false</skip>
 							<imageName>lemminx-${os.detected.classifier}-${project.version}</imageName>
+							<!-- native-maven-plugin splits each buildArg at most once, so use one per option -->
 							<buildArgs>
-								--no-fallback
-								-march=compatibility
-								--enable-http
-								--enable-https
-								${graalvm.static}
+								<buildArg>--no-fallback</buildArg>
+								<buildArg>-march=compatibility</buildArg>
+								<buildArg>--enable-http</buildArg>
+								<buildArg>--enable-https</buildArg>
+							</buildArgs>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
+		</profile>
+		<profile>
+			<!-- e.g. -Dgraalvm.static=-H:+StaticExecutableWithDynamicLibC adds that option to the native image build -->
+			<id>native-static</id>
+			<activation>
+				<property>
+					<name>graalvm.static</name>
+				</property>
+			</activation>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.graalvm.buildtools</groupId>
+						<artifactId>native-maven-plugin</artifactId>
+						<version>${native.maven.plugin.version}</version>
+						<configuration>
+							<buildArgs combine.children="append">
+								<buildArg>${graalvm.static}</buildArg>
 							</buildArgs>
 						</configuration>
 					</plugin>
