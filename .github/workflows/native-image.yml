@@ -36,7 +36,7 @@ jobs:
       uses: graalvm/setup-graalvm@v1
       with:
         distribution: graalvm-community
-        java-version: '17'
+        java-version: '21'
         cache: 'maven'
     - name: Build native image
       shell: bash
