@@ -1,0 +1,68 @@
+# Builds the LemMinX native binary with GraalVM (the same way vscode-xml builds
+# it for release) and runs an end-to-end LSP smoke test against it, so that
+# changes breaking the native image are caught before they get merged.
+
+name: native-image
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  native-image:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: linux-x86_64
+            os: ubuntu-latest
+            prop: -Dgraalvm.static=-H:+StaticExecutableWithDynamicLibC
+          - label: linux-aarch_64
+            os: ubuntu-24.04-arm
+            prop: -Dgraalvm.static=-H:+StaticExecutableWithDynamicLibC
+          - label: osx-aarch_64
+            os: macos-latest
+          - label: win32
+            os: windows-latest
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v7
+    - name: Set up MSVC
+      if: runner.os == 'Windows'
+      uses: ilammy/msvc-dev-cmd@v1
+    - name: Set up GraalVM
+      uses: graalvm/setup-graalvm@v1
+      with:
+        distribution: graalvm-community
+        java-version: '17'
+        cache: 'maven'
+    - name: Build native image
+      shell: bash
+      run: ./mvnw -B package -Dnative -DskipTests -Dcbi.jarsigner.skip=true ${{ matrix.prop }}
+    - name: Locate native image
+      id: binary
+      shell: bash
+      run: |
+        if [ "$RUNNER_OS" = "Windows" ]; then
+          binary=$(ls org.eclipse.lemminx/target/lemminx-*.exe)
+        else
+          binary=$(find org.eclipse.lemminx/target -maxdepth 1 -name 'lemminx-*' -type f -perm -u+x)
+        fi
+        echo "Native image: $binary"
+        test -n "$binary" && test "$(echo "$binary" | wc -l)" -eq 1
+        echo "path=$binary" >> "$GITHUB_OUTPUT"
+    - name: Smoke test native image
+      shell: bash
+      # the test runs in the module directory, so pass the binary path relative to it
+      run: >
+        ./mvnw -B surefire:test -pl org.eclipse.lemminx -Dtest=NativeImageSmokeTest
+        -Dlemminx.binary=target/$(basename "${{ steps.binary.outputs.path }}")
+    - name: Upload native image
+      uses: actions/upload-artifact@v4
+      with:
+        name: lemminx-${{ matrix.label }}
+        path: ${{ steps.binary.outputs.path }}
+        if-no-files-found: error
+        retention-days: 7
