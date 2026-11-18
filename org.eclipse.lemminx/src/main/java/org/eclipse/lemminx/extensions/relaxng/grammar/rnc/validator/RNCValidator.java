@@ -18,19 +18,24 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.eclipse.lemminx.commons.CharSequenceReader;
 import org.eclipse.lemminx.commons.TextDocument;
+import org.eclipse.lemminx.extensions.index.GrammarReference;
+import org.eclipse.lemminx.extensions.index.WorkspaceIndex;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.RNCDefine;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.RNCDocument;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.RNCInclude;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.RNCNode;
+import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.utils.RNCIncludeUtils;
 
 import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.parser.RNCParser;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.utils.RNCPositionUtils;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.utils.RNCSearchUtils;
+import org.eclipse.lemminx.utils.FilesUtils;
 import org.apache.xerces.impl.XMLEntityManager;
 import org.apache.xerces.util.URI.MalformedURIException;
 import org.eclipse.lsp4j.Diagnostic;
@@ -83,11 +88,16 @@ public class RNCValidator {
 	private static final String SOURCE = "rnc";
 
 	public static List<Diagnostic> validate(TextDocument document, CancelChecker cancelChecker) {
-		return validate(document, true, cancelChecker);
+		return validate(document, null, true, cancelChecker);
 	}
 
 	public static List<Diagnostic> validate(TextDocument document, boolean unnecessaryTagSupported,
 			CancelChecker cancelChecker) {
+		return validate(document, null, unnecessaryTagSupported, cancelChecker);
+	}
+
+	public static List<Diagnostic> validate(TextDocument document, WorkspaceIndex workspaceIndex,
+			boolean unnecessaryTagSupported, CancelChecker cancelChecker) {
 		List<Diagnostic> diagnostics = new ArrayList<>();
 
 		cancelChecker.checkCanceled();
@@ -109,7 +119,7 @@ public class RNCValidator {
 
 		// Phase 1b: Semantic validation on our AST (missing start, etc.)
 		if (!hasParserErrors) {
-			validateSemantics(rncDocument, document, unnecessaryTagSupported, diagnostics);
+			validateSemantics(rncDocument, document, workspaceIndex, unnecessaryTagSupported, diagnostics);
 		}
 
 		// Phase 2: Run Jing for semantic validation (undefined-pattern, duplicate-definition)
@@ -174,24 +184,30 @@ public class RNCValidator {
 	}
 
 	private static void validateSemantics(RNCDocument rncDocument, TextDocument document,
-			boolean unnecessaryTagSupported, List<Diagnostic> diagnostics) {
+			WorkspaceIndex workspaceIndex, boolean unnecessaryTagSupported, List<Diagnostic> diagnostics) {
 		List<RNCDefine> defines = rncDocument.getDefines();
 		if (rncDocument.getStartDecl() == null && rncDocument.getIncludes().isEmpty()
 				&& !rncDocument.hasTopLevelPattern()) {
-			Range range;
-			if (!defines.isEmpty()) {
-				RNCDefine firstDefine = defines.get(0);
-				range = firstDefine.getNameStart() != -1
-						? RNCPositionUtils.createRange(document, firstDefine.getNameStart(), firstDefine.getNameEnd())
-						: null;
-			} else {
-				range = RNCPositionUtils.ZERO_RANGE;
-			}
-			if (range != null) {
-				Diagnostic d = new Diagnostic(range, "missing \"start\" element",
-						DiagnosticSeverity.Error, SOURCE);
-				d.setCode(RNCErrorCode.MissingStartElement.getCode());
-				diagnostics.add(d);
+			// Suppress the diagnostic when another grammar includes this file with a start
+			// override (include "this.rnc" { start = ... }). In that case the fragment
+			// intentionally omits start because the outer grammar provides it.
+			if (!isIncludedWithStartOverride(workspaceIndex, document)) {
+				Range range;
+				if (!defines.isEmpty()) {
+					RNCDefine firstDefine = defines.get(0);
+					range = firstDefine.getNameStart() != -1
+							? RNCPositionUtils.createRange(document, firstDefine.getNameStart(),
+									firstDefine.getNameEnd())
+							: null;
+				} else {
+					range = RNCPositionUtils.ZERO_RANGE;
+				}
+				if (range != null) {
+					Diagnostic d = new Diagnostic(range, "missing \"start\" element",
+							DiagnosticSeverity.Error, SOURCE);
+					d.setCode(RNCErrorCode.MissingStartElement.getCode());
+					diagnostics.add(d);
+				}
 			}
 		}
 
@@ -261,6 +277,69 @@ public class RNCValidator {
 				}
 			}
 		}
+	}
+
+	/**
+	 * Returns {@code true} if the workspace index shows that some other RNC file
+	 * includes {@code document} via {@code include "..." \{ start = ... \}}, meaning
+	 * the outer grammar provides the start element and this file is intentionally
+	 * a fragment without a start declaration.
+	 */
+	private static boolean isIncludedWithStartOverride(WorkspaceIndex workspaceIndex, TextDocument document) {
+		if (workspaceIndex == null) {
+			return false;
+		}
+		String uri = document.getUri();
+		if (uri == null || !uri.startsWith("file:")) {
+			return false;
+		}
+		Path thisPath = FilesUtils.getPathOrNull(uri);
+		if (thisPath == null) {
+			return false;
+		}
+		Map<String, List<GrammarReference>> refs = workspaceIndex.getReferencesTo(thisPath);
+		for (String refUri : refs.keySet()) {
+			if (!refUri.toLowerCase().endsWith(".rnc")) {
+				continue;
+			}
+			RNCDocument refDoc = RNCIncludeUtils.parseFile(refUri);
+			if (refDoc == null) {
+				continue;
+			}
+			if (includesWithStartOverride(refDoc, refUri, thisPath)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** Returns true if {@code refDoc} contains {@code include "thisPath" \{ start = ... \}}. */
+	private static boolean includesWithStartOverride(RNCDocument refDoc, String refUri, Path thisPath) {
+		for (RNCNode child : refDoc.getChildren()) {
+			if (!(child instanceof RNCInclude)) {
+				continue;
+			}
+			RNCInclude inc = (RNCInclude) child;
+			if (!inc.hasBody()) {
+				continue;
+			}
+			if (!inc.getOverriddenNames().contains("start")) {
+				continue;
+			}
+			String incUri = inc.getUri();
+			if (incUri == null) {
+				continue;
+			}
+			String resolved = resolveURI(refUri, incUri);
+			if (resolved == null) {
+				continue;
+			}
+			Path resolvedPath = FilesUtils.getPathOrNull(resolved);
+			if (thisPath.equals(resolvedPath)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static String resolveURI(String documentURI, String location) {

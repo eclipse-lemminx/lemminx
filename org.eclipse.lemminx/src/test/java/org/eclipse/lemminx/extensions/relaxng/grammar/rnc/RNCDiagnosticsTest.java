@@ -13,18 +13,26 @@ package org.eclipse.lemminx.extensions.relaxng.grammar.rnc;
 
 import static org.eclipse.lemminx.extensions.relaxng.grammar.rnc.RNCAssert.LS;
 import static org.eclipse.lemminx.extensions.relaxng.grammar.rnc.RNCAssert.d;
+import static org.eclipse.lemminx.extensions.relaxng.grammar.rnc.RNCAssert.fi;
 import static org.eclipse.lemminx.extensions.relaxng.grammar.rnc.RNCAssert.testDiagnosticsFor;
-import static org.eclipse.lemminx.extensions.relaxng.grammar.rnc.RNCAssert.testFileContent;
 import static org.eclipse.lemminx.extensions.relaxng.grammar.rnc.RNCAssert.testFileUri;
 import static org.eclipse.lemminx.extensions.relaxng.grammar.rnc.RNCAssert.testNoParserErrors;
 
 import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
 
+import org.eclipse.lemminx.extensions.index.WorkspaceIndex;
+import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.RNCAssert.FileInfo;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.validator.RNCErrorCode;
 import org.eclipse.lsp4j.DiagnosticTag;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 public class RNCDiagnosticsTest {
+
+	@TempDir
+	Path tempDir;
 
 	// -------------------- Parser Diagnostics --------------------
 
@@ -530,7 +538,7 @@ public class RNCDiagnosticsTest {
 
 	@Test
 	public void testDiagnosticsValidIncludeWithDefines() throws IOException {
-		testDiagnosticsFor(testFileContent("include-valid.rnc"), testFileUri("include-valid.rnc"));
+		testDiagnosticsFor(fi("include-valid.rnc"));
 	}
 
 	@Test
@@ -538,8 +546,8 @@ public class RNCDiagnosticsTest {
 		// include-base.rnc defines: start, paragraph
 		// "xparagraph" does not exist in base, error should be on "xparagraph" not on "include"
 		String fileUri = testFileUri("include-valid.rnc");
-		String value = "include \"include-base.rnc\" {" + LS +
-				"  xparagraph = element p { text }" + LS +
+		String value = "include \"include-base.rnc\" {" + LS + //
+				"  xparagraph = element p { text }" + LS + //
 				"}";
 		testDiagnosticsFor(value, fileUri,
 				d(1, 2, 1, 12, "include-not-overriding"));
@@ -547,9 +555,7 @@ public class RNCDiagnosticsTest {
 
 	@Test
 	public void testDiagnosticsIncludeFileNotFound() throws IOException {
-		String fileUri = testFileUri("include-file-not-found.rnc");
-		String value = testFileContent("include-file-not-found.rnc");
-		testDiagnosticsFor(value, fileUri,
+		testDiagnosticsFor(fi("include-file-not-found.rnc"),
 				d(0, 9, 0, 27, "file-not-found"));
 	}
 
@@ -1212,5 +1218,56 @@ public class RNCDiagnosticsTest {
 				LS +
 				"extra = element extra { text }";
 		testDiagnosticsFor(value, testFileUri("base.rnc"));
+	}
+
+	// -------------------- Case B: fragment included with start override --------------------
+
+	@Test
+	public void testNoMissingStartDiagnosticWhenIncludedWithStartOverride() throws IOException {
+		// fragment.rnc — only defines, no start
+		FileInfo fragment = fi(tempDir.resolve("fragment.rnc"),
+				"item = element item { text }");
+		// main.rnc — includes fragment and overrides start
+		FileInfo main = fi(tempDir.resolve("main.rnc"),
+				"include \"fragment.rnc\" {" + LS
+				+ "  start = element root { item+ }" + LS
+				+ "}");
+
+		// Without workspace index: missing-start diagnostic should fire
+		testDiagnosticsFor(fragment.content, fragment.uri,
+				d(0, 0, 0, 4, "missing-start-element"));
+
+		// Build workspace index with the main.rnc file indexed
+		WorkspaceIndex index = new WorkspaceIndex();
+		index.setFileScannerContributors(
+				List.of(new RNCIndexFileScannerContributor()));
+		index.indexFile(main.path);
+
+		// With workspace index: main.rnc includes fragment.rnc with start override
+		// → missing-start diagnostic should be suppressed
+		testDiagnosticsFor(fragment.content, fragment.uri, index /* no diagnostics */);
+	}
+
+	@Test
+	public void testMissingStartStillShownWhenNoStartOverride() throws IOException {
+		// fragment.rnc — only defines, no start
+		FileInfo fragment = fi(tempDir.resolve("fragment.rnc"),
+				"item = element item { text }");
+		// other.rnc — includes fragment WITHOUT a start override
+		FileInfo other = fi(tempDir.resolve("other.rnc"),
+				"include \"fragment.rnc\"" + LS
+				+ LS
+				+ "start = element root { item+ }");
+
+		WorkspaceIndex index = new WorkspaceIndex();
+		index.setFileScannerContributors(
+				List.of(new RNCIndexFileScannerContributor()));
+		index.indexFile(other.path);
+
+		// other.rnc includes fragment but NOT with a start override in the include block
+		// (the start is defined separately at the top level of other.rnc)
+		// → missing-start diagnostic should still fire for fragment.rnc
+		testDiagnosticsFor(fragment.content, fragment.uri, index,
+				d(0, 0, 0, 4, "missing-start-element"));
 	}
 }

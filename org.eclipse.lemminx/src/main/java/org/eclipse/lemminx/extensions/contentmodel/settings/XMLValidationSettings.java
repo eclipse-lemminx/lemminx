@@ -225,6 +225,10 @@ public class XMLValidationSettings {
 		this.publishDiagnostics = publishDiagnostics;
 	}
 
+	public PublishDiagnosticsCapabilities getCapabilities() {
+		return publishDiagnostics;
+	}
+
 	public boolean isRelatedInformation() {
 		return publishDiagnostics != null && publishDiagnostics.getRelatedInformation() != null
 				&& publishDiagnostics.getRelatedInformation();

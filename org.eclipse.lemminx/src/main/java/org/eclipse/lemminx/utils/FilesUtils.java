@@ -268,6 +268,24 @@ public class FilesUtils {
 	}
 
 	/**
+	 * Like {@link #getPath(String)} but returns {@code null} instead of throwing
+	 * when {@code uri} is {@code null}, empty, or not a valid path.
+	 *
+	 * @param uri the URI or file path string.
+	 * @return the corresponding {@link Path}, or {@code null} on any error.
+	 */
+	public static Path getPathOrNull(String uri) {
+		if (uri == null || uri.isEmpty()) {
+			return null;
+		}
+		try {
+			return getPath(uri);
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	/**
 	 * Replace spaces with "%20".
 	 *
 	 * @param path the path.
