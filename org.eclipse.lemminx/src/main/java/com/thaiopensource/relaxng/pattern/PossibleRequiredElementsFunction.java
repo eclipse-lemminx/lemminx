@@ -13,7 +13,7 @@ package com.thaiopensource.relaxng.pattern;
 
 import java.util.Set;
 
-public class PossibleRequiredElementsFunction extends AbstractPatternFunction<Void> {
+class PossibleRequiredElementsFunction extends AbstractPatternFunction<Void> {
 
 	private final Set<String> requiredElementNames;
 
