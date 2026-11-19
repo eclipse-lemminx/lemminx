@@ -9,15 +9,27 @@
 * Contributors:
 *     Red Hat Inc. - initial API and implementation
 *******************************************************************************/
-package com.thaiopensource.relaxng.pattern;
+package org.eclipse.lemminx.extensions.relaxng.contentmodel;
 
 import java.util.Set;
 
-public class PossibleRequiredElementsFunction extends AbstractPatternFunction<Void> {
+import com.thaiopensource.relaxng.pattern.AbstractPatternFunction;
+import com.thaiopensource.relaxng.pattern.AfterPattern;
+import com.thaiopensource.relaxng.pattern.BinaryPattern;
+import com.thaiopensource.relaxng.pattern.ChoicePattern;
+import com.thaiopensource.relaxng.pattern.ElementPattern;
+import com.thaiopensource.relaxng.pattern.GroupPattern;
+import com.thaiopensource.relaxng.pattern.InterleavePattern;
+import com.thaiopensource.relaxng.pattern.NameClass;
+import com.thaiopensource.relaxng.pattern.OneOrMorePattern;
+import com.thaiopensource.relaxng.pattern.Pattern;
+import com.thaiopensource.relaxng.pattern.SimpleNameClass;
+
+public class MyRequiredElementsFunction extends AbstractPatternFunction<Void> {
 
 	private final Set<String> requiredElementNames;
 
-	public PossibleRequiredElementsFunction(Set<String> requiredElementNames) {
+	public MyRequiredElementsFunction(Set<String> requiredElementNames) {
 		this.requiredElementNames = requiredElementNames;
 	}
 
@@ -38,7 +50,17 @@ public class PossibleRequiredElementsFunction extends AbstractPatternFunction<Vo
 
 	@Override
 	public Void caseChoice(ChoicePattern p) {
-		return union(p);
+		// For choice, get the first pattern which is not nullable
+		Pattern p1 = p.getOperand1();
+		if (!p1.isNullable()) {
+			p1.apply(this);
+		} else {
+			Pattern p2 = p.getOperand2();
+			if (!p2.isNullable()) {
+				p2.apply(this);
+			}
+		}
+		return null;
 	}
 
 	@Override

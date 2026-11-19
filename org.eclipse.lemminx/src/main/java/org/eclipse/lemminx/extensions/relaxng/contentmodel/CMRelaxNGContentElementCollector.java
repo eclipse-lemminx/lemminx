@@ -9,8 +9,10 @@
 * Contributors:
 *     Red Hat Inc. - initial API and implementation
 *******************************************************************************/
-package com.thaiopensource.relaxng.pattern;
+package org.eclipse.lemminx.extensions.relaxng.contentmodel;
 
+import com.thaiopensource.relaxng.pattern.ChoicePattern;
+import com.thaiopensource.relaxng.pattern.Pattern;
 import com.thaiopensource.util.VoidValue;
 
 /**

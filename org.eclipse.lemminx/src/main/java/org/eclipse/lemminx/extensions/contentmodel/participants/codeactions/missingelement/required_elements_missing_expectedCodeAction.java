@@ -27,6 +27,7 @@ import org.eclipse.lemminx.dom.DOMNode;
 import org.eclipse.lemminx.extensions.contentmodel.model.CMDocument;
 import org.eclipse.lemminx.extensions.contentmodel.model.CMElementDeclaration;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
+import org.eclipse.lemminx.extensions.relaxng.contentmodel.CMRelaxNGElementDeclaration;
 import org.eclipse.lemminx.extensions.contentmodel.generator.XMLElementGenerator;
 import org.eclipse.lemminx.services.data.DataEntryField;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionParticipant;
@@ -40,7 +41,6 @@ import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
 import com.google.gson.JsonObject;
-import com.thaiopensource.relaxng.pattern.CMRelaxNGElementDeclaration;
 
 /**
  * CodeAction to insert expected child element given a list of choices

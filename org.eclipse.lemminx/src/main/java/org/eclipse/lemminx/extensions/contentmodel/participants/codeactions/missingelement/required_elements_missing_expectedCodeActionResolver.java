@@ -22,6 +22,7 @@ import org.eclipse.lemminx.dom.DOMNode;
 import org.eclipse.lemminx.extensions.contentmodel.model.CMDocument;
 import org.eclipse.lemminx.extensions.contentmodel.model.CMElementDeclaration;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
+import org.eclipse.lemminx.extensions.relaxng.contentmodel.CMRelaxNGElementDeclaration;
 import org.eclipse.lemminx.extensions.contentmodel.generator.XMLElementGenerator;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionResolverRequest;
 import org.eclipse.lemminx.services.extensions.codeaction.ICodeActionResolvesParticipant;
@@ -30,8 +31,6 @@ import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.Position;
 import org.eclipse.lsp4j.Range;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
-
-import com.thaiopensource.relaxng.pattern.CMRelaxNGElementDeclaration;
 
 /**
  * CodeAction resolver used to generate missing element of choice

@@ -9,7 +9,7 @@
 * Contributors:
 *     Red Hat Inc. - initial API and implementation
 *******************************************************************************/
-package com.thaiopensource.relaxng.pattern;
+package org.eclipse.lemminx.extensions.relaxng.contentmodel;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -17,6 +17,11 @@ import java.util.List;
 
 import org.eclipse.lemminx.extensions.contentmodel.model.CMElementDeclaration;
 
+import com.thaiopensource.relaxng.pattern.ElementPattern;
+import com.thaiopensource.relaxng.pattern.NameClass;
+import com.thaiopensource.relaxng.pattern.NameClassVisitor;
+import com.thaiopensource.relaxng.pattern.Pattern;
+import com.thaiopensource.relaxng.pattern.SimpleNameClass;
 import com.thaiopensource.util.VoidValue;
 import com.thaiopensource.xml.util.Name;
 

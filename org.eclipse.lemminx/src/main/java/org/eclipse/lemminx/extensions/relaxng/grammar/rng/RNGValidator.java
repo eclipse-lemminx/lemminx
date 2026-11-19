@@ -25,6 +25,7 @@ import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
 import org.eclipse.lemminx.extensions.contentmodel.participants.diagnostics.LSPErrorReporterForXML;
 import org.eclipse.lemminx.extensions.contentmodel.settings.XMLValidationSettings;
+import org.eclipse.lemminx.extensions.relaxng.contentmodel.MySchemaPatternBuilder;
 import org.eclipse.lemminx.extensions.relaxng.jing.SchemaProvider;
 import org.eclipse.lemminx.extensions.xerces.ReferencedGrammarDiagnosticsInfo;
 import org.eclipse.lemminx.utils.DOMUtils;
@@ -33,7 +34,6 @@ import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
-import com.thaiopensource.relaxng.pattern.MySchemaPatternBuilder;
 import com.thaiopensource.validate.IncorrectSchemaException;
 import com.thaiopensource.xml.sax.XMLReaderCreator;
 
