@@ -23,7 +23,7 @@ import com.thaiopensource.util.VoidValue;
  * of each {@code <choice>} group.
  * </p>
  */
-public class CMRelaxNGContentElementCollector extends CMRelaxNGElementDeclarationCollector {
+class CMRelaxNGContentElementCollector extends CMRelaxNGElementDeclarationCollector {
 
 	public CMRelaxNGContentElementCollector(CMRelaxNGDocument document, Pattern pattern) {
 		super(document, pattern);

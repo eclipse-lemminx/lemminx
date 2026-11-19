@@ -28,7 +28,7 @@ import com.thaiopensource.util.VoidValue;
  * @author Angelo ZERR
  *
  */
-public abstract class AbstractCMRelaxNGCollector extends AbstractPatternFunction<VoidValue> {
+abstract class AbstractCMRelaxNGCollector extends AbstractPatternFunction<VoidValue> {
 
 	@Override
 	public VoidValue caseElement(ElementPattern p) {

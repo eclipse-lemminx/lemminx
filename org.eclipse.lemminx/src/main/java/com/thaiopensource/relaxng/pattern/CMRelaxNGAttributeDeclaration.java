@@ -42,7 +42,7 @@ import com.thaiopensource.xml.util.Name;
  * @author Angelo ZERR
  *
  */
-public class CMRelaxNGAttributeDeclaration implements CMAttributeDeclaration {
+class CMRelaxNGAttributeDeclaration implements CMAttributeDeclaration {
 
 	private static final Logger LOGGER = Logger.getLogger(CMRelaxNGAttributeDeclaration.class.getName());
 

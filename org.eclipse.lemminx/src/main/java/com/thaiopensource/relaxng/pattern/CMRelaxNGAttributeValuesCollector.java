@@ -31,7 +31,7 @@ import com.thaiopensource.util.VoidValue;
  * @author Angelo ZERR
  *
  */
-public class CMRelaxNGAttributeValuesCollector extends AbstractCMRelaxNGCollector {
+class CMRelaxNGAttributeValuesCollector extends AbstractCMRelaxNGCollector {
 
 	private final List<String> values;
 

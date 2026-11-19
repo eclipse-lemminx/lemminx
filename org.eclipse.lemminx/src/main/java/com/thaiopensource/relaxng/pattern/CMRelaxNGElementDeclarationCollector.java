@@ -35,7 +35,7 @@ import com.thaiopensource.xml.util.Name;
  * @author Angelo ZERR
  *
  */
-public class CMRelaxNGElementDeclarationCollector extends AbstractCMRelaxNGCollector {
+class CMRelaxNGElementDeclarationCollector extends AbstractCMRelaxNGCollector {
 
 	private final CMRelaxNGDocument document;
 
