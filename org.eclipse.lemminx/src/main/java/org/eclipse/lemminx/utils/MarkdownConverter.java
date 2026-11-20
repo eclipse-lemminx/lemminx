@@ -15,8 +15,8 @@ package org.eclipse.lemminx.utils;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import io.github.fbricon.mdream4j.HtmlToMarkdown;
-import io.github.fbricon.mdream4j.Options;
+import io.github.mdream4j.HtmlToMarkdown;
+import io.github.mdream4j.Options;
 
 /**
  * Converts HTML content into Markdown equivalent.
