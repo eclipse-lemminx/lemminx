@@ -1,11 +1,5 @@
 [
 	{
-		"name": "com.overzealous.remark.Remark",
-		"fields": [{
-			"name": "cleaner"
-		}]
-	},
-	{
 		"name": "java.lang.Object",
 		"allDeclaredMethods": true
 	},
