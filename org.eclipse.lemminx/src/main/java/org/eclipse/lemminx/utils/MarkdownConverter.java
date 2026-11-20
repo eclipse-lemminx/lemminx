@@ -32,7 +32,10 @@ public class MarkdownConverter {
 	public static String convert(String html) {
 		String res = HtmlToMarkdown.convert(html, Options.builder().wrapWidth(0).build()) //
 				// remark handled local files weirdly; this replicates that
-				.replaceAll("\\(file:///", "(file:/");
+				.replaceAll("\\(file:///", "(file:/")
+
+				// remark uses crlf on Windows
+				.replaceAll("\n", System.lineSeparator());
 		
 		// link with no whitespace in them don't render italics/bold through `_`; remark exploited this but mdream doesn't rely on it
 		Pattern p = Pattern.compile("\\[[^\\]\\s]+\\]");
