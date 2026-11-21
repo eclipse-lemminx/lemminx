@@ -61,7 +61,7 @@ public class ExtensionRegistryDoSaveTest extends AbstractCacheBasedTest {
 		}
 
 		@Override
-		public void collectDocumentToValidate(Predicate<DOMDocument> validateDocumentPredicate) {
+		public void refreshDiagnostics(Predicate<DOMDocument> filter) {
 		}
 
 		@Override

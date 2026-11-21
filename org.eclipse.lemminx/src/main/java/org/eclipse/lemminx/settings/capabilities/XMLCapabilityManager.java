@@ -210,11 +210,16 @@ public class XMLCapabilityManager {
 	}
 
 	private void registerWatchedFiles() {
-		List<FileSystemWatcher> watchers = new ArrayList<>(2);
+		List<FileSystemWatcher> watchers = new ArrayList<>();
+		// All XML-family files — changes affect cross-file references and code lens counts.
+		watchers.add(new FileSystemWatcher(Either.forLeft("**/*.xml")));
 		watchers.add(new FileSystemWatcher(Either.forLeft("**/*.xsd")));
+		watchers.add(new FileSystemWatcher(Either.forLeft("**/*.xsl")));
+		watchers.add(new FileSystemWatcher(Either.forLeft("**/*.xslt")));
 		watchers.add(new FileSystemWatcher(Either.forLeft("**/*.dtd")));
 		watchers.add(new FileSystemWatcher(Either.forLeft("**/*.rng")));
 		watchers.add(new FileSystemWatcher(Either.forLeft("**/*.rnc")));
+		watchers.add(new FileSystemWatcher(Either.forLeft("**/*.wsdl")));
 		DidChangeWatchedFilesRegistrationOptions options = new DidChangeWatchedFilesRegistrationOptions(watchers);
 		registerCapability(WORKSPACE_WATCHED_FILES_ID, WORKSPACE_WATCHED_FILES, options);
 	}

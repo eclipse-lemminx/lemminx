@@ -50,6 +50,7 @@ import org.eclipse.lemminx.extensions.contentmodel.settings.XMLValidationRootSet
 import org.eclipse.lemminx.extensions.contentmodel.settings.XMLValidationSettings;
 import org.eclipse.lemminx.services.IXMLDocumentProvider;
 import org.eclipse.lemminx.services.IXMLValidationService;
+import org.eclipse.lemminx.services.extensions.IGrammarReferenceContributor;
 import org.eclipse.lemminx.services.extensions.IDocumentLinkParticipant;
 import org.eclipse.lemminx.services.extensions.ITypeDefinitionParticipant;
 import org.eclipse.lemminx.services.extensions.IWorkspaceServiceParticipant;
@@ -142,7 +143,7 @@ public class ContentModelPlugin implements IXMLExtension {
 				contentModelManager.refreshCatalogs();
 			}
 			// 2) Validate all opened XML files except the catalog which have changed
-			context.collectDocumentToValidate(d -> {
+			context.refreshDiagnostics(d -> {
 				DOMDocument xml = context.getDocument(d.getDocumentURI());
 				xml.resetGrammar();
 				return !documentURI.equals(d.getDocumentURI());
@@ -210,7 +211,7 @@ public class ContentModelPlugin implements IXMLExtension {
 		XMLValidationRootSettings validation = cmSettings.getValidation();
 		currentValidationSettings = validation != null ? validation : new XMLValidationRootSettings();
 		if (oldValidationSettings != null && !Objects.equals(oldValidationSettings, currentValidationSettings)) {
-			context.collectDocumentToValidate(d -> true);
+			context.refreshDiagnostics(d -> true);
 			if (context instanceof SaveContext) {
 				((SaveContext) context).setRefreshCodeLenses(true);
 			}
@@ -220,7 +221,7 @@ public class ContentModelPlugin implements IXMLExtension {
 
 	private void validateAllOpenedDocument(ISaveContext context) {
 		// Validate all opened XML files
-		context.collectDocumentToValidate(d -> {
+		context.refreshDiagnostics(d -> {
 			DOMDocument xml = context.getDocument(d.getDocumentURI());
 			if (xml == null) {
 				return false;
@@ -266,6 +267,9 @@ public class ContentModelPlugin implements IXMLExtension {
 		registry.registerFormatterParticipant(formatterParticipant);
 		semanticTokensParticipant = new ContentModelSemanticTokensParticipant();
 		registry.registerSemanticTokensParticipant(semanticTokensParticipant);
+
+		// Contribute catalog grammar reference patterns to the workspace index
+		registry.registerGrammarReferenceContributor(new CatalogGrammarReferenceContributor());
 
 		// Register custom commands to re-validate XML files
 		IXMLCommandService commandService = registry.getCommandService();
@@ -383,5 +387,23 @@ public class ContentModelPlugin implements IXMLExtension {
 			return uris;
 		}
 		return null;
+	}
+
+	/** Contributes OASIS XML Catalog {@code uri} attributes to the workspace index. */
+	private static final class CatalogGrammarReferenceContributor implements IGrammarReferenceContributor {
+
+		@Override
+		public ExtractionKind classify(String elementLocalName, String attrLocalName, boolean hasPrefix) {
+			if (!hasPrefix && "uri".equals(attrLocalName) && isCatalogEntry(elementLocalName)) {
+				return ExtractionKind.PATH;
+			}
+			return null;
+		}
+
+		private static boolean isCatalogEntry(String elementLocalName) {
+			return "uri".equals(elementLocalName) || "public".equals(elementLocalName)
+					|| "system".equals(elementLocalName) || "systemSuffix".equals(elementLocalName)
+					|| "uriSuffix".equals(elementLocalName);
+		}
 	}
 }

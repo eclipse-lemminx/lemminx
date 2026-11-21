@@ -75,7 +75,7 @@ public class RelaxNGPlugin implements IXMLExtension {
 		String documentURI = context.getUri();
 		DOMDocument document = context.getDocument(documentURI);
 		if (DOMUtils.isRelaxNG(document)) {
-			context.collectDocumentToValidate(d -> {
+			context.refreshDiagnostics(d -> {
 				DOMDocument xml = context.getDocument(d.getDocumentURI());
 				return contentModelManager.dependsOnGrammar(xml, context.getUri());
 			});

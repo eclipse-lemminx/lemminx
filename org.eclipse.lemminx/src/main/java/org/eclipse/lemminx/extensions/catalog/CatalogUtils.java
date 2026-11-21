@@ -200,6 +200,32 @@ public class CatalogUtils {
 	}
 
 	/**
+	 * Returns the catalog key attribute value for the given entry:
+	 * {@code systemId} for {@code <system>}, {@code publicId} for {@code <public>},
+	 * and {@code name} for {@code <uri>}. Returns {@code null} when the entry type
+	 * has no such key (e.g. {@code rewriteURI}, {@code namespace}).
+	 *
+	 * <p>This identifier is what XML instance files use to bind to the grammar:
+	 * {@code xmlns="http://foo"}, {@code SYSTEM "http://example.org/schema"},
+	 * {@code PUBLIC "-//Ex//DTD//EN"}.
+	 *
+	 * @param entry the catalog entry.
+	 * @return the catalog identifier, or {@code null} if not applicable.
+	 */
+	public static String getCatalogIdentifier(CatalogEntry entry) {
+		DOMElement el = entry.getEntryElement();
+		if (el == null) {
+			return null;
+		}
+		switch (el.getNodeName()) {
+			case "system": return el.getAttribute("systemId");
+			case "public": return el.getAttribute("publicId");
+			case "uri": return el.getAttribute("name");
+			default: return null;
+		}
+	}
+
+	/**
 	 * Returns the expanded system location
 	 *
 	 * @param document     the xml document

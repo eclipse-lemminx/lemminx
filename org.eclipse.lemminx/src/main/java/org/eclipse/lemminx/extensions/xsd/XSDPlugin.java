@@ -74,7 +74,7 @@ public class XSDPlugin implements IXMLExtension {
 		String documentURI = context.getUri();
 		DOMDocument document = context.getDocument(documentURI);
 		if (DOMUtils.isXSD(document)) {
-			context.collectDocumentToValidate(d -> {
+			context.refreshDiagnostics(d -> {
 				DOMDocument xml = context.getDocument(d.getDocumentURI());
 				return contentModelManager.dependsOnGrammar(xml, context.getUri());
 			});

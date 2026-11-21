@@ -17,7 +17,9 @@ import org.eclipse.lemminx.services.extensions.diagnostics.IXMLErrorCode;
  *
  */
 public enum XMLCatalogErrorCode implements IXMLErrorCode {
-	catalog_uri("catalog_uri");
+	catalog_uri("catalog_uri"),
+	catalog_not_registered("catalog_not_registered"),
+	catalog_entry_unused("catalog_entry_unused");
 	
 	private final String code;
 

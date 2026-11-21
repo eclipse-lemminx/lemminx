@@ -15,6 +15,7 @@ package org.eclipse.lemminx;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -64,6 +65,10 @@ import org.eclipse.lemminx.telemetry.TelemetryManager;
 import org.eclipse.lemminx.utils.FilesUtils;
 import org.eclipse.lemminx.utils.platform.Platform;
 import org.eclipse.lsp4j.Command;
+import org.eclipse.lsp4j.FileOperationFilter;
+import org.eclipse.lsp4j.FileOperationOptions;
+import org.eclipse.lsp4j.FileOperationPattern;
+import org.eclipse.lsp4j.FileOperationsServerCapabilities;
 import org.eclipse.lsp4j.InitializeParams;
 import org.eclipse.lsp4j.InitializeResult;
 import org.eclipse.lsp4j.InitializedParams;
@@ -149,7 +154,22 @@ public class XMLLanguageServer implements ProcessLanguageServer, XMLLanguageServ
 		ServerCapabilities nonDynamicServerCapabilities = ServerCapabilitiesInitializer.getNonDynamicServerCapabilities(
 				capabilityManager.getClientCapabilities(), xmlTextDocumentService.isIncrementalSupport());
 
+		// Register workspace/willRenameFiles for grammar files
+		addWillRenameFilesCapability(nonDynamicServerCapabilities);
+
 		return CompletableFuture.completedFuture(new InitializeResult(nonDynamicServerCapabilities));
+	}
+
+	private void addWillRenameFilesCapability(ServerCapabilities caps) {
+		FileOperationPattern pattern = new FileOperationPattern("**/*.{xsd,dtd,rng,rnc,xsl,xslt,wsdl,xml}");
+		FileOperationFilter filter = new FileOperationFilter(pattern);
+		FileOperationOptions options = new FileOperationOptions(List.of(filter));
+		FileOperationsServerCapabilities fileOps = new FileOperationsServerCapabilities();
+		fileOps.setWillRename(options);
+		if (caps.getWorkspace() == null) {
+			caps.setWorkspace(new org.eclipse.lsp4j.WorkspaceServerCapabilities());
+		}
+		caps.getWorkspace().setFileOperations(fileOps);
 	}
 
 	/*
@@ -166,6 +186,7 @@ public class XMLLanguageServer implements ProcessLanguageServer, XMLLanguageServ
 		capabilityManager.initializeCapabilities();
 		xmlTextDocumentService.setInitialized();
 		getTelemetryManager().onInitialized(params);
+		xmlLanguageService.notifyInitialized(params);
 	}
 
 	/**
@@ -295,6 +316,16 @@ public class XMLLanguageServer implements ProcessLanguageServer, XMLLanguageServ
 		this.languageClient = (XMLLanguageClientAPI) languageClient;
 		capabilityManager = new XMLCapabilityManager(this.languageClient, xmlTextDocumentService);
 		telemetryManager = new TelemetryManager(languageClient);
+		xmlLanguageService.setCodeLensRefresher(uriFilter -> {
+			if (xmlTextDocumentService.getSharedSettings().getCodeLensSettings().isRefreshSupport()
+					&& xmlTextDocumentService.allDocuments().stream()
+							.anyMatch(doc -> uriFilter.test(doc.getUri()))) {
+				this.languageClient.refreshCodeLenses();
+			}
+		});
+		xmlLanguageService.setDiagnosticsRefresher(documentFilter -> {
+			xmlTextDocumentService.refreshDiagnostics(documentFilter);
+		});
 	}
 
 	public XMLLanguageClientAPI getLanguageClient() {

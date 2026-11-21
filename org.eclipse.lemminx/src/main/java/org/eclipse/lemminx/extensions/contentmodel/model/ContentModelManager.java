@@ -529,6 +529,26 @@ public class ContentModelManager {
 	}
 
 	/**
+	 * Returns true if the given catalog URI is registered in {@code xml.catalogs}.
+	 *
+	 * @param uri the catalog document URI to check
+	 * @return true if registered
+	 */
+	public boolean isRegisteredCatalog(String uri) {
+		String expanded = expandSystemId(uri);
+		String[] catalogs = getCatalogs();
+		if (catalogs == null) {
+			return false;
+		}
+		for (String catalog : catalogs) {
+			if (expanded.equals(catalog) || expanded.equals(expandSystemId(catalog))) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
 	 * Set up XML catalogs.
 	 *
 	 * @param catalogs list of XML catalog files.

@@ -22,6 +22,7 @@ import java.util.stream.Collectors;
 import org.eclipse.lemminx.AbstractTextDocumentService;
 import org.eclipse.lemminx.XMLLanguageServer;
 import org.eclipse.lemminx.client.CodeLensKind;
+import org.eclipse.lemminx.extensions.index.WorkspaceIndex;
 import org.eclipse.lemminx.commons.ModelTextDocument;
 import org.eclipse.lemminx.commons.ModelValidatorDelayer;
 import org.eclipse.lemminx.commons.config.ConfigurationField;
@@ -366,8 +367,10 @@ public class RNCTextDocumentService extends AbstractTextDocumentService<RNCDocum
 	@Override
 	public CompletableFuture<List<? extends Location>> references(ReferenceParams params) {
 		return computeModelAsync(params.getTextDocument(), (rncDocument, cancelChecker) -> {
+			WorkspaceIndex workspaceIndex = xmlLanguageServer.getXMLLanguageService()
+					.getComponent(WorkspaceIndex.class);
 			return rncLanguageService.findReferences(
-					rncDocument, params.getPosition(), params.getContext(), cancelChecker);
+					rncDocument, params.getPosition(), params.getContext(), workspaceIndex, cancelChecker);
 		});
 	}
 
@@ -437,7 +440,13 @@ public class RNCTextDocumentService extends AbstractTextDocumentService<RNCDocum
 		return computeModelAsync(params.getTextDocument(), (rncDocument, cancelChecker) -> {
 			boolean supportedByClient = getSharedSettings().getCodeLensSettings()
 					.isSupportedByClient(CodeLensKind.References);
-			return rncLanguageService.getCodeLens(rncDocument, supportedByClient, cancelChecker);
+			// WorkspaceIndex is registered as a component in the XML extension registry.
+			// RNC uses a separate text document service, so it cannot go through the
+			// WorkspaceIndexCodeLensParticipant. Instead it retrieves the index here and
+			// passes it to RNCCodeLenses, which calls WorkspaceIndexCodeLensSupport directly.
+			WorkspaceIndex workspaceIndex = xmlLanguageServer.getXMLLanguageService()
+					.getComponent(WorkspaceIndex.class);
+			return rncLanguageService.getCodeLens(rncDocument, supportedByClient, workspaceIndex, cancelChecker);
 		});
 	}
 

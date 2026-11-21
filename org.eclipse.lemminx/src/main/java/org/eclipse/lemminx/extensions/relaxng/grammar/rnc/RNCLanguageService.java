@@ -14,6 +14,7 @@ package org.eclipse.lemminx.extensions.relaxng.grammar.rnc;
 import java.util.List;
 
 import org.eclipse.lemminx.commons.TextDocument;
+import org.eclipse.lemminx.extensions.index.WorkspaceIndex;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.codeaction.RNCCodeActions;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.codelens.RNCCodeLenses;
 import org.eclipse.lemminx.extensions.relaxng.grammar.rnc.completion.RNCCompletionResolver;
@@ -221,17 +222,22 @@ public class RNCLanguageService {
 	 * Finds all references to the symbol at the given position.
 	 *
 	 * <p>Use case: "Find All References" on a define name shows everywhere
-	 * it is used in the document (and optionally includes the declaration).</p>
+	 * it is used in the document (and optionally includes the declaration).
+	 * When the cursor is not on a define name and {@code workspaceIndex} is
+	 * non-null, falls back to cross-file workspace references (e.g. code lens
+	 * click at position {@code (0,0)}).</p>
 	 *
-	 * @param rncDocument   the parsed RNC document (AST).
-	 * @param position      the cursor position.
-	 * @param context       whether to include the declaration itself.
-	 * @param cancelChecker used to abort if the request is cancelled.
+	 * @param rncDocument    the parsed RNC document (AST).
+	 * @param position       the cursor position.
+	 * @param context        whether to include the declaration itself.
+	 * @param workspaceIndex the workspace Bloom index for cross-file lookup, or
+	 *                       {@code null} if the workspace index feature is disabled.
+	 * @param cancelChecker  used to abort if the request is cancelled.
 	 * @return the list of reference locations.
 	 */
 	public List<? extends Location> findReferences(RNCDocument rncDocument, Position position,
-			ReferenceContext context, CancelChecker cancelChecker) {
-		return references.findReferences(rncDocument, position, context, cancelChecker);
+			ReferenceContext context, WorkspaceIndex workspaceIndex, CancelChecker cancelChecker) {
+		return references.findReferences(rncDocument, position, context, workspaceIndex, cancelChecker);
 	}
 
 	// -------------------- Prepare Rename --------------------
@@ -291,17 +297,26 @@ public class RNCLanguageService {
 	/**
 	 * Computes code lenses for an RNC document.
 	 *
-	 * <p>Use case: shows reference counts above each define declaration
-	 * (e.g. "2 references") as clickable code lenses.</p>
+	 * <p><b>Use case — workspace lens:</b> When {@code workspaceIndex} is non-null,
+	 * a "N references" lens is added at position {@code (0,0)} showing how many
+	 * workspace XML files reference this RNC file. This is the same lens that
+	 * {@code WorkspaceIndexCodeLensParticipant} produces for XSD/DTD/RNG files,
+	 * but RNC files go through a separate text document service and therefore call
+	 * {@code WorkspaceIndexCodeLensSupport} directly.
+	 *
+	 * <p><b>Use case — per-define lens:</b> Each {@code define} gets a lens showing
+	 * its reference count within the file (and included files).
 	 *
 	 * @param rncDocument       the parsed RNC document (AST).
 	 * @param supportedByClient whether the client supports code lens.
+	 * @param workspaceIndex    the populated workspace Bloom index, or {@code null}
+	 *                          if the workspace index feature is disabled.
 	 * @param cancelChecker     used to abort if the request is cancelled.
 	 * @return the list of code lenses.
 	 */
 	public List<CodeLens> getCodeLens(RNCDocument rncDocument, boolean supportedByClient,
-			CancelChecker cancelChecker) {
-		return codeLenses.getCodeLens(rncDocument, supportedByClient, cancelChecker);
+			WorkspaceIndex workspaceIndex, CancelChecker cancelChecker) {
+		return codeLenses.getCodeLens(rncDocument, supportedByClient, workspaceIndex, cancelChecker);
 	}
 
 	// -------------------- Document Links --------------------
