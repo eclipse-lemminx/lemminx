@@ -7,9 +7,6 @@
 	},
 	"editor.formatOnSave": false,
 	"editor.renderWhitespace": "all",
-	//Use consistent indentation
-	"editor.detectIndentation": false,
-	"editor.tabSize": 4,
 	"editor.insertSpaces": false,
 	"java.compile.nullAnalysis.mode": "automatic",
 }

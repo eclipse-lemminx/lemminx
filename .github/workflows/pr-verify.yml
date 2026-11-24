@@ -29,3 +29,16 @@ jobs:
         cache: 'maven'
     - name: Run Tests
       run: ./mvnw -B '-Dlemminx.cacheInRepoDir' clean verify
+  verify-p2:
+    runs-on: ubuntu-latest
+    name: "Verify p2 repo build"
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v7
+    - name: Set up JDK 21
+      uses: actions/setup-java@v6
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+    - name: Build p2 repo
+      run: ./mvnw -B clean verify -DskipTests -Pci,generate-p2

@@ -10,6 +10,7 @@
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<lsp4j.version>1.0.0</lsp4j.version>
 		<junit.version>5.10.1</junit.version>
+		<tycho.version>5.0.4</tycho.version>
 	</properties>
 	<url>https://github.com/eclipse/lemminx</url>
 	<licenses>
@@ -245,9 +246,9 @@
 				<pluginManagement>
 					<plugins>
 						<plugin>
-							<groupId>org.eclipse.tycho.extras</groupId>
-							<artifactId>tycho-eclipserun-plugin</artifactId>
-							<version>4.0.13</version>
+							<groupId>org.eclipse.tycho</groupId>
+							<artifactId>tycho-eclipse-plugin</artifactId>
+							<version>${tycho.version}</version>
 							<executions>
 								<execution>
 									<id>generate-p2-site</id>
