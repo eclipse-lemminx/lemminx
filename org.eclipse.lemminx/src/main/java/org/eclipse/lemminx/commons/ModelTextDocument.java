@@ -11,10 +11,12 @@
 *******************************************************************************/
 package org.eclipse.lemminx.commons;
 
+import java.util.List;
 import java.util.concurrent.CancellationException;
 import java.util.function.BiFunction;
 import java.util.logging.Logger;
 
+import org.eclipse.lsp4j.TextDocumentContentChangeEvent;
 import org.eclipse.lsp4j.TextDocumentItem;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
 
@@ -34,7 +36,34 @@ public class ModelTextDocument<T, S> extends TextDocument {
 
 	private final BiFunction<TextDocument, CancelChecker, T> parse;
 
-	private T model;
+	/**
+	 * A parsed model with the modification stamp of the text document it was
+	 * parsed from.
+	 */
+	private static final class ParsedModel<T> {
+
+		private final T model;
+
+		private final int modificationStamp;
+
+		ParsedModel(T model, int modificationStamp) {
+			this.model = model;
+			this.modificationStamp = modificationStamp;
+		}
+	}
+
+	/**
+	 * Incremented each time the text or the version of the document changes, so
+	 * that a model parsed from an older content is never returned as the current
+	 * one, even when the parse completes after the change. It is a plain field
+	 * (not initialized) because the super constructor already calls
+	 * {@link #setText(String)}. Updates come from document change notifications
+	 * which are serialized by {@link TextDocuments}, and a lost update could never
+	 * bring the stamp back to an older value.
+	 */
+	private volatile int modificationStamp;
+
+	private volatile ParsedModel<T> model;
 
 	private S settings;
 
@@ -56,7 +85,7 @@ public class ModelTextDocument<T, S> extends TextDocument {
 	 *         document and null otherwise.
 	 */
 	public T getExistingModel() {
-		return model;
+		return getUpToDateModel();
 	}
 
 	/**
@@ -68,10 +97,26 @@ public class ModelTextDocument<T, S> extends TextDocument {
 		if (isDisposed()) {
 			return null;
 		}
-		if (model == null) {
+		T current = getUpToDateModel();
+		if (current == null) {
 			return getSynchronizedModel();
 		}
-		return model;
+		return current;
+	}
+
+	/**
+	 * Returns the cached model if it was parsed from the current content of the
+	 * text document and null otherwise.
+	 * 
+	 * @return the cached model if it was parsed from the current content of the
+	 *         text document and null otherwise.
+	 */
+	private T getUpToDateModel() {
+		ParsedModel<T> current = model;
+		if (current != null && current.modificationStamp == modificationStamp) {
+			return current.model;
+		}
+		return null;
 	}
 
 	/**
@@ -85,9 +130,13 @@ public class ModelTextDocument<T, S> extends TextDocument {
 		if (isDisposed()) {
 			return null;
 		}
-		if (model != null) {
-			return model;
+		T current = getUpToDateModel();
+		if (current != null) {
+			return current;
 		}
+		// Read the stamp before the text is read by the parser: if the text changes
+		// while parsing, the stamp no longer matches and the model is parsed again.
+		int stamp = modificationStamp;
 		int version = super.getVersion();
 		long start = System.currentTimeMillis();
 		try {
@@ -96,7 +145,8 @@ public class ModelTextDocument<T, S> extends TextDocument {
 			// version of document changes
 			CancelChecker cancelChecker = new TextDocumentVersionChecker(this, version);
 			// parse the model
-			model = parse.apply(this, cancelChecker);
+			current = parse.apply(this, cancelChecker);
+			model = new ParsedModel<>(current, stamp);
 		} catch (CancellationException e) {
 			LOGGER.fine("Stop parsing parsing of model with version '" + version + "' in "
 					+ (System.currentTimeMillis() - start) + "ms");
@@ -105,13 +155,21 @@ public class ModelTextDocument<T, S> extends TextDocument {
 			LOGGER.fine("End parse of model with version '" + version + "' in " + (System.currentTimeMillis() - start)
 					+ "ms");
 		}
-		return model;
+		return current;
 	}
 
 	@Override
 	public void setText(String text) {
 		super.setText(text);
 		// text changed, cancel the completable future which load the model
+		cancelModel();
+	}
+
+	@Override
+	public void update(List<TextDocumentContentChangeEvent> changes) {
+		super.update(changes);
+		// In incremental mode the text is updated in place without calling
+		// setText(String), mark the model as dirty
 		cancelModel();
 	}
 
@@ -126,6 +184,7 @@ public class ModelTextDocument<T, S> extends TextDocument {
 	 * Mark the model as dirty
 	 */
 	private void cancelModel() {
+		modificationStamp++;
 		model = null;
 	}
 
