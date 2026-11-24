@@ -40,7 +40,7 @@ public class SharedSettings {
 	public SharedSettings() {
 		this.completion = new XMLCompletionSettings();
 		this.foldings = new XMLFoldingSettings();
-		this.format = new XMLFormattingOptions(true);
+		this.format = new XMLFormattingOptions();
 		this.validation = new XMLValidationRootSettings();
 		this.symbols = new XMLSymbolSettings();
 		this.codeActionSettings = new XMLCodeActionSettings();

@@ -22,7 +22,6 @@ public class XMLFormattingPreferences extends XMLFormattingOptions {
 	public static final String COLLAPSE = "COLLAPSE";
 
 	public XMLFormattingPreferences() {
-		super(true);
 		// Line width: [72]
 		super.setMaxLineWidth(72);
 		// [] Split multiple attributes each on new line

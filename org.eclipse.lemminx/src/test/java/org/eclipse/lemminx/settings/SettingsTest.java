@@ -182,7 +182,7 @@ public class SettingsTest {
 		assertFalse(xmlFormattingOptions.isInsertSpaces()); // formattingOptions doesn't defines insert spaces
 		assertFalse(xmlFormattingOptions.isJoinCommentLines());// Since default for JoinCommentLines is False
 
-		XMLFormattingOptions sharedXMLFormattingOptions = new XMLFormattingOptions(true);
+		XMLFormattingOptions sharedXMLFormattingOptions = new XMLFormattingOptions();
 		sharedXMLFormattingOptions.setTabSize(10);
 		sharedXMLFormattingOptions.setInsertSpaces(true);
 		sharedXMLFormattingOptions.setJoinCommentLines(true);

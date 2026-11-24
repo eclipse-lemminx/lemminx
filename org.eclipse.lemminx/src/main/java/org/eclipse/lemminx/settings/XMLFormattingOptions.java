@@ -54,33 +54,52 @@ public class XMLFormattingOptions extends org.eclipse.lemminx.settings.LSPFormat
 	 * Controls how mixed content (text + child elements) is formatted.
 	 *
 	 * <ul>
-	 * <li>{@link #normalize} (default) — backward-compatible behavior.
-	 * Collapses whitespace (including newlines) to single spaces within
-	 * text nodes. Line breaks in whitespace-only gaps between sibling
-	 * elements are preserved with normalized indentation.
-	 * No block/inline element distinction.
-	 * Use case: {@code <p>text\n  <b>bold</b>  more</p>}
-	 * → {@code <p>text <b>bold</b> more</p>} (newline in text joined).
-	 * Use case: {@code <p>\n  <b>bold</b>\n  <i>more</i>\n</p>}
-	 * → line breaks between elements preserved.</li>
+	 * <li>{@link #normalize} (default) — backward-compatible behavior. Collapses
+	 * whitespace (including newlines) to single spaces within text nodes. Line
+	 * breaks in whitespace-only gaps between sibling elements are preserved with
+	 * normalized indentation. No block/inline element distinction. Use case:
+	 * {@code 
+	 * <p>
+	 * text\n  <b>bold</b>  more
+	 * </p>
+	 * } → {@code 
+	 * <p>
+	 * text <b>bold</b> more
+	 * </p>
+	 * } (newline in text joined). Use case: {@code 
+	 * <p>
+	 * \n  <b>bold</b>\n  <i>more</i>\n
+	 * </p>
+	 * } → line breaks between elements preserved.</li>
 	 *
-	 * <li>{@link #reflow} — smart wrapping. Collapses inline whitespace
-	 * to a single space but preserves newlines within text nodes (unlike
-	 * {@code normalize} which collapses them). When {@code maxLineWidth}
-	 * is set, content soft-wraps at word and element boundaries. Block
-	 * elements (those listed in {@code blockElements}) always start on
-	 * their own line, and text after a block element starts on a new line.
-	 * Use case: {@code <p>text <b>bold</b> more</p>} with
-	 * {@code maxLineWidth=40} → wraps overflowing content to new lines.</li>
+	 * <li>{@link #reflow} — smart wrapping. Collapses inline whitespace to a single
+	 * space but preserves newlines within text nodes (unlike {@code normalize}
+	 * which collapses them). When {@code maxLineWidth} is set, content soft-wraps
+	 * at word and element boundaries. Block elements (those listed in
+	 * {@code blockElements}) always start on their own line, and text after a block
+	 * element starts on a new line. Use case: {@code 
+	 * <p>
+	 * text <b>bold</b> more
+	 * </p>
+	 * } with {@code maxLineWidth=40} → wraps overflowing content to new lines.</li>
 	 *
-	 * <li>{@link #expand} — always put each mixed content child on
-	 * its own line (one child per line), regardless of
-	 * {@code maxLineWidth}.
-	 * Use case: {@code <p>text <b>bold</b></p>}
-	 * → {@code <p>\n  text\n  <b>bold</b>\n</p>}.</li>
+	 * <li>{@link #expand} — always put each mixed content child on its own line
+	 * (one child per line), regardless of {@code maxLineWidth}. Use case: {@code 
+	 * <p>
+	 * text <b>bold</b>
+	 * </p>
+	 * } → {@code 
+	 * <p>
+	 * \n  text\n  <b>bold</b>\n
+	 * </p>
+	 * }.</li>
 	 *
-	 * <li>{@link #preserve} — don't reformat mixed content at all.
-	 * Use case: {@code <p>text   <b>bold</b>  more</p>} → unchanged.</li>
+	 * <li>{@link #preserve} — don't reformat mixed content at all. Use case:
+	 * {@code 
+	 * <p>
+	 * text   <b>bold</b>  more
+	 * </p>
+	 * } → unchanged.</li>
 	 * </ul>
 	 */
 	public static enum MixedContent {
@@ -111,13 +130,15 @@ public class XMLFormattingOptions extends org.eclipse.lemminx.settings.LSPFormat
 	 * behavior.
 	 *
 	 * <p>
-	 * Legacy values {@link #splitNewLine} and {@link #alignWithFirstAttr} are
-	 * kept for backward compatibility but are deprecated in favor of the new
-	 * names.
+	 * Legacy values {@link #splitNewLine} and {@link #alignWithFirstAttr} are kept
+	 * for backward compatibility but are deprecated in favor of the new names.
 	 * </p>
 	 */
 	public static enum SplitAttributes {
-		/** Keep existing attribute layout; only wrap when {@code maxLineWidth} is exceeded. */
+		/**
+		 * Keep existing attribute layout; only wrap when {@code maxLineWidth} is
+		 * exceeded.
+		 */
 		preserve,
 
 		/** @deprecated Use {@link #forceExpandMultiline} instead. */
@@ -128,22 +149,35 @@ public class XMLFormattingOptions extends org.eclipse.lemminx.settings.LSPFormat
 		@Deprecated
 		alignWithFirstAttr,
 
-		/** Wrap when line exceeds {@code maxLineWidth}, indent with {@code splitAttributesIndentSize}. */
+		/**
+		 * Wrap when line exceeds {@code maxLineWidth}, indent with
+		 * {@code splitAttributesIndentSize}.
+		 */
 		auto,
 
-		/** Always wrap each attribute except the first, indent with {@code splitAttributesIndentSize}. */
+		/**
+		 * Always wrap each attribute except the first, indent with
+		 * {@code splitAttributesIndentSize}.
+		 */
 		force,
 
-		/** Always wrap each attribute except the first, align with the first attribute. */
+		/**
+		 * Always wrap each attribute except the first, align with the first attribute.
+		 */
 		forceAligned("force-aligned"),
 
 		/** Always wrap every attribute (including the first) onto its own line. */
 		forceExpandMultiline("force-expand-multiline"),
 
-		/** Wrap when line exceeds {@code maxLineWidth}, align with the first attribute. */
+		/**
+		 * Wrap when line exceeds {@code maxLineWidth}, align with the first attribute.
+		 */
 		alignedMultiple("aligned-multiple"),
 
-		/** Preserve existing line breaks but align wrapped attributes with the first attribute. */
+		/**
+		 * Preserve existing line breaks but align wrapped attributes with the first
+		 * attribute.
+		 */
 		preserveAligned("preserve-aligned");
 
 		private final String alias;
@@ -180,7 +214,9 @@ public class XMLFormattingOptions extends org.eclipse.lemminx.settings.LSPFormat
 			return result != null ? result : preserve;
 		}
 
-		/** Returns true if attributes should always be split regardless of line width. */
+		/**
+		 * Returns true if attributes should always be split regardless of line width.
+		 */
 		public boolean isAlwaysSplit() {
 			switch (this) {
 			case splitNewLine:
@@ -217,7 +253,9 @@ public class XMLFormattingOptions extends org.eclipse.lemminx.settings.LSPFormat
 			return this == preserve || this == preserveAligned;
 		}
 
-		/** Returns true if splitting is conditional on {@code maxLineWidth} overflow. */
+		/**
+		 * Returns true if splitting is conditional on {@code maxLineWidth} overflow.
+		 */
 		public boolean isSplitOnOverflow() {
 			return this == auto || this == alignedMultiple;
 		}
@@ -316,24 +354,19 @@ public class XMLFormattingOptions extends org.eclipse.lemminx.settings.LSPFormat
 
 	private List<XMLFormattingProfile> profiles;
 
-	public XMLFormattingOptions() {
-		this(false);
-	}
-
 	/**
 	 * Create an XMLFormattingOptions instance with the option to initialize default
 	 * values for all supported settings.
 	 */
-	public XMLFormattingOptions(boolean initializeDefaults) {
-		if (initializeDefaults) {
-			initializeDefaultSettings();
-		}
+	public XMLFormattingOptions() {
+		initializeDefaultSettings();
 	}
 
 	/**
 	 * Necessary: Initialize default values in case client does not provide one
 	 */
 	private void initializeDefaultSettings() {
+		this.setEnabled(true);
 		super.setTabSize(DEFAULT_TAB_SIZE);
 		super.setInsertSpaces(true);
 		super.setTrimFinalNewlines(true);
@@ -342,7 +375,6 @@ public class XMLFormattingOptions extends org.eclipse.lemminx.settings.LSPFormat
 		this.setFormatComments(true);
 		this.setJoinCommentLines(false);
 		this.setJoinContentLines(false);
-		this.setEnabled(true);
 		this.setLegacy(false);
 		this.setMaxLineWidth(100);
 		this.setSpaceBeforeEmptyCloseTag(true);
@@ -432,8 +464,7 @@ public class XMLFormattingOptions extends org.eclipse.lemminx.settings.LSPFormat
 	/**
 	 * Set true if the legacy formatter must be used and false otherwise.
 	 * 
-	 * @param legacy true if the legacy formatter must be used and false
-	 *                     otherwise.
+	 * @param legacy true if the legacy formatter must be used and false otherwise.
 	 */
 	public void setLegacy(final boolean legacy) {
 		this.legacy = legacy;
@@ -533,8 +564,8 @@ public class XMLFormattingOptions extends org.eclipse.lemminx.settings.LSPFormat
 	 *
 	 * <p>
 	 * Only effective when {@code splitAttributes} is a preserve mode
-	 * ({@code preserve} or {@code preserve-aligned}). Force/auto modes
-	 * control line breaks themselves and override this setting.
+	 * ({@code preserve} or {@code preserve-aligned}). Force/auto modes control line
+	 * breaks themselves and override this setting.
 	 * </p>
 	 *
 	 * <p>
@@ -630,8 +661,13 @@ public class XMLFormattingOptions extends org.eclipse.lemminx.settings.LSPFormat
 	/**
 	 * Returns the mixed content formatting mode.
 	 *
-	 * <p>Use case: {@code xml.format.mixedContent=preserve} keeps
-	 * {@code <p>text  <b>bold</b>  more</p>} unchanged.</p>
+	 * <p>
+	 * Use case: {@code xml.format.mixedContent=preserve} keeps {@code 
+	 * <p>
+	 * text  <b>bold</b>  more
+	 * </p>
+	 * } unchanged.
+	 * </p>
 	 *
 	 * @return the mixed content mode (defaults to {@code normalize}).
 	 */
@@ -658,15 +694,21 @@ public class XMLFormattingOptions extends org.eclipse.lemminx.settings.LSPFormat
 	/**
 	 * Returns the element name list treated as block in mixed content.
 	 *
-	 * <p>Use case: with {@code blockElements=["div","set"]},
-	 * {@code <p>text <div>block</div></p>} puts {@code <div>}
-	 * on its own line, while {@code <b>} stays inline.</p>
+	 * <p>
+	 * Use case: with {@code blockElements=["div","set"]}, {@code 
+	 * <p>
+	 * text <div>block</div>
+	 * </p>
+	 * } puts {@code <div>} on its own line, while {@code <b>} stays inline.
+	 * </p>
 	 *
-	 * <p>When {@code null} or empty, no elements are block — all elements
-	 * are inline (backward-compatible default).</p>
+	 * <p>
+	 * When {@code null} or empty, no elements are block — all elements are inline
+	 * (backward-compatible default).
+	 * </p>
 	 *
-	 * @return the block element name list, or {@code null} if no elements
-	 *         are block.
+	 * @return the block element name list, or {@code null} if no elements are
+	 *         block.
 	 */
 	public List<String> getBlockElements() {
 		return blockElements;
@@ -675,38 +717,46 @@ public class XMLFormattingOptions extends org.eclipse.lemminx.settings.LSPFormat
 	/**
 	 * Sets the element name list treated as block in mixed content.
 	 *
-	 * @param blockElements the element name list, or {@code null} to treat
-	 *                      all elements as inline (default).
+	 * @param blockElements the element name list, or {@code null} to treat all
+	 *                      elements as inline (default).
 	 */
 	public void setBlockElements(List<String> blockElements) {
 		this.blockElements = blockElements;
 	}
 
 	/**
-	 * Returns {@code true} if the given element name is a block element
-	 * in mixed content.
+	 * Returns {@code true} if the given element name is a block element in mixed
+	 * content.
 	 *
-	 * <p>When {@link #getBlockElements()} is {@code null} or empty,
-	 * no elements are block — all are inline (backward-compatible behavior).
-	 * {@code null} and {@code []} are equivalent — both mean "not configured".</p>
+	 * <p>
+	 * When {@link #getBlockElements()} is {@code null} or empty, no elements are
+	 * block — all are inline (backward-compatible behavior). {@code null} and
+	 * {@code []} are equivalent — both mean "not configured".
+	 * </p>
 	 *
-	 * <p>Only effective in {@code reflow} mode. In {@code normalize} mode,
-	 * the block/inline distinction is not used.</p>
+	 * <p>
+	 * Only effective in {@code reflow} mode. In {@code normalize} mode, the
+	 * block/inline distinction is not used.
+	 * </p>
 	 *
-	 * <p>Use cases (with {@code mixedContent=reflow}):</p>
+	 * <p>
+	 * Use cases (with {@code mixedContent=reflow}):
+	 * </p>
 	 * <ul>
-	 * <li>{@code blockElements=null} or {@code []}: no block elements
-	 *   → {@code <p>text <b>bold</b> <div>x</div></p>} stays on one line.</li>
-	 * <li>{@code blockElements=["div"]}: only {@code <div>} is block
-	 *   → {@code <div>} gets its own line, {@code <b>} stays inline.</li>
+	 * <li>{@code blockElements=null} or {@code []}: no block elements → {@code 
+	 * <p>
+	 * text <b>bold</b> <div>x</div>
+	 * </p>
+	 * } stays on one line.</li>
+	 * <li>{@code blockElements=["div"]}: only {@code <div>} is block →
+	 * {@code <div>} gets its own line, {@code <b>} stays inline.</li>
 	 * </ul>
 	 *
 	 * @param tagName the element tag name to check.
 	 * @return {@code true} if the element is block.
 	 */
 	public boolean isBlockElement(String tagName) {
-		if (blockElements == null || blockElements.isEmpty()
-				|| tagName == null || tagName.isEmpty()) {
+		if (blockElements == null || blockElements.isEmpty() || tagName == null || tagName.isEmpty()) {
 			return false;
 		}
 		for (String name : blockElements) {
@@ -729,9 +779,9 @@ public class XMLFormattingOptions extends org.eclipse.lemminx.settings.LSPFormat
 	 * Returns the formatting profiles for per-document settings overrides.
 	 *
 	 * <p>
-	 * Use case: a workspace with DocBook and Maven POM files can define
-	 * profiles with different format settings for each document type.
-	 * The first matching profile wins.
+	 * Use case: a workspace with DocBook and Maven POM files can define profiles
+	 * with different format settings for each document type. The first matching
+	 * profile wins.
 	 * </p>
 	 *
 	 * @return the profiles, or {@code null} if none are configured.
