@@ -1,7 +1,7 @@
 pipeline{
   agent any
   tools {
-    jdk 'temurin-21'
+    jdk 'temurin-jdk21-latest'
   }
   environment {
     MAVEN_HOME = "$WORKSPACE/.m2/"
