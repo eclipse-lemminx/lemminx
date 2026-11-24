@@ -48,9 +48,12 @@ public class ModelTextDocumentTest {
 						// Simulate a parse which is still running when the document changes
 						parsingOldText.countDown();
 						try {
-							documentChanged.await(5, TimeUnit.SECONDS);
+							if (!documentChanged.await(5, TimeUnit.SECONDS)) {
+								throw new IllegalStateException("Document not changed while parsing old content");
+							}
 						} catch (InterruptedException e) {
 							Thread.currentThread().interrupt();
+							throw new IllegalStateException("Interrupted while parsing old content", e);
 						}
 					}
 					return text;
