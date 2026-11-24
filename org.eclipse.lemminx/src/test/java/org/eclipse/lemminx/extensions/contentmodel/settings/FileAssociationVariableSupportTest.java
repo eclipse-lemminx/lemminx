@@ -33,17 +33,17 @@ public class FileAssociationVariableSupportTest {
 
 	@Test
 	public void hasVariablesTrue() {
-		assertTrue(FileAssociationVariableSupport.hasVariables("${workspaceFolder}/data/*.xml"));
-		assertTrue(FileAssociationVariableSupport.hasVariables("${fileDirname}/schema.xsd"));
-		assertTrue(FileAssociationVariableSupport.hasVariables("${env:HOME}/file.xml"));
+		assertTrue(VariableSupportUtils.hasVariables("${workspaceFolder}/data/*.xml"));
+		assertTrue(VariableSupportUtils.hasVariables("${fileDirname}/schema.xsd"));
+		assertTrue(VariableSupportUtils.hasVariables("${env:HOME}/file.xml"));
 	}
 
 	@Test
 	public void hasVariablesFalse() {
-		assertFalse(FileAssociationVariableSupport.hasVariables("*.xml"));
-		assertFalse(FileAssociationVariableSupport.hasVariables("/home/user/file.xml"));
-		assertFalse(FileAssociationVariableSupport.hasVariables(null));
-		assertFalse(FileAssociationVariableSupport.hasVariables(""));
+		assertFalse(VariableSupportUtils.hasVariables("*.xml"));
+		assertFalse(VariableSupportUtils.hasVariables("/home/user/file.xml"));
+		assertFalse(VariableSupportUtils.hasVariables(null));
+		assertFalse(VariableSupportUtils.hasVariables(""));
 	}
 
 	// --- File-level variables ---

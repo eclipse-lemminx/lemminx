@@ -66,12 +66,19 @@ public class ContentModelSettings {
 	}
 
 	/**
-	 * Returns the list of the XML catalogs file path.
+	 * Returns the list of the XML catalogs file path, with any variables resolved.
 	 *
-	 * @return the list of the XML catalogs file path.
+	 * @return the list of the XML catalogs file path, with any variables resolved.
 	 */
 	public String[] getCatalogs() {
-		return catalogs == null ? new String[0] : catalogs;
+		if (catalogs == null) {
+			return new String[0];
+		}
+		String[] res = new String[catalogs.length];
+		for (int i = 0; i < catalogs.length; i++) {
+			res[i] = CatalogVariableSupport.resolve(catalogs[i]);
+		}
+		return res;
 	}
 
 	public void setFileAssociations(XMLFileAssociation[] fileAssociations) {
