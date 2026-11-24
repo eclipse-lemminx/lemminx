@@ -217,8 +217,8 @@
 			<build>
 				<plugins>
 					<plugin>
-						<groupId>org.eclipse.tycho.extras</groupId>
-						<artifactId>tycho-eclipserun-plugin</artifactId>
+						<groupId>org.eclipse.tycho</groupId>
+						<artifactId>tycho-eclipse-plugin</artifactId>
 					</plugin>
 					<plugin>
 						<artifactId>maven-assembly-plugin</artifactId>
