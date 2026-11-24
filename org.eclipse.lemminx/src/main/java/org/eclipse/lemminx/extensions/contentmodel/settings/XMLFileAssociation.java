@@ -89,7 +89,7 @@ public class XMLFileAssociation extends PathPatternMatcher {
 	 */
 	public boolean hasPatternVariables() {
 		if (!patternVariablesChecked) {
-			hasPatternVariables = FileAssociationVariableSupport.hasVariables(getPattern());
+			hasPatternVariables = VariableSupportUtils.hasVariables(getPattern());
 			patternVariablesChecked = true;
 		}
 		return hasPatternVariables;
@@ -102,7 +102,7 @@ public class XMLFileAssociation extends PathPatternMatcher {
 	 */
 	public boolean hasSystemIdVariables() {
 		if (!systemIdVariablesChecked) {
-			hasSystemIdVariables = FileAssociationVariableSupport.hasVariables(systemId);
+			hasSystemIdVariables = VariableSupportUtils.hasVariables(systemId);
 			systemIdVariablesChecked = true;
 		}
 		return hasSystemIdVariables;

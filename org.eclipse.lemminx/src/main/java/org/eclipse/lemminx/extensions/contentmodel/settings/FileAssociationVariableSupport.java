@@ -43,20 +43,7 @@ import java.util.List;
  */
 public class FileAssociationVariableSupport {
 
-	private static final String VARIABLE_PREFIX = "${";
-	private static final String ENV_PREFIX = "${env:";
-
 	private FileAssociationVariableSupport() {
-	}
-
-	/**
-	 * Returns true if the given value contains variable references.
-	 *
-	 * @param value the value to check.
-	 * @return true if the value contains {@code ${...}} variable references.
-	 */
-	public static boolean hasVariables(String value) {
-		return value != null && value.contains(VARIABLE_PREFIX);
 	}
 
 	/**
@@ -69,7 +56,7 @@ public class FileAssociationVariableSupport {
 	 * @return the string with all resolvable variables substituted.
 	 */
 	public static String resolve(String value, URI documentUri, List<String> workspaceFolderUris) {
-		if (!hasVariables(value)) {
+		if (!VariableSupportUtils.hasVariables(value)) {
 			return value;
 		}
 
@@ -77,7 +64,7 @@ public class FileAssociationVariableSupport {
 
 		// Path-independent variables: resolve before Paths.get so non-file URIs
 		// still get environment variables resolved.
-		result = resolveEnvVariables(result);
+		result = VariableSupportUtils.resolveEnvVariables(result);
 
 		Path documentPath;
 		try {
@@ -177,28 +164,5 @@ public class FileAssociationVariableSupport {
 
 	private static String normalizePathSeparator(String path) {
 		return path.replace('\\', '/');
-	}
-
-	private static String resolveEnvVariables(String value) {
-		int startIndex = 0;
-		while (true) {
-			int envStart = value.indexOf(ENV_PREFIX, startIndex);
-			if (envStart < 0) {
-				break;
-			}
-			int envEnd = value.indexOf('}', envStart + ENV_PREFIX.length());
-			if (envEnd < 0) {
-				break;
-			}
-			String envName = value.substring(envStart + ENV_PREFIX.length(), envEnd);
-			String envValue = System.getenv(envName);
-			if (envValue != null) {
-				value = value.substring(0, envStart) + envValue + value.substring(envEnd + 1);
-				startIndex = envStart + envValue.length();
-			} else {
-				startIndex = envEnd + 1;
-			}
-		}
-		return value;
 	}
 }
