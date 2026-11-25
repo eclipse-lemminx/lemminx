@@ -60,7 +60,7 @@ jobs:
         ./mvnw -B surefire:test -pl org.eclipse.lemminx -Dtest=NativeImageSmokeTest
         -Dlemminx.binary=target/$(basename "${{ steps.binary.outputs.path }}")
     - name: Upload native image
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@v7
       with:
         name: lemminx-${{ matrix.label }}
         path: ${{ steps.binary.outputs.path }}
