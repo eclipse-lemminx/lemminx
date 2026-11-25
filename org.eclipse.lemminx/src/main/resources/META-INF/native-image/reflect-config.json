@@ -2301,6 +2301,22 @@
 		}]
 	},
 	{
+		"name": "org.eclipse.lsp4j.SnippetTextEdit",
+		"allDeclaredFields": true,
+		"methods": [{
+			"name": "<init>",
+			"parameterTypes": []
+		}]
+	},
+	{
+		"name": "org.eclipse.lsp4j.StringValue",
+		"allDeclaredFields": true,
+		"methods": [{
+			"name": "<init>",
+			"parameterTypes": []
+		}]
+	},
+	{
 		"name": "org.eclipse.lsp4j.TextEdit",
 		"allDeclaredFields": true,
 		"methods": [{
