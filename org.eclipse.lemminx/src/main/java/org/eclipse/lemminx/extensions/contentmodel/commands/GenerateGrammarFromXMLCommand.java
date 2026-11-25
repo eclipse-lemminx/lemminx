@@ -187,6 +187,11 @@ public class GenerateGrammarFromXMLCommand extends AbstractDOMDocumentCommandHan
 		private final String grammarContent;
 		private final TextDocumentEdit bindingEdit;
 
+		// Required by GSON for reflective TypeAdapter creation in GraalVM native image mode.
+		public GenerateGrammarResult() {
+			this(null, null);
+		}
+
 		public GenerateGrammarResult(String grammarContent, TextDocumentEdit bindingEdit) {
 			this.grammarContent = grammarContent;
 			this.bindingEdit = bindingEdit;

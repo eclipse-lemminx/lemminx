@@ -24,6 +24,11 @@ public class BindableCatalogEntry {
 	private final String uriValue;
 	private final String grammarType;
 
+	// Required by GSON for reflective TypeAdapter creation in GraalVM native image mode.
+	public BindableCatalogEntry() {
+		this(null, null, null, null, null, null);
+	}
+
 	/**
 	 * @param catalogURI  which catalog file this entry comes from
 	 * @param entryType   "public", "system", or "uri"

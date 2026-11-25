@@ -187,7 +187,11 @@
 	},
 	{
 		"name": "org.eclipse.lemminx.customservice.AutoInsertParams",
-		"allDeclaredFields": true
+		"allDeclaredFields": true,
+		"methods": [{
+			"name": "<init>",
+			"parameterTypes": []
+		}]
 	},
 	{
 		"name": "org.eclipse.lemminx.customservice.XMLLanguageClientAPI",
@@ -199,11 +203,27 @@
 	},
 	{
 		"name": "org.eclipse.lemminx.extensions.contentmodel.commands.BindableCatalogEntry",
-		"allDeclaredFields": true
+		"allDeclaredFields": true,
+		"methods": [{
+			"name": "<init>",
+			"parameterTypes": []
+		}]
 	},
 	{
 		"name": "org.eclipse.lemminx.extensions.contentmodel.commands.GenerateGrammarFromXMLCommand$GenerateGrammarResult",
-		"allDeclaredFields": true
+		"allDeclaredFields": true,
+		"methods": [{
+			"name": "<init>",
+			"parameterTypes": []
+		}]
+	},
+	{
+		"name": "org.eclipse.lemminx.extensions.contentmodel.commands.ListRootElementsCommand$RootElementInfo",
+		"allDeclaredFields": true,
+		"methods": [{
+			"name": "<init>",
+			"parameterTypes": []
+		}]
 	},
 	{
 		"name": "org.eclipse.lemminx.extensions.contentmodel.commands.SurroundWithCommand$SurroundWithResponse",

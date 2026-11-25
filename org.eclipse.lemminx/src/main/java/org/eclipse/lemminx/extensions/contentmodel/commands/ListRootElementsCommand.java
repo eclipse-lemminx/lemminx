@@ -14,11 +14,9 @@ package org.eclipse.lemminx.extensions.contentmodel.commands;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.lemminx.commons.progress.ProgressMonitor;
 import org.eclipse.lemminx.commons.progress.ProgressSupport;
-import org.eclipse.lemminx.extensions.contentmodel.model.CMDocument;
 import org.eclipse.lemminx.extensions.contentmodel.model.CMElementDeclaration;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
 import org.eclipse.lemminx.extensions.contentmodel.model.InvalidGrammarException;
@@ -112,6 +110,11 @@ public class ListRootElementsCommand implements IDelegateCommandHandler {
 		private final String name;
 
 		private final String namespace;
+
+		// Required by GSON for reflective TypeAdapter creation in GraalVM native image mode.
+		public RootElementInfo() {
+			this(null, null);
+		}
 
 		public RootElementInfo(String name, String namespace) {
 			this.name = name;
