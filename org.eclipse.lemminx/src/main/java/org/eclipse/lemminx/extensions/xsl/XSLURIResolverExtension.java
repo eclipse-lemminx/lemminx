@@ -9,6 +9,7 @@
  *
  *  Contributors:
  *  Angelo Zerr <angelo.zerr@gmail.com> - initial API and implementation
+ *  Lukasz Kwiatkowski <woocash@eikberg.com> - adjustments for XSL from XSD resolver
  */
 package org.eclipse.lemminx.extensions.xsl;
 
@@ -36,7 +37,7 @@ public class XSLURIResolverExtension implements URIResolverExtension {
 	/**
 	 * The XSL namespace URI (= http://www.w3.org/1999/XSL/Transform)
 	 */
-	private static final String XSL_NAMESPACE_URI = "http://www.w3.org/1999/XSL/Transform"; //$NON-NLS-1$
+	public static final String XSL_NAMESPACE_URI = "http://www.w3.org/1999/XSL/Transform"; //$NON-NLS-1$
 
 	private static final ResourceToDeploy XML_SCHEMA_10 = new ResourceToDeploy("https://www.w3.org/1999/11/xslt10.xsd",
 			"/schemas/xslt/xslt-1.0.xsd");

@@ -43,7 +43,11 @@ public class DOMUtils {
 
 	private static final String MOD_EXTENSION = ".mod";
 
+	private static final String XSL_EXTENSION = ".xsl";
+
 	private static final String HTTP_WWW_W3_ORG_2001_XML_SCHEMA_NS = "http://www.w3.org/2001/XMLSchema";
+
+	private static final  String HTTP_WWW_W3_ORG_1999_XSL_STYLESHEET_NS = "http://www.w3.org/1999/XSL/Transform";
 
 	private static final String URN_OASIS_NAMES_TC_ENTITY_XMLNS_XML_CATALOG_NS = "urn:oasis:names:tc:entity:xmlns:xml:catalog";
 
@@ -78,6 +82,7 @@ public class DOMUtils {
 		// (http://www.w3.org/2001/XMLSchema)
 		return checkRootNamespace(document, HTTP_WWW_W3_ORG_2001_XML_SCHEMA_NS);
 	}
+
 
 	/**
 	 * Returns true if the given URI is a XML Schema and false otherwise.
@@ -159,6 +164,33 @@ public class DOMUtils {
 	 */
 	public static boolean isRelaxNGUriCompactSyntax(String uri) {
 		return uri != null && uri.endsWith(RNC_EXTENSION);
+	}
+
+	/**
+	 * Returns true if the XML document is a XSL Stylesheet and false otherwise.
+	 * 
+	 * @return true if the XML document is a XSL Stylesheet and false otherwise.
+	 */
+	public static boolean isXSL(DOMDocument document) {
+		if (document == null) {
+			return false;
+		}
+		String uri = document.getDocumentURI();
+		if (isXSL(uri)) {
+			return true;
+		}
+		// check root element is bound with XML Schema namespace
+		// (http://www.w3.org/1999/XSL/Transform)
+		return checkRootNamespace(document, HTTP_WWW_W3_ORG_1999_XSL_STYLESHEET_NS);
+	}
+	/**
+	 * Returns true if the given URI is a XSL Stylesheet and false otherwise.
+	 * 
+	 * @param uri the URI to check
+	 * @return true if the given URI is a XSL Stylesheet and false otherwise.
+	 */
+	public static boolean isXSL(String uri) {
+		return uri != null && uri.endsWith(XSL_EXTENSION);
 	}
 
 	/**
