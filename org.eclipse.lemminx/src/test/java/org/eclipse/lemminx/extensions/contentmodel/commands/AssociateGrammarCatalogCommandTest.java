@@ -22,6 +22,7 @@ import java.io.File;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import org.eclipse.lemminx.XMLAssert;
 import org.eclipse.lemminx.dom.DOMDocument;
@@ -1146,6 +1147,22 @@ public class AssociateGrammarCatalogCommandTest {
 						"    xsi:noNamespaceSchemaLocation=\"xsd/tag.xsd\"></person>")));
 	}
 
+	// Grammar URI points to a non-existent file, causing loadCMDocumentAsync to
+	// fail synchronously or asynchronously. The command must still return a valid
+	// binding edit with an empty root-element list (no exception propagated).
+	@Test
+	public void standardBindingWithUnresolvableGrammarReturnsEdit() throws Exception {
+		String xml = "<?xml version=\"1.0\"?>\r\n" + //
+				"<foo />";
+		String xmlURI = getFileURI("src/test/resources/tag.xml");
+		String badGrammarURI = getFileURI("src/test/resources/does-not-exist.xsd");
+
+		TextDocumentEdit actual = executeStandardBinding(xml, xmlURI, badGrammarURI,
+				GrammarBindingType.STANDARD.getName());
+
+		assertNotNull(actual);
+	}
+
 	// --- Helper methods ---
 
 	private static TextDocumentEdit executeCatalogBinding(String xmlContent, String xmlURI,
@@ -1168,7 +1185,7 @@ public class AssociateGrammarCatalogCommandTest {
 						targetURI,
 						uriValue));
 		SharedSettings sharedSettings = new SharedSettings();
-		return (TextDocumentEdit) command.executeCommand(params, sharedSettings, NULL_CHECKER);
+		return unwrapEdit(command.executeCommand(params, sharedSettings, NULL_CHECKER));
 	}
 
 	private static TextDocumentEdit executeStandardBinding(String xmlContent, String xmlURI,
@@ -1188,7 +1205,15 @@ public class AssociateGrammarCatalogCommandTest {
 						grammarURI,
 						bindingType));
 		SharedSettings sharedSettings = new SharedSettings();
-		return (TextDocumentEdit) command.executeCommand(params, sharedSettings, NULL_CHECKER);
+		return unwrapEdit(command.executeCommand(params, sharedSettings, NULL_CHECKER));
+	}
+
+	@SuppressWarnings("unchecked")
+	private static TextDocumentEdit unwrapEdit(Object result) throws Exception {
+		if (result instanceof CompletableFuture) {
+			result = ((CompletableFuture<?>) result).get();
+		}
+		return (TextDocumentEdit) result;
 	}
 
 	private static String getFileURI(String fileName) {
