@@ -18,6 +18,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.logging.Level;
+import java.util.logging.LogRecord;
 import java.util.logging.Logger;
 
 import org.apache.xerces.impl.XMLEntityManager;
@@ -87,13 +89,18 @@ public class XMLCatalogResolverExtension implements URIResolverExtension {
 			for (String catalogPath : catalogs) {
 				// resolve catalog file path with root uri
 				String fullPath = expandSystemId(catalogPath);
-				if (Files.exists(FilesUtils.getPath(fullPath))) {
-					xmlCatalogFiles.add(fullPath);
-					LOGGER.info("Adding XML catalog '" + catalogPath + "' with expand system id '" + fullPath
-							+ "' and root URI '" + rootUri + "'.");
-				} else {
-					LOGGER.severe("Cannot add XML catalog '" + catalogPath + "' with expand system id '" + fullPath
-							+ "' and root URI '" + rootUri + "'.");
+				try {
+					if (Files.exists(FilesUtils.getPath(fullPath))) {
+						xmlCatalogFiles.add(fullPath);
+						LOGGER.info("Adding XML catalog '" + catalogPath + "' with expand system id '" + fullPath
+								+ "' and root URI '" + rootUri + "'.");
+					} else {
+						LOGGER.severe("Cannot add XML catalog '" + catalogPath + "' with expand system id '" + fullPath
+								+ "' and root URI '" + rootUri + "'.");
+					}
+				} catch (Exception e) {
+					LOGGER.log(Level.SEVERE, "Cannot add XML catalog '" + catalogPath + "' with expand system id '"
+							+ fullPath + "' and root URI '" + rootUri + "'.", e);
 				}
 			}
 			if (xmlCatalogFiles.size() > 0) {

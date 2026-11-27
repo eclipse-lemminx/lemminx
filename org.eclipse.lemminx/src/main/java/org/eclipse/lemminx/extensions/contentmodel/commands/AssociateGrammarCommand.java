@@ -11,10 +11,6 @@
 *******************************************************************************/
 package org.eclipse.lemminx.extensions.contentmodel.commands;
 
-import static org.eclipse.lemminx.extensions.xsd.utils.XSDUtils.TARGET_NAMESPACE_ATTR;
-
-import java.net.URL;
-import java.util.Locale;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -22,14 +18,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.xml.parsers.SAXParser;
-import javax.xml.parsers.SAXParserFactory;
-
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMElement;
+import org.eclipse.lemminx.extensions.catalog.CatalogEntry;
+import org.eclipse.lemminx.extensions.catalog.CatalogUtils;
 import org.eclipse.lemminx.extensions.contentmodel.model.CMDocument;
 import org.eclipse.lemminx.extensions.contentmodel.model.CMElementDeclaration;
 import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
@@ -44,9 +42,6 @@ import org.eclipse.lemminx.utils.FilesUtils;
 import org.eclipse.lemminx.utils.StringUtils;
 import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.jsonrpc.CancelChecker;
-import org.xml.sax.Attributes;
-import org.xml.sax.SAXException;
-import org.xml.sax.helpers.DefaultHandler;
 
 /**
  * XML Command "xml.associate.grammar.insert" to associate a grammar to a given
@@ -127,37 +122,41 @@ public class AssociateGrammarCommand extends AbstractDOMDocumentCommandHandler {
 		boolean isXSD = DOMUtils.isXSD(fullPathGrammarURI);
 		boolean snippetSupport = sharedSettings.getWorkspaceSettings().isSnippetEditSupported();
 
-		return getRootElementNamesForDocument(document, fullPathGrammarURI).thenApply(rootElementNames -> {
-			try {
-				if (GrammarBindingType.STANDARD.getName().equals(bindingType)) {
-					if (isXSD) {
-						String targetNamespace = getTargetNamespace(fullPathGrammarURI);
-						if (StringUtils.isEmpty(targetNamespace)) {
-							// XSD without targetNamespace:
-							// <foo /> -> <foo xmlns:xsi="..." xsi:noNamespaceSchemaLocation="xsd/tag.xsd" />
-							return (Object) NoGrammarConstraintsCodeAction.createXSINoNamespaceSchemaLocationEdit(
-									grammarURI, document, sharedSettings, rootElementNames, snippetSupport);
+		return getGrammarInfoForDocument(document, fullPathGrammarURI) //
+				.thenApply(grammarInfo -> {
+					List<String> rootElementNames = grammarInfo.rootElementNames;
+					String targetNamespace = grammarInfo.targetNamespace;
+					try {
+						if (GrammarBindingType.STANDARD.getName().equals(bindingType)) {
+							if (isXSD) {
+								if (StringUtils.isEmpty(targetNamespace)) {
+									// XSD without targetNamespace:
+									// <foo /> -> <foo xmlns:xsi="..." xsi:noNamespaceSchemaLocation="xsd/tag.xsd"
+									// />
+									return (Object) NoGrammarConstraintsCodeAction
+											.createXSINoNamespaceSchemaLocationEdit(grammarURI, document,
+													sharedSettings, rootElementNames, snippetSupport);
+								}
+								// XSD with targetNamespace:
+								// <foo /> -> <foo xmlns="ns" xmlns:xsi="..." xsi:schemaLocation="ns
+								// xsd/team.xsd" />
+								return (Object) NoGrammarConstraintsCodeAction.createXSISchemaLocationEdit(grammarURI,
+										targetNamespace, document, sharedSettings, rootElementNames, snippetSupport);
+							} else {
+								// DTD: <foo /> -> <!DOCTYPE foo SYSTEM "dtd/note.dtd">\n<foo />
+								return (Object) NoGrammarConstraintsCodeAction.createDocTypeEdit(grammarURI, document,
+										sharedSettings, rootElementNames, snippetSupport);
+							}
+						} else if (GrammarBindingType.XML_MODEL.getName().equals(bindingType)) {
+							// xml-model: <foo /> -> <?xml-model href="grammar.xsd"?>\n<foo />
+							return (Object) NoGrammarConstraintsCodeAction.createXmlModelEdit(grammarURI,
+									targetNamespace, null, document, sharedSettings, rootElementNames, snippetSupport);
 						}
-						// XSD with targetNamespace:
-						// <foo /> -> <foo xmlns="ns" xmlns:xsi="..." xsi:schemaLocation="ns xsd/team.xsd" />
-						return (Object) NoGrammarConstraintsCodeAction.createXSISchemaLocationEdit(grammarURI,
-								targetNamespace, document, sharedSettings, rootElementNames, snippetSupport);
-					} else {
-						// DTD: <foo /> -> <!DOCTYPE foo SYSTEM "dtd/note.dtd">\n<foo />
-						return (Object) NoGrammarConstraintsCodeAction.createDocTypeEdit(grammarURI, document,
-								sharedSettings, rootElementNames, snippetSupport);
+						throw new UnknownBindingTypeException(bindingType);
+					} catch (Exception e) {
+						throw new CompletionException(e);
 					}
-				} else if (GrammarBindingType.XML_MODEL.getName().equals(bindingType)) {
-					// xml-model: <foo /> -> <?xml-model href="grammar.xsd"?>\n<foo />
-					String targetNamespace = isXSD ? getTargetNamespace(fullPathGrammarURI) : null;
-					return (Object) NoGrammarConstraintsCodeAction.createXmlModelEdit(grammarURI, targetNamespace,
-							null, document, sharedSettings, rootElementNames, snippetSupport);
-				}
-				throw new UnknownBindingTypeException(bindingType);
-			} catch (Exception e) {
-				throw new CompletionException(e);
-			}
-		});
+				});
 	}
 
 	/**
@@ -181,9 +180,9 @@ public class AssociateGrammarCommand extends AbstractDOMDocumentCommandHandler {
 	 *
 	 * <p>
 	 * When the grammar has no existing document element, root element names are
-	 * resolved from the grammar's content model. If snippet editing is supported,
-	 * a choice placeholder {@code ${1|elem1,elem2,...|}} is generated for
-	 * multiple root elements.
+	 * resolved from the grammar's content model. If snippet editing is supported, a
+	 * choice placeholder {@code ${1|elem1,elem2,...|}} is generated for multiple
+	 * root elements.
 	 * </p>
 	 *
 	 * Parameters for catalog binding:
@@ -191,8 +190,7 @@ public class AssociateGrammarCommand extends AbstractDOMDocumentCommandHandler {
 	 * <li>param 1: entryType (String) — "public", "system", or "uri"</li>
 	 * <li>param 2: "catalog" (bindingType)</li>
 	 * <li>param 3: identifier (String) — the publicId, systemId, or name</li>
-	 * <li>param 4: targetURI (String) — the resolved grammar URI</li>
-	 * <li>param 5: uriValue (String) — the raw uri attribute from catalog entry</li>
+	 * <li>param 4: targetURI (String) — the resolved grammar URI</li> entry</li>
 	 * </ul>
 	 */
 	private Object executeCatalogBinding(DOMDocument document, ExecuteCommandParams params,
@@ -202,87 +200,140 @@ public class AssociateGrammarCommand extends AbstractDOMDocumentCommandHandler {
 		String targetURI = ArgumentsUtils.getArgAt(params, 4, String.class);
 		boolean snippetSupport = sharedSettings.getWorkspaceSettings().isSnippetEditSupported();
 
-		return getRootElementNamesForDocument(document, targetURI).thenApply(rootElementNames -> {
-			try {
-				switch (entryType) {
-					case "public":
-						// <foo /> -> <!DOCTYPE foo PUBLIC "-//Example//DTD//EN" "dtd/note.dtd">\n<foo />
-						String systemId = FilesUtils.getRelativeURI(targetURI, document.getDocumentURI());
-						return (Object) NoGrammarConstraintsCodeAction.createPublicDocTypeEdit(identifier, systemId,
-								document, sharedSettings, rootElementNames, snippetSupport);
-					case "system": {
-						boolean isXSD = DOMUtils.isXSD(targetURI);
-						if (isXSD) {
-							String targetNamespace = getTargetNamespace(targetURI);
-							if (StringUtils.isEmpty(targetNamespace)) {
-								// <foo /> -> <foo xmlns:xsi="..." xsi:noNamespaceSchemaLocation="systemId" />
-								return (Object) NoGrammarConstraintsCodeAction.createXSINoNamespaceSchemaLocationEdit(
-										identifier, document, sharedSettings, rootElementNames, snippetSupport);
+		return getGrammarInfoForDocument(document, targetURI)//
+				.thenApply(grammarInfo -> {
+					try {
+						List<String> rootElementNames = grammarInfo.rootElementNames;
+						String targetNamespace = grammarInfo.targetNamespace;
+						switch (entryType) {
+						case "public":
+							// <foo /> -> <!DOCTYPE foo PUBLIC "-//Example//DTD//EN" "dtd/note.dtd">\n<foo
+							// />
+							// Try to find a corresponding system entry with the same URI
+							String systemId = findSystemIdForUri(targetURI);
+							if (systemId == null) {
+								// Fallback: extract JAR path or use relative URI
+								if (targetURI != null && targetURI.contains("jar:")) {
+									systemId = extractPathFromJarUri(targetURI);
+								} else {
+									systemId = FilesUtils.getRelativeURI(targetURI, document.getDocumentURI());
+								}
 							}
-							// <foo /> -> <foo xmlns="ns" xmlns:xsi="..." xsi:schemaLocation="ns systemId" />
-							return (Object) NoGrammarConstraintsCodeAction.createXSISchemaLocationEdit(identifier,
-									targetNamespace, document, sharedSettings, rootElementNames, snippetSupport);
-						}
-						// <foo /> -> <!DOCTYPE foo SYSTEM "systemId">\n<foo />
-						return (Object) NoGrammarConstraintsCodeAction.createDocTypeEdit(identifier, document,
-								sharedSettings, rootElementNames, snippetSupport);
-					}
-					case "uri": {
-						boolean isXSD = DOMUtils.isXSD(targetURI);
-						boolean isRNG = DOMUtils.isRelaxNGUri(targetURI);
-						if (isXSD) {
-							String targetNamespace = getTargetNamespace(targetURI);
-							if (StringUtils.isEmpty(targetNamespace)) {
-								// <foo /> -> <foo xmlns:xsi="..." xsi:noNamespaceSchemaLocation="identifier" />
-								return (Object) NoGrammarConstraintsCodeAction.createXSINoNamespaceSchemaLocationEdit(
-										identifier, document, sharedSettings, rootElementNames, snippetSupport);
+							return (Object) NoGrammarConstraintsCodeAction.createPublicDocTypeEdit(identifier, systemId,
+									document, sharedSettings, rootElementNames, snippetSupport);
+						case "system": {
+							boolean isXSD = DOMUtils.isXSD(targetURI);
+							if (isXSD) {
+								if (StringUtils.isEmpty(targetNamespace)) {
+									// <foo /> -> <foo xmlns:xsi="..." xsi:noNamespaceSchemaLocation="systemId" />
+									return (Object) NoGrammarConstraintsCodeAction
+											.createXSINoNamespaceSchemaLocationEdit(identifier, document,
+													sharedSettings, rootElementNames, snippetSupport);
+								}
+								// <foo /> -> <foo xmlns="ns" xmlns:xsi="..." xsi:schemaLocation="ns systemId"
+								// />
+								return (Object) NoGrammarConstraintsCodeAction.createXSISchemaLocationEdit(identifier,
+										targetNamespace, document, sharedSettings, rootElementNames, snippetSupport);
 							}
-							// <foo /> -> <foo xmlns="ns" xmlns:xsi="..." xsi:schemaLocation="ns identifier" />
-							return (Object) NoGrammarConstraintsCodeAction.createXSISchemaLocationEdit(identifier,
-									targetNamespace, document, sharedSettings, rootElementNames, snippetSupport);
-						} else if (isRNG) {
-							// <foo /> -> <?xml-model href="identifier" schematypens="http://relaxng.org/..."?>\n<foo />
-							String schematypens = getSchematypens(targetURI);
-							return (Object) NoGrammarConstraintsCodeAction.createXmlModelEdit(identifier, null,
-									schematypens, document, sharedSettings, rootElementNames, snippetSupport);
+							// <foo /> -> <!DOCTYPE foo SYSTEM "systemId">\n<foo />
+							return (Object) NoGrammarConstraintsCodeAction.createDocTypeEdit(identifier, document,
+									sharedSettings, rootElementNames, snippetSupport);
 						}
-						// DTD fallback: <foo /> -> <!DOCTYPE foo SYSTEM "identifier">\n<foo />
-						return (Object) NoGrammarConstraintsCodeAction.createDocTypeEdit(identifier, document,
-								sharedSettings, rootElementNames, snippetSupport);
+						case "uri": {
+							boolean isXSD = DOMUtils.isXSD(targetURI);
+							boolean isRNG = DOMUtils.isRelaxNGUri(targetURI);
+							if (isXSD) {
+								if (StringUtils.isEmpty(targetNamespace)) {
+									// <foo /> -> <foo xmlns:xsi="..." xsi:noNamespaceSchemaLocation="identifier" />
+									return (Object) NoGrammarConstraintsCodeAction
+											.createXSINoNamespaceSchemaLocationEdit(identifier, document,
+													sharedSettings, rootElementNames, snippetSupport);
+								}
+								// <foo /> -> <foo xmlns="ns" xmlns:xsi="..." xsi:schemaLocation="ns identifier"
+								// />
+								return (Object) NoGrammarConstraintsCodeAction.createXSISchemaLocationEdit(identifier,
+										targetNamespace, document, sharedSettings, rootElementNames, snippetSupport);
+							} else if (isRNG) {
+								// <foo /> -> <?xml-model href="identifier"
+								// schematypens="http://relaxng.org/..."?>\n<foo />
+								String schematypens = getSchematypens(targetURI);
+								return (Object) NoGrammarConstraintsCodeAction.createXmlModelEdit(identifier, null,
+										schematypens, document, sharedSettings, rootElementNames, snippetSupport);
+							}
+							// DTD fallback: <foo /> -> <!DOCTYPE foo SYSTEM "identifier">\n<foo />
+							return (Object) NoGrammarConstraintsCodeAction.createDocTypeEdit(identifier, document,
+									sharedSettings, rootElementNames, snippetSupport);
+						}
+						default:
+							throw new IllegalArgumentException("Unknown catalog entry type: " + entryType);
+						}
+					} catch (Exception e) {
+						throw new CompletionException(e);
 					}
-					default:
-						throw new IllegalArgumentException("Unknown catalog entry type: " + entryType);
-				}
-			} catch (Exception e) {
-				throw new CompletionException(e);
-			}
-		});
+				});
 	}
 
 	/**
-	 * Returns the root element names used by a binding edit. When the document
-	 * already has a named root element, the grammar is not loaded — the builders
-	 * use the existing element name and ignore discovered names, so loading would
-	 * only add latency.
+	 * Holds both root element names and target namespace from a grammar document.
 	 */
-	private CompletableFuture<List<String>> getRootElementNamesForDocument(DOMDocument document, String grammarURI) {
-		DOMElement documentElement = document.getDocumentElement();
-		if (documentElement != null && documentElement.hasTagName()) {
-			return CompletableFuture.completedFuture(Collections.emptyList());
+	private static class GrammarInfo {
+		List<String> rootElementNames;
+		String targetNamespace;
+
+		GrammarInfo(List<String> rootElementNames, String targetNamespace) {
+			this.rootElementNames = rootElementNames;
+			this.targetNamespace = targetNamespace;
 		}
-		return getRootElementNamesAsync(grammarURI);
 	}
 
-	private CompletableFuture<List<String>> getRootElementNamesAsync(String grammarURI) {
+	/**
+	 * Returns grammar info (root elements and target namespace) for a binding edit.
+	 * When the document already has a named root element, root element names are not
+	 * extracted (the builders use the existing element name). For XSD schemas, the
+	 * target namespace is loaded since catalog XSD branches use it to determine
+	 * xsi:schemaLocation vs xsi:noNamespaceSchemaLocation. For DTD, no metadata is
+	 * loaded since it is not needed for the edit.
+	 */
+	private CompletableFuture<GrammarInfo> getGrammarInfoForDocument(DOMDocument document, String grammarURI) {
+		DOMElement documentElement = document.getDocumentElement();
+		if (documentElement != null && documentElement.hasTagName()) {
+			// For XSD, load namespace; for DTD or other types, return empty
+			if (DOMUtils.isXSD(grammarURI)) {
+				return getNamespaceAsync(grammarURI);
+			}
+			return CompletableFuture.completedFuture(new GrammarInfo(Collections.emptyList(), null));
+		}
+		return getGrammarInfoAsync(grammarURI);
+	}
+
+	private CompletableFuture<GrammarInfo> getGrammarInfoAsync(String grammarURI) {
 		if (contentModelManager == null || grammarURI == null) {
-			return CompletableFuture.completedFuture(Collections.emptyList());
+			return CompletableFuture.completedFuture(new GrammarInfo(Collections.emptyList(), null));
 		}
 		try {
-			return contentModelManager.loadCMDocumentAsync(grammarURI)
-					.thenApply(this::extractRootElementNames)
-					.exceptionally(e -> Collections.emptyList());
+			return contentModelManager.loadCMDocumentAsync(grammarURI) //
+					.thenApply(cmDocument -> {
+						List<String> rootElements = extractRootElementNames(cmDocument);
+						String namespace = cmDocument != null ? cmDocument.getNamespace() : null;
+						return new GrammarInfo(rootElements, namespace);
+					}).exceptionally(e -> new GrammarInfo(Collections.emptyList(), null));
 		} catch (Exception e) {
-			return CompletableFuture.completedFuture(Collections.emptyList());
+			return CompletableFuture.completedFuture(new GrammarInfo(Collections.emptyList(), null));
+		}
+	}
+
+	private CompletableFuture<GrammarInfo> getNamespaceAsync(String grammarURI) {
+		if (contentModelManager == null || grammarURI == null) {
+			return CompletableFuture.completedFuture(new GrammarInfo(Collections.emptyList(), null));
+		}
+		try {
+			return contentModelManager.loadCMDocumentAsync(grammarURI) //
+					.thenApply(cmDocument -> {
+						String namespace = cmDocument != null ? cmDocument.getNamespace() : null;
+						return new GrammarInfo(Collections.emptyList(), namespace);
+					}).exceptionally(e -> new GrammarInfo(Collections.emptyList(), null));
+		} catch (Exception e) {
+			return CompletableFuture.completedFuture(new GrammarInfo(Collections.emptyList(), null));
 		}
 	}
 
@@ -307,45 +358,99 @@ public class AssociateGrammarCommand extends AbstractDOMDocumentCommandHandler {
 		if (grammarURI == null) {
 			return null;
 		}
-		String lower = grammarURI.toLowerCase(Locale.ROOT);
-		if (lower.endsWith(".rng") || lower.endsWith(".rnc")) {
+		if (DOMUtils.isRelaxNGUri(grammarURI)) {
 			return XMLModelConstants.RELAXNG_SCHEMATYPENS;
 		}
 		return null;
 	}
 
-	private static String getTargetNamespace(String xsdURI) {
-		TargetNamespaceHandler handler = new TargetNamespaceHandler();
-		try {
-			SAXParserFactory factory = DOMUtils.newSAXParserFactory();
-			SAXParser saxParser = factory.newSAXParser();
-			saxParser.parse(new URL(xsdURI).openStream(), handler);
-		} catch (Exception e) {
-
+	/**
+	 * Extracts the internal path from a JAR URI. For example:
+	 * {@code jar:file:/path/to/my.jar!/dtd/xhtml.dtd} → {@code dtd/xhtml.dtd}
+	 * If the URI is not a JAR URI, returns the URI unchanged.
+	 */
+	private static String extractPathFromJarUri(String uri) {
+		if (uri != null && uri.contains("jar:")) {
+			int sepIndex = uri.indexOf("!");
+			if (sepIndex != -1) {
+				String path = uri.substring(sepIndex + 1);
+				// Remove leading slash if present
+				if (path.startsWith("/")) {
+					path = path.substring(1);
+				}
+				return path;
+			}
 		}
-		return handler.getTargetNamespace();
+		return uri;
 	}
 
 	/**
-	 * SAX handler which extract the targetNamespace attribute from the xs:schema
-	 * root tag element and null otherwise.
-	 *
+	 * Searches all configured catalogs for a system entry that points to the same
+	 * target URI as the given URI. Returns the system entry's systemId if found,
+	 * or null otherwise. This allows public entries to use the HTTP URL from a
+	 * corresponding system entry for DOCTYPE declarations.
 	 */
-	private static class TargetNamespaceHandler extends DefaultHandler {
-
-		private String targetNamespace;
-
-		@Override
-		public void startElement(String uri, String localName, String qName, Attributes attributes)
-				throws SAXException {
-			super.startElement(uri, localName, qName, attributes);
-			this.targetNamespace = attributes.getValue(TARGET_NAMESPACE_ATTR);
-			throw new SAXException();
+	private String findSystemIdForUri(String targetUri) {
+		if (contentModelManager == null || targetUri == null) {
+			return null;
 		}
-
-		public String getTargetNamespace() {
-			return targetNamespace;
+		String[] catalogs = contentModelManager.getCatalogs();
+		if (catalogs == null || catalogs.length == 0) {
+			return null;
 		}
+		java.util.Set<String> visited = new java.util.HashSet<>();
+		for (String catalogUri : catalogs) {
+			String result = searchSystemIdInCatalog(catalogUri, targetUri, visited);
+			if (result != null) {
+				return result;
+			}
+		}
+		return null;
+	}
+
+	private String searchSystemIdInCatalog(String catalogUri, String targetUri, java.util.Set<String> visited) {
+		if (catalogUri == null || !visited.add(catalogUri)) {
+			return null;
+		}
+		try {
+			// Load catalog with timeout to avoid blocking on unresponsive HTTPS catalogs
+			ExecutorService executor = Executors.newSingleThreadExecutor();
+			try {
+				DOMDocument catalog = executor.submit(() -> DOMUtils.loadDocument(catalogUri, null))
+						.get(5, TimeUnit.SECONDS);
+				if (catalog == null || !DOMUtils.isCatalog(catalog)) {
+					return null;
+				}
+				return searchSystemIdInDocument(catalog, targetUri, visited);
+			} finally {
+				executor.shutdown();
+			}
+		} catch (Exception e) {
+			// Timeout or other error: skip this catalog and continue search
+			return null;
+		}
+	}
+
+	private String searchSystemIdInDocument(DOMDocument catalog, String targetUri, java.util.Set<String> visited) {
+		for (CatalogEntry entry : CatalogUtils.getCatalogEntries(catalog)) {
+			DOMElement child = entry.getEntryElement();
+			String localName = child.getLocalName();
+			if ("system".equals(localName)) {
+				String resolvedUri = CatalogUtils.getResolvedLocation(catalog, entry);
+				if (resolvedUri != null && resolvedUri.equals(targetUri)) {
+					return child.getAttribute("systemId");
+				}
+			} else if ("nextCatalog".equals(localName)) {
+				String resolvedNextUri = CatalogUtils.getResolvedLocation(catalog, entry);
+				if (resolvedNextUri != null) {
+					String result = searchSystemIdInCatalog(resolvedNextUri, targetUri, visited);
+					if (result != null) {
+						return result;
+					}
+				}
+			}
+		}
+		return null;
 	}
 
 }
