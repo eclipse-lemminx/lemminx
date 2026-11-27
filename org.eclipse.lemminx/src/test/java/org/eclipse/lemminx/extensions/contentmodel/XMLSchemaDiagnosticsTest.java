@@ -1634,6 +1634,15 @@ public class XMLSchemaDiagnosticsTest extends AbstractCacheBasedTest {
 		testDiagnosticsFor(xml, null, null, null, true, settings, //
 				d(2, 32, 2, 48, XMLSchemaErrorCode.schema_reference_4), //
 				d(0, 1, 0, 11, XMLSchemaErrorCode.cvc_elt_1_a));
+
+		// bad XSD location without .xsd extension
+		xml = "<server\r\n" + //
+				"	xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"\r\n" + //
+				"	xsi:noNamespaceSchemaLocation=\"server.xsdXXX\">\r\n" + //
+				"</server>";
+		testDiagnosticsFor(xml, null, null, null, true, settings, //
+				d(2, 32, 2, 46, XMLSchemaErrorCode.schema_reference_4), //
+				d(0, 1, 0, 7, XMLSchemaErrorCode.cvc_elt_1_a));
 	}
 
 	@Test
