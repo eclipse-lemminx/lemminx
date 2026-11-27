@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -28,10 +29,15 @@ import org.eclipse.lemminx.XMLAssert;
 import org.eclipse.lemminx.dom.DOMDocument;
 import org.eclipse.lemminx.dom.DOMParser;
 import org.eclipse.lemminx.extensions.contentmodel.commands.AssociateGrammarCommand.GrammarBindingType;
+import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelManager;
+import org.eclipse.lemminx.extensions.contentmodel.model.ContentModelProvider;
 import org.eclipse.lemminx.extensions.contentmodel.participants.codeactions.nogrammarconstraints.NoGrammarConstraintsCodeAction;
+import org.eclipse.lemminx.extensions.dtd.contentmodel.CMDTDContentModelProvider;
+import org.eclipse.lemminx.extensions.xsd.contentmodel.CMXSDContentModelProvider;
 import org.eclipse.lemminx.services.IXMLDocumentProvider;
 import org.eclipse.lemminx.settings.SharedSettings;
 import org.eclipse.lemminx.settings.XMLFormattingOptions.SplitAttributes;
+import org.eclipse.lemminx.uriresolver.URIResolverExtensionManager;
 import org.eclipse.lsp4j.ExecuteCommandParams;
 import org.eclipse.lsp4j.TextDocumentEdit;
 import org.eclipse.lsp4j.TextDocumentIdentifier;
@@ -172,6 +178,83 @@ public class AssociateGrammarCatalogCommandTest {
 		assertNotNull(actual);
 		assertEquals(actual, tde(xmlURI, 0, te(1, 0, 1, 0,
 				"<!DOCTYPE foo PUBLIC \"-//Example//DTD Foo//EN\" \"dtd/note.dtd\">\r\n")));
+	}
+
+	// Catalog entry: <public publicId="-//W3C//DTD XHTML 1.0 Strict//EN"
+	//                        uri="jar:file:/path/to/my.jar!/dtd/xhtml1-strict.dtd"/>
+	// JAR URI with leading slash after !
+	// <foo /> -> <!DOCTYPE foo PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "dtd/xhtml1-strict.dtd">
+	//            <foo />
+	@Test
+	public void catalogPublicEntryWithJarUriWithSlash() throws Exception {
+		String xml = "<?xml version=\"1.0\"?>\r\n" + //
+				"<foo />";
+		String xmlURI = getFileURI("src/test/resources/tag.xml");
+		String jarUri = "jar:file:/path/to/my.jar!/dtd/xhtml1-strict.dtd";
+
+		TextDocumentEdit actual = executeCatalogBinding(xml, xmlURI,
+				"public", "-//W3C//DTD XHTML 1.0 Strict//EN", jarUri, "xhtml1-strict.dtd");
+
+		assertNotNull(actual);
+		assertEquals(actual, tde(xmlURI, 0, te(1, 0, 1, 0,
+				"<!DOCTYPE foo PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"dtd/xhtml1-strict.dtd\">\r\n")));
+	}
+
+	// Catalog entry: <public publicId="-//W3C//DTD XHTML 1.0 Strict//EN"
+	//                        uri="jar:file:/path/to/my.jar!dtd/xhtml1-strict.dtd"/>
+	// JAR URI without leading slash after !
+	// <foo /> -> <!DOCTYPE foo PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "dtd/xhtml1-strict.dtd">
+	//            <foo />
+	@Test
+	public void catalogPublicEntryWithJarUriWithoutSlash() throws Exception {
+		String xml = "<?xml version=\"1.0\"?>\r\n" + //
+				"<foo />";
+		String xmlURI = getFileURI("src/test/resources/tag.xml");
+		String jarUri = "jar:file:/path/to/my.jar!dtd/xhtml1-strict.dtd";
+
+		TextDocumentEdit actual = executeCatalogBinding(xml, xmlURI,
+				"public", "-//W3C//DTD XHTML 1.0 Strict//EN", jarUri, "xhtml1-strict.dtd");
+
+		assertNotNull(actual);
+		assertEquals(actual, tde(xmlURI, 0, te(1, 0, 1, 0,
+				"<!DOCTYPE foo PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"dtd/xhtml1-strict.dtd\">\r\n")));
+	}
+
+	// Catalog with both public and system entries pointing to same JAR URI:
+	// <public publicId="-//W3C//DTD XHTML 1.0 Strict//EN"
+	//         uri="jar:file:/path/to/my.jar!/dtd/xhtml1-strict.dtd"/>
+	// <system systemId="http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"
+	//         uri="jar:file:/path/to/my.jar!/dtd/xhtml1-strict.dtd"/>
+	// When binding public entry, use the system's HTTP URL if found
+	// <foo /> -> <!DOCTYPE foo PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+	//            <foo />
+	@Test
+	public void catalogPublicEntryWithCorrespondingSystemEntry() throws Exception {
+		String xml = "<?xml version=\"1.0\"?>\r\n" + //
+				"<foo />";
+		String xmlURI = getFileURI("src/test/resources/tag.xml");
+		String jarUri = "jar:file:/path/to/my.jar!/dtd/xhtml1-strict.dtd";
+
+		// Create catalog with both public and system entries
+		String catalogContent = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n" + //
+				"<!DOCTYPE catalog PUBLIC \"-//OASIS//DTD Entity Resolution XML Catalog V1.0//EN\" \"http://www.oasis-open.org/committees/entity/release/1.0/catalog.dtd\">\r\n" + //
+				"<catalog xmlns=\"urn:oasis:names:tc:entity:xmlns:xml:catalog\" prefer=\"public\">\r\n" + //
+				"  <public publicId=\"-//W3C//DTD XHTML 1.0 Strict//EN\"\r\n" + //
+				"          uri=\"" + jarUri + "\"/>\r\n" + //
+				"  <system systemId=\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\"\r\n" + //
+				"          uri=\"" + jarUri + "\"/>\r\n" + //
+				"</catalog>";
+		File tempCatalog = File.createTempFile("test-catalog", ".xml");
+		tempCatalog.deleteOnExit();
+		Files.write(tempCatalog.toPath(), catalogContent.getBytes());
+		String catalogURI = getFileURI(tempCatalog);
+
+		TextDocumentEdit actual = executeCatalogBinding(xml, xmlURI,
+				"public", "-//W3C//DTD XHTML 1.0 Strict//EN", jarUri, "xhtml1-strict.dtd", catalogURI);
+
+		assertNotNull(actual);
+		assertEquals(actual, tde(xmlURI, 0, te(1, 0, 1, 0,
+				"<!DOCTYPE foo PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\r\n")));
 	}
 
 	// ==========================================
@@ -571,8 +654,8 @@ public class AssociateGrammarCatalogCommandTest {
 	// ==========================================
 
 	// Empty document + catalog DTD: generates DOCTYPE + root element from scratch
-	// "" -> <!DOCTYPE root-element SYSTEM "http://example.org/schema/note">
-	//       <root-element></root-element>
+	// "" -> <!DOCTYPE note SYSTEM "http://example.org/schema/note">
+	//       <note></note>
 	@Test
 	public void catalogUriDTDWithEmptyDocument() throws Exception {
 		String xml = "";
@@ -584,13 +667,13 @@ public class AssociateGrammarCatalogCommandTest {
 
 		assertNotNull(actual);
 		assertEquals(actual, tde(xmlURI, 0, te(0, 0, 0, 0,
-				"<!DOCTYPE root-element SYSTEM \"http://example.org/schema/note\">" + ls + //
-						"<root-element></root-element>")));
+				"<!DOCTYPE note SYSTEM \"http://example.org/schema/note\">" + ls + //
+						"<note></note>")));
 	}
 
 	// Empty document + catalog XSD (no namespace): generates root element with xsi attributes
-	// "" -> <root-element xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	//            xsi:noNamespaceSchemaLocation="http://example.org/schema/tag"></root-element>
+	// "" -> <root xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	//            xsi:noNamespaceSchemaLocation="http://example.org/schema/tag"></root>
 	@Test
 	public void catalogUriXSDWithEmptyDocument() throws Exception {
 		String xml = "";
@@ -602,14 +685,14 @@ public class AssociateGrammarCatalogCommandTest {
 
 		assertNotNull(actual);
 		assertEquals(actual, tde(xmlURI, 0, te(0, 0, 0, 0,
-				"<root-element" + //
+				"<root" + //
 						" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + ls + //
-						"    xsi:noNamespaceSchemaLocation=\"http://example.org/schema/tag\"></root-element>")));
+						"    xsi:noNamespaceSchemaLocation=\"http://example.org/schema/tag\"></root>")));
 	}
 
 	// Empty document + standard DTD: generates DOCTYPE + root element
-	// "" -> <!DOCTYPE root-element SYSTEM "dtd/note.dtd">
-	//       <root-element></root-element>
+	// "" -> <!DOCTYPE note SYSTEM "dtd/note.dtd">
+	//       <note></note>
 	@Test
 	public void standardDTDWithEmptyDocument() throws Exception {
 		String xml = "";
@@ -621,8 +704,8 @@ public class AssociateGrammarCatalogCommandTest {
 
 		assertNotNull(actual);
 		assertEquals(actual, tde(xmlURI, 0, te(0, 0, 0, 0,
-				"<!DOCTYPE root-element SYSTEM \"dtd/note.dtd\">" + ls + //
-						"<root-element></root-element>")));
+				"<!DOCTYPE note SYSTEM \"dtd/note.dtd\">" + ls + //
+						"<note></note>")));
 	}
 
 	// ==========================================
@@ -710,8 +793,8 @@ public class AssociateGrammarCatalogCommandTest {
 	// Edge cases: XML with just "<"
 	// ==========================================
 
-	// Just "<" (incomplete tag) + catalog XSD: replaces orphan "<" with root element
-	// < -> <root-element xmlns:xsi="..." xsi:noNamespaceSchemaLocation="..."></root-element>
+	// Just "<" (incomplete tag) + catalog XSD: replaces orphan "<" with root
+	// < -> <root xmlns:xsi="..." xsi:noNamespaceSchemaLocation="..."></root>
 	@Test
 	public void catalogUriXSDWithJustLessThan() throws Exception {
 		String xml = "<";
@@ -723,13 +806,13 @@ public class AssociateGrammarCatalogCommandTest {
 
 		assertNotNull(actual);
 		assertEquals(actual, tde(xmlURI, 0, te(0, 0, 0, 1,
-				"<root-element" + //
+				"<root" + //
 						" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + ls + //
-						"    xsi:noNamespaceSchemaLocation=\"http://example.org/schema/tag\"></root-element>")));
+						"    xsi:noNamespaceSchemaLocation=\"http://example.org/schema/tag\"></root>")));
 	}
 
 	// Just "<" + standard XSD: replaces orphan "<" with root element
-	// < -> <root-element xmlns:xsi="..." xsi:noNamespaceSchemaLocation="xsd/tag.xsd"></root-element>
+	// < -> <root xmlns:xsi="..." xsi:noNamespaceSchemaLocation="xsd/tag.xsd"></root>
 	@Test
 	public void standardXSDWithJustLessThan() throws Exception {
 		String xml = "<";
@@ -741,9 +824,9 @@ public class AssociateGrammarCatalogCommandTest {
 
 		assertNotNull(actual);
 		assertEquals(actual, tde(xmlURI, 0, te(0, 0, 0, 1,
-				"<root-element" + //
+				"<root" + //
 						" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\"" + ls + //
-						"    xsi:noNamespaceSchemaLocation=\"xsd/tag.xsd\"></root-element>")));
+						"    xsi:noNamespaceSchemaLocation=\"xsd/tag.xsd\"></root>")));
 	}
 
 	// Just "<" + standard DTD: replaces orphan "<" with DOCTYPE + root element
@@ -760,8 +843,8 @@ public class AssociateGrammarCatalogCommandTest {
 
 		assertNotNull(actual);
 		assertEquals(actual, tde(xmlURI, 0, te(0, 0, 0, 1,
-				"<!DOCTYPE root-element SYSTEM \"dtd/note.dtd\">" + ls + //
-						"<root-element></root-element>")));
+				"<!DOCTYPE note SYSTEM \"dtd/note.dtd\">" + ls + //
+						"<note></note>")));
 	}
 
 	// Just "<" + catalog RNG: replaces orphan "<" with xml-model PI + root element
@@ -1167,6 +1250,11 @@ public class AssociateGrammarCatalogCommandTest {
 
 	private static TextDocumentEdit executeCatalogBinding(String xmlContent, String xmlURI,
 			String entryType, String identifier, String targetURI, String uriValue) throws Exception {
+		return executeCatalogBinding(xmlContent, xmlURI, entryType, identifier, targetURI, uriValue, null);
+	}
+
+	private static TextDocumentEdit executeCatalogBinding(String xmlContent, String xmlURI,
+			String entryType, String identifier, String targetURI, String uriValue, String catalogURI) throws Exception {
 		DOMDocument document = DOMParser.getInstance().parse(xmlContent, xmlURI, null);
 		IXMLDocumentProvider documentProvider = uri -> {
 			if (xmlURI.equals(uri)) {
@@ -1174,7 +1262,9 @@ public class AssociateGrammarCatalogCommandTest {
 			}
 			return null;
 		};
-		AssociateGrammarCommand command = new AssociateGrammarCommand(documentProvider);
+		AssociateGrammarCommand command = catalogURI != null
+				? createCommandWithCatalog(documentProvider, catalogURI)
+				: createCommand(documentProvider);
 		ExecuteCommandParams params = new ExecuteCommandParams(
 				AssociateGrammarCommand.COMMAND_ID,
 				Arrays.asList(
@@ -1197,7 +1287,7 @@ public class AssociateGrammarCatalogCommandTest {
 			}
 			return null;
 		};
-		AssociateGrammarCommand command = new AssociateGrammarCommand(documentProvider);
+		AssociateGrammarCommand command = createCommand(documentProvider);
 		ExecuteCommandParams params = new ExecuteCommandParams(
 				AssociateGrammarCommand.COMMAND_ID,
 				Arrays.asList(
@@ -1206,6 +1296,34 @@ public class AssociateGrammarCatalogCommandTest {
 						bindingType));
 		SharedSettings sharedSettings = new SharedSettings();
 		return unwrapEdit(command.executeCommand(params, sharedSettings, NULL_CHECKER));
+	}
+
+	private static AssociateGrammarCommand createCommand(IXMLDocumentProvider documentProvider) {
+		ContentModelManager modelManager = createModelManager();
+		return new AssociateGrammarCommand(documentProvider, modelManager);
+	}
+
+	private static ContentModelManager createModelManager() {
+		URIResolverExtensionManager resolverExtensionManager = new URIResolverExtensionManager();
+		ContentModelManager modelManager = new ContentModelManager(resolverExtensionManager);
+
+		modelManager = new ContentModelManager(resolverExtensionManager);
+
+		// DTD -> See DTDPlugin
+		ContentModelProvider modelProvider = new CMDTDContentModelProvider(resolverExtensionManager);
+		modelManager.registerModelProvider(modelProvider);
+
+		// XSD -> See XSDPlugin
+		modelProvider = new CMXSDContentModelProvider(resolverExtensionManager);
+		modelManager.registerModelProvider(modelProvider);
+		return modelManager;
+	}
+
+	private static AssociateGrammarCommand createCommandWithCatalog(IXMLDocumentProvider documentProvider, String catalogURI) throws Exception {
+		ContentModelManager modelManager = createModelManager();
+		// Set the catalog
+		modelManager.setCatalogs(new String[] {catalogURI});
+		return new AssociateGrammarCommand(documentProvider, modelManager);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -1217,11 +1335,15 @@ public class AssociateGrammarCatalogCommandTest {
 	}
 
 	private static String getFileURI(String fileName) {
-		String uri = new File(fileName).toURI().toString();
-		boolean isWindows = System.getProperty("os.name", "").toLowerCase().contains("win");
-		if (isWindows && !uri.startsWith("file://")) {
+		return getFileURI(new File(fileName));
+	}
+	
+	private static String getFileURI(File file) {
+		String uri = file.toURI().toString();
+		if (!uri.startsWith("file://")) {
 			uri = uri.replace("file:/", "file:///");
 		}
 		return uri;
 	}
+
 }

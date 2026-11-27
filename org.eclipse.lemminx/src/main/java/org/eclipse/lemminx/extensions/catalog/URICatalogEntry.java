@@ -46,6 +46,9 @@ public class URICatalogEntry extends CatalogEntry {
 		if (StringUtils.isBlank(lastSegment)) {
 			return null;
 		}
+		if (lastSegment.startsWith("jar:")) {
+			return lastSegment;
+		}
 		try {
 			return Paths.get(getBaseURI(), lastSegment).toString();
 		} catch (InvalidPathException e) {
